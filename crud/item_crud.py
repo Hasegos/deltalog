@@ -146,3 +146,33 @@ def count_items_by_topic(db: Session) -> dict[str, int]:
         .group_by(Item.topic)
     )
     return {topic: count for topic, count in db.execute(stmt).all()}
+
+
+def list_entry_times_since(db: Session, since: datetime) -> list[tuple[int, datetime]]:
+    """지정한 시각 이후에 게시된 글의 소스와 게시 시각을 돌려준다.
+
+    Args:
+        db: DB 세션
+        since: 이 시각 이후(포함)에 게시된 글만 돌려준다
+    Returns:
+        `(소스 ID, 게시 시각)` 목록
+    """
+    stmt = select(Entry.source_id, Entry.published_at).where(Entry.published_at >= since)
+    return [(source_id, published_at) for source_id, published_at in db.execute(stmt).all()]
+
+
+def list_topic_times_since(db: Session, since: datetime) -> list[tuple[str, datetime]]:
+    """지정한 시각 이후에 게시된 글의 항목을 주제와 게시 시각으로 돌려준다.
+
+    Args:
+        db: DB 세션
+        since: 이 시각 이후(포함)에 게시된 글의 항목만 돌려준다
+    Returns:
+        `(주제, 게시 시각)` 목록. 주제가 아직 없는(요약 전) 항목은 들어 있지 않다
+    """
+    stmt = (
+        select(Item.topic, Entry.published_at)
+        .join(Entry, Item.entry_id == Entry.id)
+        .where(Entry.published_at >= since, Item.topic.is_not(None))
+    )
+    return [(topic, published_at) for topic, published_at in db.execute(stmt).all()]
