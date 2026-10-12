@@ -78,7 +78,7 @@ def build_home(
     ]
 
     start = _week_start(now)
-    week_counts = item_crud.count_categories_since(db, start)
+    week_counts = item_crud.count_categories_since(db, start, now)
     week = {
         "label": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~",
         "cats": [
@@ -126,7 +126,7 @@ def build_home(
                 "type_label": label,
                 "importance": item.importance or 0,
                 "topic": item.topic,
-                "url": entry.url,
+                "url": entry.url if entry.url.startswith(("https://", "http://")) else "#",
             }
         )
         last_date = date

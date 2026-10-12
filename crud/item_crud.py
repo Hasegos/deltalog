@@ -35,13 +35,12 @@ def _filter(
     if topic:
         stmt = stmt.where(Item.topic == topic)
     if q:
-        like = f"%{q}%"
         stmt = stmt.where(
-            Item.summary_ko.ilike(like)
-            | Source.name.ilike(like)
-            | Entry.version.ilike(like)
-            | Entry.title.ilike(like)
-            | Item.topic.ilike(like)
+            Item.summary_ko.icontains(q, autoescape=True)
+            | Source.name.icontains(q, autoescape=True)
+            | Entry.version.icontains(q, autoescape=True)
+            | Entry.title.icontains(q, autoescape=True)
+            | Item.topic.icontains(q, autoescape=True)
         )
     return stmt
 
@@ -113,19 +112,20 @@ def count_items_by_source(db: Session) -> dict[int, int]:
     return {source_id: count for source_id, count in db.execute(stmt).all()}
 
 
-def count_categories_since(db: Session, since: datetime) -> dict[str, int]:
-    """지정한 시각 이후에 게시된 항목을 유형별로 센다.
+def count_categories_since(db: Session, since: datetime, until: datetime) -> dict[str, int]:
+    """지정한 기간에 게시된 항목을 유형별로 센다.
 
     Args:
         db: DB 세션
         since: 이 시각 이후(포함)에 게시된 글의 항목만 센다
+        until: 이 시각 이전(포함)에 게시된 글의 항목만 센다. 미래 날짜 글을 빼는 데 쓴다
     Returns:
         유형별 개수. 유형이 아직 없는(요약 전) 항목은 세지 않는다
     """
     stmt = (
         select(Item.category, func.count(Item.id))
         .join(Entry, Item.entry_id == Entry.id)
-        .where(Entry.published_at >= since, Item.category.is_not(None))
+        .where(Entry.published_at >= since, Entry.published_at <= until, Item.category.is_not(None))
         .group_by(Item.category)
     )
     return {category: count for category, count in db.execute(stmt).all()}
