@@ -17,6 +17,7 @@ def home(
     category: str = Query("", alias="type"),
     topic: str = "",
     q: str = Query("", max_length=100),
+    page: int = Query(1, ge=1, le=10000),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     """홈 화면을 그린다. 쿼리 값으로 도구, 탭, 유형, 주제, 검색어를 거른다.
@@ -28,9 +29,10 @@ def home(
         category: 유형 (`type` 쿼리 값. `feature`, `bugfix`, `breaking`, `security`)
         topic: 주제
         q: 검색어
+        page: 쪽 번호 (1부터)
         db: 요청에 쓸 DB 세션
     Returns:
         렌더링한 홈 페이지
     """
-    context = build_home(db, tool, tab, category, topic, q.strip())
+    context = build_home(db, tool, tab, category, topic, q.strip(), page)
     return templates.TemplateResponse(request, "home.html", context)
