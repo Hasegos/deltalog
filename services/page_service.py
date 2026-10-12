@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
 
@@ -54,27 +55,24 @@ def build_tools(db: Session, now: datetime | None = None) -> dict:
         db: DB 세션
         now: 기준 시각. 비우면 현재 시각
     Returns:
-        소스별 이름, 종류, 항목 개수, 홈으로 가는 주소, 최근 몇 주의 릴리스 추이
+        소스별 이름, 저장소 또는 사이트 주소(`sub`), 홈으로 가는 주소, 최근 몇 주의 릴리스 추이. 추이 합계가 큰 순서다
     """
     starts = _week_starts(now or datetime.now(KST))
     by_source = defaultdict(list)
     for source_id, published_at in item_crud.list_entry_times_since(db, starts[0]):
         by_source[source_id].append(published_at)
 
-    counts = item_crud.count_items_by_source(db)
-    return {
-        "weeks": SPARK_WEEKS,
-        "tools": [
-            {
-                "name": s.name,
-                "kind": s.kind,
-                "count": counts.get(s.id, 0),
-                "href": f"/?tool={s.slug}",
-                "spark": _spark(by_source[s.id], starts),
-            }
-            for s in item_crud.list_sources(db)
-        ],
-    }
+    tools = [
+        {
+            "name": s.name,
+            "sub": s.repo or urlparse(s.feed_url or "").netloc,
+            "href": f"/?tool={s.slug}",
+            "spark": _spark(by_source[s.id], starts),
+        }
+        for s in item_crud.list_sources(db)
+    ]
+    tools.sort(key=lambda t: t["spark"]["total"], reverse=True)
+    return {"weeks": SPARK_WEEKS, "tools": tools}
 
 
 def build_topics(db: Session, now: datetime | None = None) -> dict:
