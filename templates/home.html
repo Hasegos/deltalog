@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% macro tool_chips(tools, total, all_href) %}
+  <a class="ch{{ ' on' if not (tools | selectattr('active') | list) }}" href="{{ all_href }}">전체<em>{{ total }}</em></a>
+  {% for t in tools %}
+    <a class="ch{{ ' on' if t.active }}" href="{{ t.href }}">{{ t.name }}<em>{{ t.count }}</em></a>
+  {% endfor %}
+{% endmacro %}
+
+{% macro topic_chips(topics) %}
+  {% for t in topics %}
+    <a class="ch{{ ' on' if t.active }}" href="{{ t.href }}">{{ t.name }}</a>
+  {% endfor %}
+{% endmacro %}
+
+{% block content %}
+<section class="hero">
+  <div class="wordmark">DELTA<br>LOG</div>
+  <div class="wk">
+    <div class="wk-t">This week · {{ week.label }}</div>
+    <div class="wk-g">
+      {% for c in week.cats %}
+        <a class="wk-c cat-{{ c.key }}{{ ' on' if c.active }}" href="{{ c.href }}">
+          <b>{{ c.symbol }}{{ c.count }}</b>
+          <span>{{ c.label }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<p class="tagline">AI 코딩 도구와 IDE의 릴리스 노트를 한국어로 요약해 한곳에 모았습니다.</p>
+
+<section class="blk tools-d" id="tools">
+  <div class="chs">{{ tool_chips(tools, total, all_href) }}</div>
+</section>
+
+<section class="blk">
+  <form class="sr" method="get" action="/">
+    {% for k, v in hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <label class="srch">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" name="q" value="{{ q }}" placeholder="검색: 도구, 기능, 키워드" aria-label="검색">
+    </label>
+    <details class="fb">
+      <summary>필터{% if active %} {{ active | length }}{% endif %}</summary>
+      <div class="fb-p">
+        <div class="lab">도구</div>
+        <div class="chs">{{ tool_chips(tools, total, all_href) }}</div>
+        <div class="lab">주제</div>
+        <div class="chs">{{ topic_chips(topics) }}</div>
+      </div>
+    </details>
+  </form>
+
+  {% if active %}
+  <div class="act">
+    {% for a in active %}<a class="ch on" href="{{ a.href }}">{{ a.label }} ×</a>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="bar" id="topics">
+    <nav class="tabs">
+      {% for t in tabs %}
+        <a class="tb{{ ' on' if t.active }}" href="{{ t.href }}"><span class="dsk">{{ t.label }}</span><span class="mob">{{ t.short }}</span> ({{ t.count }})</a>
+      {% endfor %}
+    </nav>
+    <form class="sel" method="get" action="/">
+      {% for k, v in hidden.items() if k != 'topic' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      <select name="topic" aria-label="주제" onchange="this.form.submit()">
+        <option value="">주제: 전체</option>
+        {% for t in topics %}<option value="{{ t.name }}"{{ ' selected' if t.active }}>주제: {{ t.name }}</option>{% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="list">
+    {% for r in rows %}
+    <details class="tr">
+      <summary>
+        <span class="dt">{% if r.show_date %}{{ r.date }}{% endif %}</span>
+        <span class="main">
+          <span class="nm"><b>{{ r.name }}</b><span>{{ r.version }}</span></span>
+          <span class="sm">
+            {% if r.summary %}{{ r.summary }}
+            {% elif r.status == 'failed' %}요약을 만들지 못했습니다. <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기</a>
+            {% else %}요약 대기 중 · <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기</a>{% endif %}
+          </span>
+          <span class="mt">
+            <span>{{ r.date }}</span>
+            {% if r.category %}<span class="ty cat-{{ r.category }}">{{ r.symbol }} {{ r.type_label }}</span>{% endif %}
+            {% if r.importance %}<span class="im">{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}</span>{% endif %}
+          </span>
+        </span>
+        <span class="ty d cat-{{ r.category }}">{% if r.category %}{{ r.symbol }} {{ r.type_label }}{% endif %}</span>
+        <span class="im d">{% if r.importance %}{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}{% endif %}</span>
+      </summary>
+      <div class="xp">
+        {% if r.topic %}<span># {{ r.topic }}</span>{% endif %}
+        <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
+      </div>
+    </details>
+    {% else %}
+    <div class="empty">{% if total == 0 %}아직 수집된 릴리스가 없습니다.{% else %}조건에 맞는 항목이 없습니다.{% endif %}</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

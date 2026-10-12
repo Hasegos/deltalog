@@ -1,0 +1,84 @@
+"""create source entry item
+
+Revision ID: 0001
+Revises:
+Create Date: 2026-10-12 12:53:23.313769
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+revision: str = '0001'
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """source, entry, item 테이블을 만든다."""
+    op.create_table('source',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('slug', sa.String(length=50), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('kind', sa.String(length=20), nullable=False),
+    sa.Column('repo', sa.String(length=200), nullable=True),
+    sa.Column('feed_url', sa.Text(), nullable=True),
+    sa.Column('etag', sa.Text(), nullable=True),
+    sa.Column('last_polled_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('include_prerelease', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+    sa.CheckConstraint("kind IN ('github_release', 'rss', 'html')", name='ck_source_kind'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('slug')
+    )
+    op.create_table('entry',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('source_id', sa.Integer(), nullable=False),
+    sa.Column('kind', sa.String(length=10), nullable=False),
+    sa.Column('external_id', sa.Text(), nullable=False),
+    sa.Column('version', sa.String(length=100), nullable=True),
+    sa.Column('title', sa.Text(), nullable=False),
+    sa.Column('published_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('url', sa.Text(), nullable=False),
+    sa.Column('is_prerelease', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+    sa.Column('body_raw', sa.Text(), nullable=False),
+    sa.CheckConstraint("kind IN ('release', 'news')", name='ck_entry_kind'),
+    sa.ForeignKeyConstraint(['source_id'], ['source.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('source_id', 'external_id', name='uq_entry_source_external')
+    )
+    op.create_index(op.f('ix_entry_published_at'), 'entry', ['published_at'], unique=False)
+    op.create_index(op.f('ix_entry_source_id'), 'entry', ['source_id'], unique=False)
+    op.create_table('item',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('entry_id', sa.Integer(), nullable=False),
+    sa.Column('seq', sa.Integer(), nullable=False),
+    sa.Column('raw_text', sa.Text(), nullable=False),
+    sa.Column('category', sa.String(length=20), nullable=True),
+    sa.Column('topic', sa.String(length=50), nullable=True),
+    sa.Column('importance', sa.SmallInteger(), nullable=True),
+    sa.Column('summary_ko', sa.Text(), nullable=True),
+    sa.Column('status', sa.String(length=10), server_default='pending', nullable=False),
+    sa.Column('model', sa.String(length=100), nullable=True),
+    sa.Column('prompt_version', sa.String(length=20), nullable=True),
+    sa.Column('error', sa.Text(), nullable=True),
+    sa.CheckConstraint("category IS NULL OR category IN ('feature', 'bugfix', 'breaking', 'security', 'other')", name='ck_item_category'),
+    sa.CheckConstraint("status IN ('pending', 'done', 'failed')", name='ck_item_status'),
+    sa.CheckConstraint('importance IS NULL OR importance BETWEEN 1 AND 5', name='ck_item_importance'),
+    sa.ForeignKeyConstraint(['entry_id'], ['entry.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('entry_id', 'seq', name='uq_item_entry_seq')
+    )
+    op.create_index(op.f('ix_item_entry_id'), 'item', ['entry_id'], unique=False)
+    op.create_index(op.f('ix_item_status'), 'item', ['status'], unique=False)
+
+
+def downgrade() -> None:
+    """만든 테이블을 지운다."""
+    op.drop_index(op.f('ix_item_status'), table_name='item')
+    op.drop_index(op.f('ix_item_entry_id'), table_name='item')
+    op.drop_table('item')
+    op.drop_index(op.f('ix_entry_source_id'), table_name='entry')
+    op.drop_index(op.f('ix_entry_published_at'), table_name='entry')
+    op.drop_table('entry')
+    op.drop_table('source')
