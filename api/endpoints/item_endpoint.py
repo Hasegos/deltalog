@@ -5,13 +5,12 @@ from sqlalchemy.orm import Session
 
 from db.session import get_db
 from schemas.item_schema import ItemListResponse
-from schemas.source_schema import SourceResponse
 from services import item_service
 
-router = APIRouter(prefix="/api", tags=["api"])
+router = APIRouter()
 
 
-@router.get("/items", response_model=ItemListResponse)
+@router.get("", response_model=ItemListResponse)
 def list_items(
     tool: str = "",
     tab: Literal["all", "imp", "risk"] = "all",
@@ -35,15 +34,3 @@ def list_items(
         항목 목록과 쪽 정보
     """
     return item_service.list_page(db, tool, tab, category, topic, q.strip(), page)
-
-
-@router.get("/sources", response_model=list[SourceResponse])
-def list_sources(db: Session = Depends(get_db)) -> list[SourceResponse]:
-    """수집 소스와 소스별 항목 개수를 돌려준다.
-
-    Args:
-        db: 요청에 쓸 DB 세션
-    Returns:
-        소스 목록
-    """
-    return item_service.list_sources(db)
