@@ -75,6 +75,7 @@
 
 /* ── 스파크라인 (최근 8주 추이) ── */
 .spark {
+  display: block;
   width: 100%;
   max-width: 160px;
   height: 32px;
@@ -84,13 +85,89 @@
   opacity: .75;
 }
 
-.card:hover .spark {
+.card:hover .spark,
+.trow:hover .spark {
   opacity: 1;
 }
 
 .spark.empty {
   color: var(--faint);
   opacity: .5;
+}
+
+/* ── 도구 목록 행 ── */
+.trows {
+  margin-top: 28px;
+}
+
+.thead,
+.trow {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 180px 90px;
+  gap: 16px;
+  align-items: center;
+}
+
+.thead {
+  padding: 0 4px 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 1px solid var(--line);
+}
+
+.trow {
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.trow:hover {
+  background: var(--panel);
+}
+
+.tr-i {
+  font-family: var(--mono);
+  color: var(--dim);
+}
+
+.tr-m {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.tr-m b {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tr-m span {
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--dim);
+  text-overflow: ellipsis;
+}
+
+.tr-g {
+  justify-self: end;
+  width: 100%;
+  max-width: 180px;
+}
+
+.tr-g .spark {
+  margin-top: 0;
+  max-width: none;
+  height: 36px;
+}
+
+.tr-n {
+  font-family: var(--mono);
+  text-align: right;
 }
 
 /* ── Responsive ── */
@@ -106,5 +183,24 @@
   .lead,
   .about {
     font-size: 16px;
+  }
+
+  .thead,
+  .trow {
+    grid-template-columns: 24px minmax(0, 1fr) 72px 40px;
+    gap: 10px;
+  }
+
+  .tr-m b {
+    font-size: 16px;
+  }
+
+  .tr-m span {
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+
+  .tr-g .spark {
+    height: 28px;
   }
 }
