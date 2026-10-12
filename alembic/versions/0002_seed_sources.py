@@ -37,5 +37,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """넣었던 소스 7곳을 지운다."""
-    slugs = ", ".join(f"'{s['slug']}'" for s in SOURCES)
-    op.execute(f"DELETE FROM source WHERE slug IN ({slugs})")
+    statement = sa.text("DELETE FROM source WHERE slug IN :slugs").bindparams(
+        sa.bindparam("slugs", expanding=True)
+    )
+    op.get_bind().execute(statement, {"slugs": [s["slug"] for s in SOURCES]})
