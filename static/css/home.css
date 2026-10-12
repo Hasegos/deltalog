@@ -367,53 +367,27 @@
   color: var(--dim);
 }
 
-/* ── 페이지네이션 ── */
-.pg {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/* ── 더 보기 (무한 스크롤) ── */
+.more {
+  display: block;
   margin-top: 20px;
+  padding: 14px 0;
   font-family: var(--mono);
   font-size: 14px;
+  text-align: center;
   color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
-.pg a,
-.pg .off,
-.pg .cur,
-.pg .gap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  min-height: 32px;
-  padding: 0 8px;
-  border-radius: 6px;
-}
-
-.pg a:hover {
+.more:hover {
   color: var(--fg);
-  background: var(--panel);
+  border-color: #3a3a3a;
 }
 
-.pg .off,
-.pg .gap {
+.more.loading {
   color: var(--dim);
-}
-
-.pg .cur {
-  color: var(--fg);
-  border: 1px solid var(--fg);
-}
-
-.pg .nums {
-  display: flex;
-  gap: 4px;
-}
-
-.pg .cnt {
-  display: none;
+  pointer-events: none;
 }
 
 /* ── Responsive ── */
@@ -529,17 +503,7 @@
     min-height: 36px;
   }
 
-  .pg .nums {
-    display: none;
-  }
-
-  .pg .cnt {
-    display: inline;
-  }
-
-  .pg a,
-  .pg .off {
-    min-height: 44px;
-    padding: 0 12px;
+  .more {
+    padding: 16px 0;
   }
 }
