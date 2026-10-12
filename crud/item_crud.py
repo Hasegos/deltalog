@@ -46,14 +46,15 @@ def _filter(
 
 
 def list_items(
-    db: Session, tool: str, tab: str, category: str, topic: str, q: str, limit: int = 50
+    db: Session, tool: str, tab: str, category: str, topic: str, q: str, limit: int, offset: int = 0
 ) -> list[tuple[Item, Entry, Source]]:
     """조건에 맞는 항목을 게시일 최신순으로 돌려준다.
 
     Args:
         db: DB 세션
         tool, tab, category, topic, q: 화면 필터 (`_filter` 참고)
-        limit: 최대 개수
+        limit: 한 쪽에 담을 최대 개수
+        offset: 건너뛸 개수
     Returns:
         `(항목, 글, 소스)` 묶음 목록
     """
@@ -63,7 +64,7 @@ def list_items(
         .join(Source, Entry.source_id == Source.id)
     )
     stmt = _filter(stmt, tool, tab, category, topic, q)
-    stmt = stmt.order_by(Entry.published_at.desc(), Entry.id.desc(), Item.seq).limit(limit)
+    stmt = stmt.order_by(Entry.published_at.desc(), Entry.id.desc(), Item.seq).limit(limit).offset(offset)
     return [tuple(row) for row in db.execute(stmt).all()]
 
 

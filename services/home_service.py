@@ -1,9 +1,10 @@
 from datetime import datetime, time, timedelta
+from math import ceil
 from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
-from core.constant import CATEGORIES, IMPORTANT_MIN, KST, TOPICS
+from core.constant import CATEGORIES, IMPORTANT_MIN, KST, PAGE_SIZE, TOPICS
 from crud import item_crud
 
 WEEKDAYS = "월화수목금토일"
@@ -40,8 +41,26 @@ def _week_start(now: datetime) -> datetime:
     return datetime.combine(monday, time.min, tzinfo=KST)
 
 
+def _page_numbers(page: int, pages: int) -> list[int | None]:
+    """쪽 번호 목록을 만든다. 첫 쪽, 끝 쪽, 현재 쪽 앞뒤 2쪽만 넣고 건너뛴 곳은 `None`으로 둔다.
+
+    Args:
+        page: 현재 쪽
+        pages: 전체 쪽 수
+    Returns:
+        쪽 번호와 생략 표시(`None`)가 섞인 목록
+    """
+    shown = sorted({1, pages, *range(max(1, page - 2), min(pages, page + 2) + 1)})
+    result: list[int | None] = []
+    for n in shown:
+        if result and n - result[-1] > 1:
+            result.append(None)
+        result.append(n)
+    return result
+
+
 def build_home(
-    db: Session, tool: str, tab: str, category: str, topic: str, q: str, now: datetime | None = None
+    db: Session, tool: str, tab: str, category: str, topic: str, q: str, page: int = 1, now: datetime | None = None
 ) -> dict:
     """홈 화면에 필요한 값을 모두 만든다.
 
@@ -52,6 +71,7 @@ def build_home(
         category: 유형 필터
         topic: 주제 필터
         q: 검색어
+        page: 쪽 번호. 전체 쪽 수를 넘으면 마지막 쪽으로 본다
         now: 기준 시각. 비우면 현재 시각
     Returns:
         템플릿에 넘길 값
@@ -110,7 +130,21 @@ def build_home(
 
     rows = []
     last_date = ""
-    for item, entry, source in item_crud.list_items(db, tool, tab, category, topic, q):
+    matched = next(t["count"] for t in tabs if t["active"])
+    pages = max(1, ceil(matched / PAGE_SIZE))
+    page = min(page, pages)
+    pager = {
+        "page": page,
+        "pages": pages,
+        "prev": _url(params, page=str(page - 1) if page > 2 else None) if page > 1 else None,
+        "next": _url(params, page=str(page + 1)) if page < pages else None,
+        "numbers": [
+            None if n is None else {"n": n, "on": n == page, "href": _url(params, page=str(n) if n > 1 else None)}
+            for n in _page_numbers(page, pages)
+        ],
+    }
+
+    for item, entry, source in item_crud.list_items(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE):
         date = entry.published_at.astimezone(KST).strftime("%m-%d")
         symbol, label = CATEGORIES.get(item.category, ("", ""))
         rows.append(
@@ -146,6 +180,7 @@ def build_home(
         "topics": topics,
         "topic": topic,
         "rows": rows,
+        "pager": pager,
         "q": q,
         "hidden": {k: v for k, v in params.items() if k != "q"},
         "active": active,

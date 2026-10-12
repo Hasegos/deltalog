@@ -12,4 +12,5 @@ CATEGORIES = {
 
 TOPICS = ["에이전트", "MCP·플러그인", "훅", "보안·권한", "성능", "UI"]
 
+PAGE_SIZE = 20
 IMPORTANT_MIN = 4
