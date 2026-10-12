@@ -31,9 +31,8 @@ summary { list-style: none; cursor: pointer; }
 summary::-webkit-details-marker { display: none; }
 
 .top { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; }
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand i { color: #555; font-style: normal; }
-.brand .mono { font-size: 22px; line-height: 1; }
+.brand { font-family: "Press Start 2P", monospace; font-size: 14px; letter-spacing: 1px; }
+.brand b { font-weight: 400; color: var(--dim); }
 .nav { display: flex; gap: 20px; font-size: 15px; color: var(--muted); }
 .nav a:hover { color: var(--fg); }
 .menu { display: none; position: relative; }
