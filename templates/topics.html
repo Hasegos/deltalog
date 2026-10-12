@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}주제 · Deltalog{% endblock %}
+{% block content %}
+<section class="page">
+  <h1>주제</h1>
+  <p class="lead">요약할 때 붙는 주제입니다. 누르면 그 주제의 목록만 봅니다. 요약이 만들어진 뒤에 개수가 채워집니다.</p>
+  <div class="cards">
+    {% for t in topics %}
+    <a class="card" href="{{ t.href }}">
+      <b>{{ t.name }}</b>
+      <span>{{ t.count }}건</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -130,3 +130,19 @@ def count_categories_since(db: Session, since: datetime, until: datetime) -> dic
         .group_by(Item.category)
     )
     return {category: count for category, count in db.execute(stmt).all()}
+
+
+def count_items_by_topic(db: Session) -> dict[str, int]:
+    """주제별 항목 개수를 돌려준다.
+
+    Args:
+        db: DB 세션
+    Returns:
+        주제별 개수. 주제가 아직 없는(요약 전) 항목은 세지 않는다
+    """
+    stmt = (
+        select(Item.topic, func.count(Item.id))
+        .where(Item.topic.is_not(None))
+        .group_by(Item.topic)
+    )
+    return {topic: count for topic, count in db.execute(stmt).all()}
