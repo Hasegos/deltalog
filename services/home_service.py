@@ -41,24 +41,6 @@ def _week_start(now: datetime) -> datetime:
     return datetime.combine(monday, time.min, tzinfo=KST)
 
 
-def _page_numbers(page: int, pages: int) -> list[int | None]:
-    """쪽 번호 목록을 만든다. 첫 쪽, 끝 쪽, 현재 쪽 앞뒤 2쪽만 넣고 건너뛴 곳은 `None`으로 둔다.
-
-    Args:
-        page: 현재 쪽
-        pages: 전체 쪽 수
-    Returns:
-        쪽 번호와 생략 표시(`None`)가 섞인 목록
-    """
-    shown = sorted({1, pages, *range(max(1, page - 2), min(pages, page + 2) + 1)})
-    result: list[int | None] = []
-    for n in shown:
-        if result and n - result[-1] > 1:
-            result.append(None)
-        result.append(n)
-    return result
-
-
 def build_home(
     db: Session, tool: str, tab: str, category: str, topic: str, q: str, page: int = 1, now: datetime | None = None
 ) -> dict:
@@ -133,16 +115,7 @@ def build_home(
     matched = next(t["count"] for t in tabs if t["active"])
     pages = max(1, ceil(matched / PAGE_SIZE))
     page = min(page, pages)
-    pager = {
-        "page": page,
-        "pages": pages,
-        "prev": _url(params, page=str(page - 1) if page > 2 else None) if page > 1 else None,
-        "next": _url(params, page=str(page + 1)) if page < pages else None,
-        "numbers": [
-            None if n is None else {"n": n, "on": n == page, "href": _url(params, page=str(n) if n > 1 else None)}
-            for n in _page_numbers(page, pages)
-        ],
-    }
+    more = _url(params, page=str(page + 1)) if page < pages else None
 
     for item, entry, source in item_crud.list_items(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE):
         date = entry.published_at.astimezone(KST).strftime("%m-%d")
@@ -180,7 +153,7 @@ def build_home(
         "topics": topics,
         "topic": topic,
         "rows": rows,
-        "pager": pager,
+        "more": more,
         "q": q,
         "hidden": {k: v for k, v in params.items() if k != "q"},
         "active": active,

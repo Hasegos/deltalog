@@ -113,23 +113,13 @@
         {% endfor %}
       </div>
 
-      {% if pager.pages > 1 %}
-      <nav class="pg" aria-label="쪽 이동">
-        {% if pager.prev %}<a href="{{ pager.prev }}" rel="prev">‹ 이전</a>{% else %}<span class="off">‹ 이전</span>{% endif %}
-        <span class="nums">
-          {% for n in pager.numbers %}
-            {% if n is none %}<span class="gap">…</span>
-            {% elif n.on %}<span class="cur" aria-current="page">{{ n.n }}</span>
-            {% else %}<a href="{{ n.href }}">{{ n.n }}</a>{% endif %}
-          {% endfor %}
-        </span>
-        <span class="cnt">{{ pager.page }} / {{ pager.pages }}</span>
-        {% if pager.next %}<a href="{{ pager.next }}" rel="next">다음 ›</a>{% else %}<span class="off">다음 ›</span>{% endif %}
-      </nav>
+      {% if more %}
+      <a class="more" id="more" href="{{ more }}" rel="next">더 보기</a>
       {% endif %}
     </section>
   </main>
 
   {% include "partials/footer.html" %}
+  <script src="{{ url_for('static', path='js/home.js') }}"></script>
 </body>
 </html>
