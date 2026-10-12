@@ -1,0 +1,6 @@
+{% macro spark(s, label) %}
+<svg class="spark{{ ' empty' if not s.total }}" viewBox="0 0 96 24" role="img" aria-label="{{ label }}: {{ s.counts | join(', ') }}">
+  <polyline points="{{ s.points }}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+  <circle cx="{{ s.last[0] }}" cy="{{ s.last[1] }}" r="2" fill="currentColor"/>
+</svg>
+{% endmacro %}

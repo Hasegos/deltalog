@@ -73,6 +73,26 @@
   color: var(--dim);
 }
 
+/* ── 스파크라인 (최근 8주 추이) ── */
+.spark {
+  width: 100%;
+  max-width: 160px;
+  height: 32px;
+  margin-top: 8px;
+  overflow: visible;
+  color: var(--fg);
+  opacity: .75;
+}
+
+.card:hover .spark {
+  opacity: 1;
+}
+
+.spark.empty {
+  color: var(--faint);
+  opacity: .5;
+}
+
 /* ── Responsive ── */
 @media (max-width: 560px) {
   .page {

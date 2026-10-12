@@ -6,17 +6,19 @@
   <link rel="stylesheet" href="{{ url_for('static', path='css/page.css') }}">
 </head>
 <body>
+  {% from "partials/spark.html" import spark %}
   {% include "partials/header.html" %}
 
   <main>
     <section class="page">
       <h1>주제</h1>
-      <p class="lead">요약할 때 붙는 주제입니다. 누르면 그 주제의 목록만 봅니다. 요약이 만들어진 뒤에 개수가 채워집니다.</p>
+      <p class="lead">요약할 때 붙는 주제입니다. 누르면 그 주제의 목록만 봅니다. 요약이 만들어진 뒤에 개수와 그래프가 채워집니다. 그래프는 최근 {{ weeks }}주의 주별 변경 항목 수입니다.</p>
       <div class="cards">
         {% for t in topics %}
         <a class="card" href="{{ t.href }}">
           <b>{{ t.name }}</b>
           <span>{{ t.count }}건</span>
+          {{ spark(t.spark, '주별 항목') }}
         </a>
         {% endfor %}
       </div>

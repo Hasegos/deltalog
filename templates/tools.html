@@ -6,17 +6,19 @@
   <link rel="stylesheet" href="{{ url_for('static', path='css/page.css') }}">
 </head>
 <body>
+  {% from "partials/spark.html" import spark %}
   {% include "partials/header.html" %}
 
   <main>
     <section class="page">
       <h1>도구</h1>
-      <p class="lead">릴리스 노트를 모으는 도구입니다. 누르면 그 도구의 목록만 봅니다.</p>
+      <p class="lead">릴리스 노트를 모으는 도구입니다. 누르면 그 도구의 목록만 봅니다. 그래프는 최근 {{ weeks }}주의 주별 릴리스 수입니다.</p>
       <div class="cards">
         {% for t in tools %}
         <a class="card" href="{{ t.href }}">
           <b>{{ t.name }}</b>
           <span>{{ t.count }}건 · {{ {'github_release': 'GitHub 릴리스', 'rss': 'RSS', 'html': '웹 페이지'}[t.kind] }}</span>
+          {{ spark(t.spark, '주별 릴리스') }}
         </a>
         {% endfor %}
       </div>
