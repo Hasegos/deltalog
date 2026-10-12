@@ -1,0 +1,90 @@
+/* =============================
+  page.css — 도구, 주제, 소개 페이지
+  ============================= */
+
+/* ── 제목 ── */
+.page {
+  padding: 48px 32px 0;
+}
+
+.page h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.lead {
+  max-width: 680px;
+  margin: 12px 0 0;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.page a:not(.card) {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 소개 목록 ── */
+.about {
+  max-width: 680px;
+  margin: 24px 0;
+  padding-left: 20px;
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.about li {
+  margin-bottom: 8px;
+}
+
+/* ── 카드 (도구, 주제) ── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.card:hover {
+  background: var(--panel);
+  border-color: #2a2a2a;
+}
+
+.card b {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.card span {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--dim);
+}
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .page {
+    padding: 28px 16px 0;
+  }
+
+  .page h1 {
+    font-size: 26px;
+  }
+
+  .lead,
+  .about {
+    font-size: 16px;
+  }
+}

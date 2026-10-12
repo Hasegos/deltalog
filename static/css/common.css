@@ -1,0 +1,144 @@
+/* =============================
+  common.css — 전체 공통 스타일
+  ============================= */
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ── Variables ── */
+:root {
+  --bg:        #000;
+  --fg:        #ededed;
+  --muted:     #a1a1a1;
+  --dim:       #878787;
+  --faint:     #6b6b6b;
+  --line:      #1f1f1f;
+  --line-soft: #161616;
+  --panel:     #0a0a0a;
+  --red:       #ff6369;
+  --amber:     #f5a524;
+
+  --sans: "Geist", "Noto Sans KR", sans-serif;
+  --mono: "Geist Mono", "Noto Sans KR", monospace;
+  --pixel: "Press Start 2P", monospace;
+}
+
+/* ── Base ── */
+body {
+  margin: 0 auto;
+  max-width: 1200px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ── Header ── */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+}
+
+.brand {
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.brand b {
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.nav {
+  display: flex;
+  gap: 20px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.nav a:hover {
+  color: var(--fg);
+}
+
+/* ── Header: 모바일 메뉴 ── */
+.menu {
+  display: none;
+  position: relative;
+}
+
+.menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 20px;
+}
+
+.menu div {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  z-index: 5;
+  min-width: 120px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.menu div a {
+  display: block;
+  padding: 10px 12px;
+  color: var(--muted);
+}
+
+/* ── Footer ── */
+.foot {
+  display: flex;
+  gap: 16px;
+  margin-top: 48px;
+  padding: 20px 32px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--dim);
+}
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .top {
+    padding: 12px 16px;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .menu {
+    display: block;
+  }
+
+  .foot {
+    padding: 16px;
+  }
+}

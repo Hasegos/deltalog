@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from api.router import api_router
+from api.pages import page_router
+from api.routers import api_router
 from core.config import settings
 from db.init_db import init_db
 
@@ -24,4 +25,5 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.include_router(page_router)
 app.include_router(api_router)
