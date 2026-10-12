@@ -1,5 +1,43 @@
 <footer class="foot">
-  <span>Deltalog</span>
-  <a href="/about">소개</a>
-  <a href="https://github.com/Hasegos/deltalog" target="_blank" rel="noopener">GitHub</a>
+  <div class="foot-grid">
+    <div class="foot-col foot-about">
+      <a class="foot-brand" href="/">DELTA<b>LOG</b></a>
+      <p>AI 코딩 도구와 IDE의 릴리스 노트를 한국어로 요약해 한곳에 모았습니다.</p>
+    </div>
+
+    <nav class="foot-col" aria-label="둘러보기">
+      <h2>둘러보기</h2>
+      <a href="/">전체 릴리스</a>
+      <a href="/?tab=imp">중요 릴리스</a>
+      <a href="/?tab=risk">breaking · 보안</a>
+      <a href="/tools">도구 순위</a>
+      <a href="/topics">주제</a>
+    </nav>
+
+    <nav class="foot-col" aria-label="도구">
+      <h2>도구</h2>
+      {% for slug, name in footer_tools %}
+      <a href="/?tool={{ slug }}">{{ name }}</a>
+      {% endfor %}
+    </nav>
+
+    <nav class="foot-col" aria-label="주제">
+      <h2>주제</h2>
+      {% for name in footer_topics %}
+      <a href="/?topic={{ name | urlencode }}">{{ name }}</a>
+      {% endfor %}
+    </nav>
+
+    <nav class="foot-col" aria-label="프로젝트">
+      <h2>프로젝트</h2>
+      <a href="/about">소개</a>
+      <a href="/docs">API</a>
+      <a href="https://github.com/Hasegos/deltalog" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+
+  <div class="foot-bottom">
+    <span>요약은 로컬 LLM이 만들며, 모든 항목에 원문 링크가 있습니다.</span>
+    <span>소스 코드는 GitHub에 공개되어 있습니다.</span>
+  </div>
 </footer>

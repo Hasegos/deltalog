@@ -115,13 +115,72 @@ summary::-webkit-details-marker {
 
 /* ── Footer ── */
 .foot {
-  display: flex;
-  gap: 16px;
-  margin-top: 48px;
-  padding: 20px 32px;
+  margin-top: 64px;
+  padding: 40px 32px 24px;
   border-top: 1px solid var(--line);
   font-size: 14px;
   color: var(--dim);
+}
+
+.foot-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.foot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.foot-col h2 {
+  margin: 0 0 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.foot-col a {
+  color: var(--muted);
+}
+
+.foot-col a:hover {
+  color: var(--fg);
+}
+
+.foot-about p {
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+.foot-col .foot-brand {
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--fg);
+}
+
+.foot-brand b {
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.foot-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13px;
+  color: var(--faint);
 }
 
 /* ── Responsive ── */
@@ -139,6 +198,26 @@ summary::-webkit-details-marker {
   }
 
   .foot {
-    padding: 16px;
+    margin-top: 48px;
+    padding: 28px 16px 20px;
+  }
+
+  .foot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 16px;
+  }
+
+  .foot-about {
+    grid-column: 1 / -1;
+  }
+
+  .foot-col a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+
+  .foot-bottom {
+    flex-direction: column;
   }
 }
