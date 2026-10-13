@@ -3,7 +3,7 @@
 <head>
   {% include "partials/head_meta.html" %}
   <title>Deltalog</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
 </head>
 <body>
   {% include "partials/header.html" %}
@@ -88,13 +88,13 @@
         {% if r.show_week %}
         <div class="wd" data-week="{{ r.week }}"><b>{{ r.week_name }}</b><span>{{ r.week_range }}</span></div>
         {% endif %}
-        <details class="tr" data-week="{{ r.week }}">
+        <details class="tr" data-week="{{ r.week }}"{{ " open" if q and r.hits }}>
           <summary>
             <span class="dt">{% if r.show_date %}{{ r.date }}{% endif %}</span>
             <span class="main">
-              <span class="nm"><b>{{ r.name }}</b><span>{{ r.version }}</span></span>
+              <span class="nm"><b>{{ r.name | mark(q) }}</b><span>{{ r.version | mark(q) }}</span></span>
               <span class="sm">
-                {% if r.headline %}{{ r.headline }}{% if r.count > 1 %} <em>외 {{ r.count - 1 }}개</em>{% endif %}
+                {% if r.headline %}{{ r.headline | mark(q) }}{% if r.count > 1 %} <em>외 {{ r.count - 1 }}개</em>{% endif %}{% if q and r.hits %} <em>· 일치 {{ r.hits }}개</em>{% endif %}
                 {% else %}요약 대기 중 · 변경 항목 {{ r.count }}개{% endif %}
               </span>
               <span class="mt">
@@ -112,9 +112,9 @@
               {% for i in r.lines %}
               <li>
                 <span class="ty cat-{{ i.category }}">{{ i.symbol }}</span>
-                <span class="xt">{{ i.summary }}</span>
-                {% if i.topic %}<span class="xg"># {{ i.topic }}</span>{% endif %}
-                <details class="og"><summary>원문</summary><p lang="en">{{ i.raw }}</p></details>
+                <span class="xt">{{ (i.summary or i.raw) | mark(q) }}{% if not i.summary %} <em class="pd">요약 대기</em>{% endif %}</span>
+                {% if i.topic %}<span class="xg"># {{ i.topic | mark(q) }}</span>{% endif %}
+                <details class="og"{{ " open" if i.raw_only }}><summary>원문</summary><p lang="en">{{ i.raw | mark(q) }}</p></details>
               </li>
               {% endfor %}
             </ul>
@@ -138,6 +138,6 @@
   </main>
 
   {% include "partials/footer.html" %}
-  <script src="{{ url_for('static', path='js/home.js') }}"></script>
+  <script src="{{ asset('js/home.js') }}"></script>
 </body>
 </html>

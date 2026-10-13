@@ -138,7 +138,9 @@ def build_home(
     entries = entry_crud.list_entries(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE)
     ids = [entry.id for entry, _ in entries]
     stats = entry_crud.entry_stats(db, ids)
-    shown = entry_crud.top_items(db, ids, tab, category, topic, SHOWN_ITEMS)
+    shown = entry_crud.top_items(db, ids, tab, category, topic, SHOWN_ITEMS, q)
+    hits = entry_crud.entry_hits(db, ids, q)
+    needle = q.lower()
 
     for entry, source in entries:
         date = entry.published_at.astimezone(KST).strftime("%m-%d")
@@ -151,6 +153,11 @@ def build_home(
             {
                 "summary": item.summary_ko,
                 "raw": item.raw_text,
+                "hit": bool(q)
+                and needle in f"{item.summary_ko or ''} {item.topic or ''} {item.raw_text}".lower(),
+                "raw_only": bool(q)
+                and needle not in f"{item.summary_ko or ''} {item.topic or ''}".lower()
+                and needle in item.raw_text.lower(),
                 "symbol": CATEGORIES.get(item.category, ("", ""))[0],
                 "category": item.category or "",
                 "importance": item.importance or 0,
@@ -158,7 +165,8 @@ def build_home(
             }
             for item in shown[entry.id]
         ]
-        headline = next((i["summary"] for i in items if i["summary"]), None)
+        lines = [i for i in items if i["summary"] or i["hit"]]
+        headline = next((i["summary"] or i["raw"] for i in lines), None)
         rows.append(
             {
                 "date": date,
@@ -172,7 +180,8 @@ def build_home(
                 "count": stat["count"],
                 "done": stat["done"],
                 "headline": headline,
-                "lines": [i for i in items if i["summary"]],
+                "lines": lines,
+                "hits": hits.get(entry.id, 0),
                 "hidden_count": max(0, stat["count"] - len(items)),
                 "category": top,
                 "symbol": symbol,
