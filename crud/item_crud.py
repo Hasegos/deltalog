@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.orm import Session
 
+from core.constants.llm import PROMPT_VERSION
 from core.constants.page import IMPORTANT_MIN
 from models.entry_model import Entry
 from models.item_model import Item
@@ -87,7 +88,7 @@ def count_items(db: Session, tool: str, tab: str, category: str, topic: str, q: 
 
 
 def list_pending_items(db: Session, limit: int) -> list[tuple[Item, Entry, Source]]:
-    """요약을 기다리는 항목을 최신 글부터, 글 안에서는 원문 순서로 돌려준다.
+    """요약을 기다리는 항목(`pending`, 이전 프롬프트 버전으로 요약된 `done`)을 최신 글부터, 글 안에서는 원문 순서로 돌려준다.
 
     Args:
         db: DB 세션
@@ -99,7 +100,7 @@ def list_pending_items(db: Session, limit: int) -> list[tuple[Item, Entry, Sourc
         select(Item, Entry, Source)
         .join(Entry, Item.entry_id == Entry.id)
         .join(Source, Entry.source_id == Source.id)
-        .where(Item.status == "pending")
+        .where(or_(Item.status == "pending", and_(Item.status == "done", Item.prompt_version != PROMPT_VERSION)))
         .order_by(Entry.published_at.desc(), Entry.id.desc(), Item.seq)
         .limit(limit)
     )
