@@ -3,6 +3,7 @@ import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from html import unescape
 from html.parser import HTMLParser
 
 import httpx
@@ -20,6 +21,7 @@ PAGE_DELAY_SEC = 0.5
 SKIP_TAGS = {"script", "style", "figure", "nav", "svg", "pre", "noscript"}
 VOID_TAGS = {"img", "br", "hr", "input", "meta", "link", "source", "wbr"}
 SKIP_HINTS = re.compile(r"thank|contribut|download|insiders", re.IGNORECASE)
+PREVIEW_TITLE = re.compile(r"canary|beta|\bRC\b|alpha|\bdev\b", re.IGNORECASE)
 ATOM = "{http://www.w3.org/2005/Atom}"
 CONTENT = "{http://purl.org/rss/1.0/modules/content/}"
 
@@ -113,6 +115,18 @@ def html_to_markdown(html: str, item_tag: str, title: str = "") -> str:
     return "\n".join(lines)
 
 
+def _studio_body(html: str) -> str:
+    """Android Studio 글의 "Fixed Issues" 표에서 수정 항목을 `- 분류: 설명` 줄로 뽑는다. 표가 없으면 빈 문자열."""
+    lines = []
+    for block in re.split(r"<td><b>", html)[1:]:
+        category, _, rest = block.partition("</b>")
+        for raw in re.findall(r"<div>(.*?)</div>", rest, flags=re.DOTALL):
+            text = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", raw))).strip()
+            if text and not text.startswith("Issue #"):
+                lines.append(f"- {category.strip()}: {text}"[:MAX_ITEM_CHARS])
+    return "\n".join(lines)
+
+
 def _date(text: str) -> datetime:
     """Atom(ISO 8601)이나 RSS(RFC 822) 날짜를 UTC 시각으로 바꾼다."""
     try:
@@ -135,7 +149,7 @@ def _entries(xml: str, slug: str) -> list[Release]:
 
     Args:
         xml: 피드 XML
-        slug: 소스 slug (`vscode`, `cursor`). 소스마다 제목, 항목 규칙이 다르다
+        slug: 소스 slug (`vscode`, `cursor`, `android-studio`). 소스마다 제목, 항목 규칙이 다르다
     Returns:
         최신순 글 목록. 미리보기(Insiders)와 미래 날짜 글은 뺀다
     """
@@ -144,9 +158,9 @@ def _entries(xml: str, slug: str) -> list[Release]:
     releases: list[Release] = []
     for node in root.iter(f"{ATOM}entry") if root.tag.startswith(ATOM) else root.iter("item"):
         title = _text(node, f"{ATOM}title", "title")
-        link_node = node.find(f"{ATOM}link")
+        link_node = next((n for n in node.findall(f"{ATOM}link") if n.get("rel", "alternate") == "alternate"), None)
         link = link_node.get("href", "") if link_node is not None else _text(node, "link")
-        moment = _date(_text(node, f"{ATOM}updated", "pubDate"))
+        moment = _date(_text(node, f"{ATOM}published", f"{ATOM}updated", "pubDate"))
         if not title or not link or "insiders" in title.lower() or moment > ceiling:
             continue
         match = re.search(r"/updates/v(\d+)_(\d+)", link) if slug == "vscode" else None
@@ -155,6 +169,8 @@ def _entries(xml: str, slug: str) -> list[Release]:
         body = ""
         if slug == "cursor":
             body = html_to_markdown(_text(node, f"{CONTENT}encoded", "description"), "h2", title)
+        if slug == "android-studio":
+            body = _studio_body(_text(node, f"{ATOM}content"))
         releases.append(
             Release(
                 external_id=_text(node, f"{ATOM}id", "guid") or link,
@@ -163,7 +179,7 @@ def _entries(xml: str, slug: str) -> list[Release]:
                 published_at=moment,
                 url=link,
                 body=body,
-                prerelease=False,
+                prerelease=slug == "android-studio" and bool(PREVIEW_TITLE.search(title)),
             )
         )
     return sorted(releases, key=lambda r: r.published_at, reverse=True)
