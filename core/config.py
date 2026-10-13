@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Deltalog"
     DATABASE_URL: str
+    GITHUB_TOKEN: str = ""
+    POLL_INTERVAL_MIN: int = 30
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
