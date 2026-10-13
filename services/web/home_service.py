@@ -4,11 +4,10 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
-from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS
+from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
 from crud import entry_crud, item_crud
 
-WEEKDAYS = "월화수목금토일"
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
 
 
@@ -96,9 +95,11 @@ def build_home(
     ]
 
     start = _week_start(now)
-    week_counts = item_crud.count_categories_since(db, start, now)
+    since = now - timedelta(days=WEEK_BOX_DAYS)
+    week_counts = entry_crud.count_entries_by_category_since(db, since, now)
     week = {
-        "label": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~",
+        "label": f"{since:%m-%d} ~ {now:%m-%d}",
+        "pending": item_crud.count_pending_items(db),
         "cats": [
             {
                 "key": key,

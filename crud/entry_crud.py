@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 
 from sqlalchemy import Select, exists, func, select
 from sqlalchemy.orm import Session, defer
@@ -36,6 +37,25 @@ def add_entry(db: Session, entry: Entry, item_texts: list[str]) -> None:
     db.add(entry)
     db.flush()
     db.add_all(Item(entry_id=entry.id, seq=i, raw_text=text) for i, text in enumerate(item_texts, start=1))
+
+
+def count_entries_by_category_since(db: Session, since: datetime, until: datetime) -> dict[str, int]:
+    """지정한 기간에 게시된 글을 유형별로 센다. 그 유형의 항목이 하나라도 있는 글을 센다.
+
+    Args:
+        db: DB 세션
+        since: 이 시각 이후(포함)에 게시된 글만 센다
+        until: 이 시각 이전(포함)에 게시된 글만 센다. 미래 날짜 글을 빼는 데 쓴다
+    Returns:
+        유형별 글 개수. 유형이 아직 없는(요약 전) 항목은 세지 않는다
+    """
+    stmt = (
+        select(Item.category, func.count(func.distinct(Item.entry_id)))
+        .join(Entry, Item.entry_id == Entry.id)
+        .where(Entry.published_at >= since, Entry.published_at <= until, Item.category.is_not(None))
+        .group_by(Item.category)
+    )
+    return {category: count for category, count in db.execute(stmt).all()}
 
 
 def _item_conditions(tab: str, category: str, topic: str) -> list:
