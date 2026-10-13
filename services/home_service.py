@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
-from core.constant import CATEGORIES, IMPORTANT_MIN, KST, MIN_WEEK, PAGE_SIZE, TOPICS
+from core.constant import CATEGORIES, IMPORTANT_MIN, KST, PAGE_SIZE, TOPICS
 from crud import item_crud
 
 WEEKDAYS = "월화수목금토일"
@@ -41,31 +41,23 @@ def _week_start(now: datetime) -> datetime:
     return datetime.combine(monday, time.min, tzinfo=KST)
 
 
-def _week_name(offset: int) -> str:
-    """주 오프셋에 맞는 이름을 돌려준다.
+def _week_name(weeks_ago: int) -> str:
+    """몇 주 전인지에 맞는 이름을 돌려준다.
 
     Args:
-        offset: 0이면 이번 주, -1이면 지난주, -2이면 2주 전
+        weeks_ago: 0이면 이번 주, 1이면 지난주, 2이면 2주 전
     Returns:
         `이번 주`, `지난주`, `N주 전` 중 하나
     """
-    if offset == 0:
+    if weeks_ago == 0:
         return "이번 주"
-    if offset == -1:
+    if weeks_ago == 1:
         return "지난주"
-    return f"{-offset}주 전"
+    return f"{weeks_ago}주 전"
 
 
 def build_home(
-    db: Session,
-    tool: str,
-    tab: str,
-    category: str,
-    topic: str,
-    q: str,
-    page: int = 1,
-    week: int | None = None,
-    now: datetime | None = None,
+    db: Session, tool: str, tab: str, category: str, topic: str, q: str, page: int = 1, now: datetime | None = None
 ) -> dict:
     """홈 화면에 필요한 값을 모두 만든다.
 
@@ -77,24 +69,15 @@ def build_home(
         topic: 주제 필터
         q: 검색어
         page: 쪽 번호. 전체 쪽 수를 넘으면 마지막 쪽으로 본다
-        week: 0이면 이번 주, -1이면 지난주처럼 보고 싶은 주. 값이 있으면 목록도 그 주의 글만 보여주고, 비우면 이번 주 집계만 보여준다
         now: 기준 시각. 비우면 현재 시각
     Returns:
         템플릿에 넘길 값
     """
     now = now or datetime.now(KST)
     tab = tab if tab in ("imp", "risk") else "all"
-    offset = week or 0
     params = {
         key: value
-        for key, value in (
-            ("tool", tool),
-            ("tab", tab if tab != "all" else ""),
-            ("type", category),
-            ("topic", topic),
-            ("q", q),
-            ("week", str(week) if week is not None else ""),
-        )
+        for key, value in (("tool", tool), ("tab", tab if tab != "all" else ""), ("type", category), ("topic", topic), ("q", q))
         if value
     }
 
@@ -111,19 +94,10 @@ def build_home(
         for s in sources
     ]
 
-    start = _week_start(now) + timedelta(weeks=offset)
-    end = start + timedelta(weeks=1)
-    until = min(end, now + timedelta(microseconds=1))
-    week_counts = item_crud.count_categories_since(db, start, until - timedelta(microseconds=1))
-    last_day = end - timedelta(days=1)
-    oldest = item_crud.oldest_entry_time(db)
-    floor = -((_week_start(now) - _week_start(oldest)).days // 7) if oldest else 0
-    week_box = {
-        "title": _week_name(offset),
-        "range": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~ {last_day:%m-%d} ({WEEKDAYS[last_day.weekday()]})",
-        "prev": _url(params, week=str(offset - 1)) if offset > max(floor, MIN_WEEK) else None,
-        "next": _url(params, week=str(offset + 1)) if week is not None and offset < 0 else None,
-        "reset": _url(params, week=str(offset)) if week is not None else None,
+    start = _week_start(now)
+    week_counts = item_crud.count_categories_since(db, start, now)
+    week = {
+        "label": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~",
         "cats": [
             {
                 "key": key,
@@ -137,13 +111,12 @@ def build_home(
         ],
     }
 
-    span = (start, until) if week is not None else (None, None)
     no_tab = {k: v for k, v in params.items() if k != "tab"}
     tabs = [
         {
             "label": label,
             "short": short,
-            "count": item_crud.count_items(db, tool, key, category, topic, q, *span),
+            "count": item_crud.count_items(db, tool, key, category, topic, q),
             "active": key == tab,
             "href": _url(no_tab, tab=None if key == "all" else key),
         }
@@ -154,19 +127,24 @@ def build_home(
 
     rows = []
     last_date = ""
+    last_week = None
     matched = next(t["count"] for t in tabs if t["active"])
     pages = max(1, ceil(matched / PAGE_SIZE))
     page = min(page, pages)
     more = _url(params, page=str(page + 1)) if page < pages else None
 
-    for item, entry, source in item_crud.list_items(
-        db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE, *span
-    ):
+    for item, entry, source in item_crud.list_items(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE):
         date = entry.published_at.astimezone(KST).strftime("%m-%d")
+        row_week = _week_start(entry.published_at)
+        weeks_ago = max(0, (start - row_week).days // 7)
         symbol, label = CATEGORIES.get(item.category, ("", ""))
         rows.append(
             {
                 "date": date,
+                "week": f"{row_week:%Y-%m-%d}",
+                "show_week": row_week != last_week,
+                "week_name": _week_name(weeks_ago),
+                "week_range": f"{row_week:%m-%d} ~ {row_week + timedelta(days=6):%m-%d}",
                 "show_date": date != last_date,
                 "name": source.name,
                 "version": entry.version or entry.title,
@@ -181,6 +159,7 @@ def build_home(
             }
         )
         last_date = date
+        last_week = row_week
 
     active = []
     if tool:
@@ -192,7 +171,7 @@ def build_home(
         "tools": tools,
         "total": sum(t["count"] for t in tools),
         "all_href": _url(params, tool=None),
-        "week": week_box,
+        "week": week,
         "tabs": tabs,
         "topics": topics,
         "topic": topic,
