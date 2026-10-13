@@ -179,6 +179,17 @@ def count_items_by_topic(db: Session) -> dict[str, int]:
     return {topic: count for topic, count in db.execute(stmt).all()}
 
 
+def oldest_entry_time(db: Session) -> datetime | None:
+    """가장 오래된 글의 게시 시각을 돌려준다.
+
+    Args:
+        db: DB 세션
+    Returns:
+        게시 시각. 글이 하나도 없으면 `None`
+    """
+    return db.scalar(select(func.min(Entry.published_at)))
+
+
 def list_entry_times_since(db: Session, since: datetime) -> list[tuple[int, datetime]]:
     """지정한 시각 이후에 게시된 글의 소스와 게시 시각을 돌려준다.
 
