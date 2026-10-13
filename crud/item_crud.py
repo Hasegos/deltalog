@@ -86,6 +86,26 @@ def count_items(db: Session, tool: str, tab: str, category: str, topic: str, q: 
     return db.scalar(_filter(stmt, tool, tab, category, topic, q)) or 0
 
 
+def list_pending_items(db: Session, limit: int) -> list[tuple[Item, Entry, Source]]:
+    """요약을 기다리는 항목을 최신 글부터, 글 안에서는 원문 순서로 돌려준다.
+
+    Args:
+        db: DB 세션
+        limit: 최대 개수
+    Returns:
+        `(항목, 글, 소스)` 묶음 목록
+    """
+    stmt = (
+        select(Item, Entry, Source)
+        .join(Entry, Item.entry_id == Entry.id)
+        .join(Source, Entry.source_id == Source.id)
+        .where(Item.status == "pending")
+        .order_by(Entry.published_at.desc(), Entry.id.desc(), Item.seq)
+        .limit(limit)
+    )
+    return [tuple(row) for row in db.execute(stmt).all()]
+
+
 def list_sources(db: Session) -> list[Source]:
     """소스를 등록 순서대로 돌려준다.
 

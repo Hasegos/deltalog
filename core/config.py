@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     POSTGRESQL_DATABASE: str
     GITHUB_TOKEN: str = ""
     POLL_INTERVAL_MIN: int = 30
+    LLM_BASE_URL: str = ""
+    LLM_MODEL: str = ""
+    LLM_API_KEY: str = ""
+    LLM_TIMEOUT_SEC: int = 180
+    LLM_MAX_RETRIES: int = 2
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
