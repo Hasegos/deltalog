@@ -49,18 +49,13 @@
       if (!res.ok) throw new Error(res.status);
 
       const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-      let prev = lastOf(list, ".tr .mt span:first-child", function (n) { return n.textContent.trim(); });
-      let prevWeek = lastOf(list, ".tr", function (n) { return n.dataset.week; });
-      doc.querySelectorAll(".list > .wd, .list > .tr").forEach(function (node) {
-        if (node.classList.contains("wd")) {
-          if (node.dataset.week !== prevWeek) list.appendChild(document.importNode(node, true));
+      let prevDay = lastOf(list, ".tr", function (n) { return n.dataset.day; });
+      doc.querySelectorAll(".list > .dd, .list > .tr").forEach(function (node) {
+        if (node.classList.contains("dd")) {
+          if (node.dataset.day !== prevDay) list.appendChild(document.importNode(node, true));
           return;
         }
-        const date = node.querySelector(".mt span:first-child").textContent.trim();
-        const dt = node.querySelector(".dt");
-        if (dt && date === prev) dt.textContent = "";
-        prev = date;
-        prevWeek = node.dataset.week;
+        prevDay = node.dataset.day;
         list.appendChild(document.importNode(node, true));
       });
 

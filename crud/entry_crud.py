@@ -39,6 +39,22 @@ def add_entry(db: Session, entry: Entry, item_texts: list[str]) -> None:
     db.add_all(Item(entry_id=entry.id, seq=i, raw_text=text) for i, text in enumerate(item_texts, start=1))
 
 
+def latest_per_source(db: Session, since: datetime) -> dict[int, tuple[Entry, int]]:
+    """소스마다 가장 최근 글과, `since` 이후에 나온 글 개수를 돌려준다.
+
+    Args:
+        db: DB 세션
+        since: 이 시각 이후(포함)에 게시된 글을 센다
+    Returns:
+        소스 ID별 `(가장 최근 글, 최근 글 개수)`. 글이 하나도 없는 소스는 들어 있지 않다
+    """
+    newest = db.scalars(select(Entry).distinct(Entry.source_id).order_by(Entry.source_id, Entry.published_at.desc()))
+    recent = dict(
+        db.execute(select(Entry.source_id, func.count(Entry.id)).where(Entry.published_at >= since).group_by(Entry.source_id)).all()
+    )
+    return {entry.source_id: (entry, recent.get(entry.source_id, 0)) for entry in newest}
+
+
 def count_entries_by_category_since(db: Session, since: datetime, until: datetime) -> dict[str, int]:
     """지정한 기간에 게시된 글을 유형별로 센다. 그 유형의 항목이 하나라도 있는 글을 센다.
 

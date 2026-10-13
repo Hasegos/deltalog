@@ -9,6 +9,8 @@ from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
 from crud import entry_crud, item_crud
 
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
+WEEKDAYS = "월화수목금토일"
+HIGHLIGHTS = 4
 
 
 def _url(params: dict[str, str], **override: str | None) -> str:
@@ -41,19 +43,44 @@ def _week_start(now: datetime) -> datetime:
     return datetime.combine(monday, time.min, tzinfo=KST)
 
 
-def _week_name(weeks_ago: int) -> str:
-    """몇 주 전인지에 맞는 이름을 돌려준다.
+def _day_label(day: datetime, now: datetime) -> str:
+    """날짜 구분선에 쓸 이름을 돌려준다.
 
     Args:
-        weeks_ago: 0이면 이번 주, 1이면 지난주, 2이면 2주 전
+        day: 게시 시각
+        now: 기준 시각
     Returns:
-        `이번 주`, `지난주`, `N주 전` 중 하나
+        `오늘`, `어제`, 아니면 `10월 10일 (토)` 꼴
     """
-    if weeks_ago == 0:
-        return "이번 주"
-    if weeks_ago == 1:
-        return "지난주"
-    return f"{weeks_ago}주 전"
+    gap = (now.astimezone(KST).date() - day.astimezone(KST).date()).days
+    if gap == 0:
+        return "오늘"
+    if gap == 1:
+        return "어제"
+    local = day.astimezone(KST)
+    return f"{local.month}월 {local.day}일 ({WEEKDAYS[local.weekday()]})"
+
+
+def _ago(moment: datetime, now: datetime) -> str:
+    """게시 시각이 지금으로부터 얼마나 전인지 짧게 돌려준다.
+
+    Args:
+        moment: 게시 시각
+        now: 기준 시각
+    Returns:
+        `방금`, `3시간 전`, `어제`, `5일 전`, `3개월 전` 중 하나
+    """
+    seconds = max(0, int((now - moment).total_seconds()))
+    if seconds < 3600:
+        return "방금"
+    if seconds < 86400:
+        return f"{seconds // 3600}시간 전"
+    days = seconds // 86400
+    if days == 1:
+        return "어제"
+    if days < 60:
+        return f"{days}일 전"
+    return f"{days // 30}개월 전"
 
 
 def build_home(
@@ -81,21 +108,29 @@ def build_home(
         if value
     }
 
+    since = now - timedelta(days=WEEK_BOX_DAYS)
     sources = item_crud.list_sources(db)
     per_source = entry_crud.count_entries_by_source(db)
-    tools = [
-        {
-            "slug": s.slug,
-            "name": s.name,
-            "count": per_source.get(s.id, 0),
-            "active": s.slug == tool,
-            "href": _url(params, tool=s.slug),
-        }
-        for s in sources
-    ]
+    latest = entry_crud.latest_per_source(db, since)
+    tools = []
+    for s in sources:
+        entry, recent = latest.get(s.id, (None, 0))
+        tools.append(
+            {
+                "slug": s.slug,
+                "name": s.name,
+                "count": per_source.get(s.id, 0),
+                "active": s.slug == tool,
+                "href": _url(params, tool=s.slug),
+                "version": (entry.version or entry.title) if entry else "",
+                "ago": _ago(entry.published_at, now) if entry else "",
+                "recent": recent,
+                "ready": entry is not None,
+                "ts": entry.published_at.timestamp() if entry else 0,
+            }
+        )
+    status_tools = sorted(tools, key=lambda t: -t["ts"])
 
-    start = _week_start(now)
-    since = now - timedelta(days=WEEK_BOX_DAYS)
     week_counts = entry_crud.count_entries_by_category_since(db, since, now)
     week = {
         "label": f"{since:%m-%d} ~ {now:%m-%d}",
@@ -113,6 +148,26 @@ def build_home(
         ],
     }
 
+    highlights = []
+    if not (tool or tab != "all" or category or topic or q):
+        for item, entry, source in item_crud.list_highlights(db, HIGHLIGHTS):
+            symbol, label = CATEGORIES.get(item.category, ("", ""))
+            highlights.append(
+                {
+                    "summary": item.summary_ko,
+                    "raw": item.raw_text,
+                    "category": item.category,
+                    "symbol": symbol,
+                    "type_label": label,
+                    "importance": item.importance or 0,
+                    "topic": item.topic,
+                    "name": source.name,
+                    "version": entry.version or entry.title,
+                    "ago": _ago(entry.published_at, now),
+                    "url": entry.url if entry.url.startswith(("https://", "http://")) else "#",
+                }
+            )
+
     no_tab = {k: v for k, v in params.items() if k != "tab"}
     tabs = [
         {
@@ -128,8 +183,7 @@ def build_home(
     topics = [{"name": t, "active": t == topic, "href": _url(params, topic=t)} for t in TOPICS]
 
     rows = []
-    last_date = ""
-    last_week = None
+    last_day = ""
     matched = next(t["count"] for t in tabs if t["active"])
     pages = max(1, ceil(matched / PAGE_SIZE))
     page = min(page, pages)
@@ -143,9 +197,7 @@ def build_home(
     needle = q.lower()
 
     for entry, source in entries:
-        date = entry.published_at.astimezone(KST).strftime("%m-%d")
-        row_week = _week_start(entry.published_at)
-        weeks_ago = max(0, (start - row_week).days // 7)
+        day = entry.published_at.astimezone(KST).strftime("%Y-%m-%d")
         stat = stats[entry.id]
         top = next((c for c in SEVERITY if c in stat["categories"]), "")
         symbol, label = CATEGORIES.get(top, ("", ""))
@@ -153,8 +205,7 @@ def build_home(
             {
                 "summary": item.summary_ko,
                 "raw": item.raw_text,
-                "hit": bool(q)
-                and needle in f"{item.summary_ko or ''} {item.topic or ''} {item.raw_text}".lower(),
+                "hit": bool(q) and needle in f"{item.summary_ko or ''} {item.topic or ''} {item.raw_text}".lower(),
                 "raw_only": bool(q)
                 and needle not in f"{item.summary_ko or ''} {item.topic or ''}".lower()
                 and needle in item.raw_text.lower(),
@@ -169,14 +220,12 @@ def build_home(
         headline = next((i["summary"] or i["raw"] for i in lines), None)
         rows.append(
             {
-                "date": date,
-                "week": f"{row_week:%Y-%m-%d}",
-                "show_week": row_week != last_week,
-                "week_name": _week_name(weeks_ago),
-                "week_range": f"{row_week:%m-%d} ~ {row_week + timedelta(days=6):%m-%d}",
-                "show_date": date != last_date,
+                "day": day,
+                "show_day": day != last_day,
+                "day_label": _day_label(entry.published_at, now),
                 "name": source.name,
                 "version": entry.version or entry.title,
+                "ago": _ago(entry.published_at, now),
                 "count": stat["count"],
                 "done": stat["done"],
                 "headline": headline,
@@ -186,12 +235,16 @@ def build_home(
                 "category": top,
                 "symbol": symbol,
                 "type_label": label,
+                "cats": [
+                    {"key": key, "symbol": CATEGORIES[key][0], "count": stat["categories"][key]}
+                    for key in SEVERITY
+                    if key in stat["categories"] and key != "other"
+                ],
                 "importance": stat["importance"],
                 "url": entry.url if entry.url.startswith(("https://", "http://")) else "#",
             }
         )
-        last_date = date
-        last_week = row_week
+        last_day = day
 
     active = []
     if tool:
@@ -201,9 +254,11 @@ def build_home(
 
     return {
         "tools": tools,
+        "status_tools": status_tools,
         "total": sum(t["count"] for t in tools),
         "all_href": _url(params, tool=None),
         "week": week,
+        "highlights": highlights,
         "tabs": tabs,
         "topics": topics,
         "topic": topic,
