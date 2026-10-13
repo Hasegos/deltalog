@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
+from core.config import settings
 from core.templates import templates
 from db.session import get_db
 from services.web.changes_service import build_changes
@@ -9,6 +10,12 @@ from services.web.home_service import build_home
 from services.web.page_service import build_tools, build_topics
 
 page_router = APIRouter(include_in_schema=False)
+SITEMAP_PATHS = ("/", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
+
+
+def _site_url(request: Request) -> str:
+    """`SITE_URL` 설정 값을, 비어 있으면 요청의 주소를 끝 `/` 없이 돌려준다."""
+    return (settings.SITE_URL or str(request.base_url)).rstrip("/")
 
 
 @page_router.get("/", response_class=HTMLResponse)
@@ -134,3 +141,30 @@ def changes_page(
         렌더링한 버전 비교 페이지
     """
     return templates.TemplateResponse(request, "changes.html", build_changes(db, tool, version.strip(), level))
+
+
+@page_router.get("/robots.txt", response_class=PlainTextResponse)
+def robots(request: Request) -> PlainTextResponse:
+    """검색 로봇 안내문을 돌려준다. API는 막고 사이트맵 주소를 알린다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        `robots.txt` 본문
+    """
+    return PlainTextResponse(f"User-agent: *\nDisallow: /api/\n\nSitemap: {_site_url(request)}/sitemap.xml\n")
+
+
+@page_router.get("/sitemap.xml")
+def sitemap(request: Request) -> Response:
+    """공개 페이지 주소를 담은 `sitemap.xml`을 돌려준다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        사이트맵 XML
+    """
+    base = _site_url(request)
+    urls = "".join(f"<url><loc>{base}{path}</loc></url>" for path in SITEMAP_PATHS)
+    xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
+    return Response(xml, media_type="application/xml")
