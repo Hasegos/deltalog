@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 4096
     LLM_MAX_RETRIES: int = 2
     AUTO_SUMMARIZE: bool = True
-    SUMMARIZE_INTERVAL_MIN: int = 10
+    SUMMARIZE_INTERVAL_MIN: int = 3
     SUMMARIZE_BATCH_LIMIT: int = 200
     LOG_DIR: str = "logs"
     LOG_RETENTION_DAYS: int = 30

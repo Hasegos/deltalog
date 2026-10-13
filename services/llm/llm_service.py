@@ -205,25 +205,28 @@ def summarize_pending(db: Session, limit: int) -> list[tuple[Item, Entry, Source
 
 
 def summarize_job() -> None:
-    """스케줄러가 주기적으로 부른다. 요약 대기 항목을 `SUMMARIZE_BATCH_LIMIT`개까지 요약한다.
+    """스케줄러가 주기적으로 부른다. 요약 대기 항목이 없어질 때까지 `SUMMARIZE_BATCH_LIMIT`개씩 이어서 요약한다.
 
     LM Studio에 닿지 못하면 경고만 남기고 끝낸다 (다음 주기에 다시 시도). 한 번에 하나만 돈다.
     """
+    total = done = failed = 0
     with SessionLocal() as db:
-        try:
-            rows = summarize_pending(db, settings.SUMMARIZE_BATCH_LIMIT)
-        except LlmUnavailable as exc:
-            db.rollback()
-            logger.warning("summarize: 중단 (%s)", exc)
-            return
-        except Exception:
-            db.rollback()
-            logger.exception("summarize: 실패")
-            return
-    if rows:
-        logger.info(
-            "summarize: %d건 처리 (완료 %d, 실패 %d)",
-            len(rows),
-            sum(1 for row in rows if row[0].status == "done"),
-            sum(1 for row in rows if row[0].status == "failed"),
-        )
+        while True:
+            try:
+                rows = summarize_pending(db, settings.SUMMARIZE_BATCH_LIMIT)
+            except LlmUnavailable as exc:
+                db.rollback()
+                logger.warning("summarize: 중단 (%s)", exc)
+                break
+            except Exception:
+                db.rollback()
+                logger.exception("summarize: 실패")
+                break
+            finished = [row for row in rows if row[0].status in ("done", "failed")]
+            total += len(finished)
+            done += sum(1 for row in finished if row[0].status == "done")
+            failed += sum(1 for row in finished if row[0].status == "failed")
+            if not finished:
+                break
+    if total:
+        logger.info("summarize: %d건 처리 (완료 %d, 실패 %d)", total, done, failed)
