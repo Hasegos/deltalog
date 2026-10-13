@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     LOG_DIR: str = "logs"
     LOG_RETENTION_DAYS: int = 30
     TRUST_PROXY: bool = False
+    SITE_URL: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
