@@ -1,13 +1,22 @@
 # ──────────────────────────────────────
 # 1. 수집 소스
 # ──────────────────────────────────────
-# `source` 테이블이 비어 있을 때 시작 시 넣는 값이다 (`db/init_db.py`).
+# 시작 시 `source` 테이블에 맞춘다. 없는 slug는 넣고, 있는 slug는 이름, 종류, 주소, 프리릴리스 설정을 이 값으로 고친다 (`db/init_db.py`).
+JETBRAINS_API = "https://data.services.jetbrains.com/products/releases"
 SOURCES = [
     {"slug": "claude-code", "name": "Claude Code", "kind": "github_release", "repo": "anthropics/claude-code"},
     {"slug": "codex", "name": "Codex", "kind": "github_release", "repo": "openai/codex"},
     {"slug": "gemini-cli", "name": "Gemini CLI", "kind": "github_release", "repo": "google-gemini/gemini-cli"},
     {"slug": "vscode", "name": "VS Code", "kind": "rss", "feed_url": "https://code.visualstudio.com/feed.xml"},
     {"slug": "cursor", "name": "Cursor", "kind": "rss", "feed_url": "https://cursor.com/changelog/rss.xml"},
-    {"slug": "android-studio", "name": "Android Studio", "kind": "html", "feed_url": "https://developer.android.com/studio/releases"},
-    {"slug": "jetbrains", "name": "JetBrains", "kind": "html", "feed_url": "https://www.jetbrains.com/idea/whatsnew/"},
+    {
+        "slug": "android-studio",
+        "name": "Android Studio",
+        "kind": "rss",
+        "feed_url": "https://androidstudio.googleblog.com/feeds/posts/default?max-results=20",
+        "include_prerelease": True,
+    },
+    {"slug": "intellij-idea", "name": "IntelliJ IDEA", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=IIU&latest=false&type=release"},
+    {"slug": "pycharm", "name": "PyCharm", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=PCP&latest=false&type=release"},
+    {"slug": "webstorm", "name": "WebStorm", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=WS&latest=false&type=release"},
 ]

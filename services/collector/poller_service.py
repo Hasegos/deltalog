@@ -10,7 +10,7 @@ from crud import entry_crud
 from db.session import SessionLocal
 from models.entry_model import Entry
 from models.source_model import Source
-from services.collector import feed_service, github_release_service
+from services.collector import feed_service, github_release_service, jetbrains_service
 from services.collector.github_release_service import FetchResult
 from services.collector.splitter_service import split_items
 
@@ -18,14 +18,14 @@ logger = get_logger("poller")
 
 
 def poll_source(db: Session, source: Source) -> int:
-    """소스 하나(GitHub 릴리스 또는 RSS 피드)를 한 번 가져와 새 글을 저장한다.
+    """소스 하나(GitHub 릴리스, RSS 피드, JetBrains API)를 한 번 가져와 새 글을 저장한다.
 
     ETag가 같으면 아무것도 저장하지 않는다. 이미 있는 `(소스, external_id)`와, 설정이 꺼져 있으면 프리릴리스는 건너뛴다.
     저장이 실패하면 되돌리고 ETag도 갱신하지 않아 다음 번에 다시 시도한다.
 
     Args:
         db: DB 세션
-        source: `kind`가 `github_release` 또는 `rss`인 소스
+        source: `kind`가 `github_release`, `rss`, `html`인 소스
     Returns:
         새로 저장한 글 개수
     """
@@ -70,24 +70,26 @@ def _fetch(source: Source) -> FetchResult:
     """소스 종류에 맞는 수집기로 글 목록을 받는다.
 
     Args:
-        source: `kind`가 `github_release` 또는 `rss`인 소스
+        source: `kind`가 `github_release`, `rss`, `html`인 소스
     Returns:
         `FetchResult`
     """
     if source.kind == "rss":
         return feed_service.fetch_feed(source.slug, source.feed_url, source.etag)
+    if source.kind == "html":
+        return jetbrains_service.fetch_releases(source.feed_url, source.name)
     return github_release_service.fetch_releases(source.repo, source.etag, settings.GITHUB_TOKEN)
 
 
 def poll_all() -> int:
-    """GitHub 릴리스와 RSS 소스를 모두 한 번씩 가져온다. 소스 하나가 실패해도 나머지는 계속한다.
+    """GitHub 릴리스, RSS, JetBrains 소스를 모두 한 번씩 가져온다. 소스 하나가 실패해도 나머지는 계속한다.
 
     Returns:
         새로 저장한 글의 전체 개수
     """
     total = 0
     with SessionLocal() as db:
-        sources = list(db.scalars(select(Source).where(Source.kind.in_(("github_release", "rss"))).order_by(Source.id)))
+        sources = list(db.scalars(select(Source).where(Source.kind.in_(("github_release", "rss", "html"))).order_by(Source.id)))
         for source in sources:
             try:
                 total += poll_source(db, source)

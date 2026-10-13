@@ -6,13 +6,21 @@ from core.constants.source import SOURCES
 from db.base import Base, Source
 from db.session import engine
 
+SYNC_FIELDS = ("name", "kind", "repo", "feed_url", "include_prerelease")
+
 
 def init_db() -> None:
-    """`AUTO_CREATE_TABLES`가 켜져 있으면 테이블이 없을 때 만들고, `source`가 비어 있으면 릴리스 소스 7곳을 넣는다."""
+    """`AUTO_CREATE_TABLES`가 켜져 있으면 테이블을 만들고, `SOURCES`에 맞춰 `source`를 채운다. 없는 slug는 넣고 있는 slug는 값을 고친다."""
     if not settings.AUTO_CREATE_TABLES:
         return
     Base.metadata.create_all(engine)
     with Session(engine) as session:
-        if session.scalar(select(Source.id).limit(1)) is None:
-            session.add_all(Source(**row) for row in SOURCES)
-            session.commit()
+        existing = {s.slug: s for s in session.scalars(select(Source))}
+        for row in SOURCES:
+            source = existing.get(row["slug"])
+            if source is None:
+                session.add(Source(**row))
+                continue
+            for field in SYNC_FIELDS:
+                setattr(source, field, row.get(field, getattr(source, field)))
+        session.commit()
