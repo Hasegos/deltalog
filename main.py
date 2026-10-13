@@ -23,7 +23,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 
-app = FastAPI(title=settings.PROJECT_NAME, version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(page_router)
 app.include_router(api_router)
