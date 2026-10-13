@@ -16,6 +16,11 @@
     return rows.length ? rows[rows.length - 1].textContent.trim() : "";
   }
 
+  function lastWeek() {
+    const rows = list.querySelectorAll(".tr");
+    return rows.length ? rows[rows.length - 1].dataset.week : "";
+  }
+
   async function loadMore() {
     if (loading || !more) return;
     loading = true;
@@ -28,12 +33,18 @@
 
       const doc = new DOMParser().parseFromString(await res.text(), "text/html");
       let prev = lastDate();
-      doc.querySelectorAll(".list .tr").forEach(function (row) {
-        const date = row.querySelector(".mt span:first-child").textContent.trim();
-        const dt = row.querySelector(".dt");
+      let prevWeek = lastWeek();
+      doc.querySelectorAll(".list > .wd, .list > .tr").forEach(function (node) {
+        if (node.classList.contains("wd")) {
+          if (node.dataset.week !== prevWeek) list.appendChild(document.importNode(node, true));
+          return;
+        }
+        const date = node.querySelector(".mt span:first-child").textContent.trim();
+        const dt = node.querySelector(".dt");
         if (dt && date === prev) dt.textContent = "";
         prev = date;
-        list.appendChild(document.importNode(row, true));
+        prevWeek = node.dataset.week;
+        list.appendChild(document.importNode(node, true));
       });
 
       const next = doc.getElementById("more");
