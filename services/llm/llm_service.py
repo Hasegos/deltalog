@@ -3,11 +3,11 @@ import re
 from itertools import groupby
 from typing import Literal
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy.orm import Session
 
 from core.config import settings
-from core.constants.llm import BATCH_SIZE, MAX_ITEM_CHARS, PROMPT_VERSION
+from core.constants.llm import BATCH_SIZE, MAX_ITEM_CHARS, PROMPT_VERSION, SUMMARY_MAX_CHARS
 from core.constants.prompts import SYSTEM_PROMPT
 from core.constants.taxonomy import TOPICS
 from core.logger import get_logger
@@ -25,9 +25,24 @@ class Summary(BaseModel):
 
     n: int
     category: Literal["feature", "bugfix", "breaking", "security", "other"]
-    topic: str = ""
+    topic: Literal[(*TOPICS, "")]
     importance: int = Field(ge=1, le=5)
     summary_ko: str = Field(min_length=1)
+
+    @field_validator("summary_ko")
+    @classmethod
+    def check_summary(cls, value: str) -> str:
+        """끝의 마침표를 떼고, "~다"로 끝나지 않거나 너무 길면 검증 실패로 돌려보낸다.
+
+        Args:
+            value: 모델이 만든 한 줄 요약
+        Returns:
+            마침표를 뗀 요약
+        """
+        value = value.strip().rstrip(".").strip()
+        if not value.endswith("다") or len(value) > SUMMARY_MAX_CHARS:
+            raise ValueError("요약은 80자 안팎의 '~다' 문장이어야 한다")
+        return value
 
 
 SCHEMA = {
