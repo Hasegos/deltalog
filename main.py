@@ -1,6 +1,9 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -8,11 +11,14 @@ from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
 from db.init_db import init_db
+from services.poller_service import poll_all
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """시작할 때 테이블과 기본 소스를 준비한다.
+    """시작할 때 테이블과 기본 소스를 준비하고, 일정 주기로 소스를 가져오는 스케줄러를 켠다.
 
     Args:
         app: 앱 인스턴스
@@ -20,7 +26,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         앱이 도는 동안 대기
     """
     init_db()
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        poll_all,
+        "interval",
+        minutes=settings.POLL_INTERVAL_MIN,
+        next_run_time=datetime.now(),
+        max_instances=1,
+        coalesce=True,
+    )
+    scheduler.start()
     yield
+    scheduler.shutdown(wait=False)
 
 
 app = FastAPI(
