@@ -4,9 +4,10 @@ from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
 
-from core.constant import KST, SPARK_WEEKS, TOPICS
+from core.constants.page import KST, SPARK_WEEKS
+from core.constants.taxonomy import TOPICS
 from crud import item_crud
-from services.home_service import _week_start
+from services.web.home_service import _week_start
 
 
 def _week_starts(now: datetime) -> list[datetime]:

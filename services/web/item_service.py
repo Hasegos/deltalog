@@ -2,7 +2,7 @@ from math import ceil
 
 from sqlalchemy.orm import Session
 
-from core.constant import PAGE_SIZE
+from core.constants.page import PAGE_SIZE
 from crud import item_crud
 from schemas.item_schema import ItemListResponse, ItemResponse
 from schemas.source_schema import SourceResponse

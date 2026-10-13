@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from db.session import get_db
 from schemas.source_schema import SourceResponse
-from services import item_service
+from services.web import item_service
 
 router = APIRouter()
 

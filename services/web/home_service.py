@@ -4,7 +4,8 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
-from core.constant import CATEGORIES, IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, SEVERITY, TOPICS
+from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS
+from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
 from crud import entry_crud, item_crud
 
 WEEKDAYS = "월화수목금토일"

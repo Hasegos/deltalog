@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime, timezone
 
 import httpx
@@ -6,14 +5,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from core.logger import get_logger
 from crud import entry_crud
 from db.session import SessionLocal
 from models.entry_model import Entry
 from models.source_model import Source
-from services import github_release_service
-from services.splitter_service import split_items
+from services.collector import github_release_service
+from services.collector.splitter_service import split_items
 
-logger = logging.getLogger("deltalog.poller")
+logger = get_logger("poller")
 
 
 def poll_source(db: Session, source: Source) -> int:

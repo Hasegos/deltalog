@@ -3,7 +3,7 @@ from collections import defaultdict
 from sqlalchemy import Select, exists, func, select
 from sqlalchemy.orm import Session, defer
 
-from core.constant import IMPORTANT_MIN
+from core.constants.page import IMPORTANT_MIN
 from models.entry_model import Entry
 from models.item_model import Item
 from models.source_model import Source

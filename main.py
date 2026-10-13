@@ -1,4 +1,3 @@
-import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -10,10 +9,11 @@ from fastapi.staticfiles import StaticFiles
 from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
+from core.logger import setup_logging
 from db.init_db import init_db
-from services.poller_service import poll_all
+from services.collector.poller_service import poll_all
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+setup_logging()
 
 
 @asynccontextmanager

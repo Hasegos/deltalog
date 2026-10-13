@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from db.session import get_db
 from schemas.item_schema import ItemListResponse
-from services import item_service
+from services.web import item_service
 
 router = APIRouter()
 
