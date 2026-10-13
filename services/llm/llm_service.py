@@ -55,6 +55,32 @@ SCHEMA = {
 }
 
 
+def clean_text(text: str) -> str:
+    """모델에 보내기 전에 요약에 필요 없는 PR 번호(`#1234`)와 작성자(`@name`)를 뺀다.
+
+    Args:
+        text: 항목 원문
+    Returns:
+        정리한 원문
+    """
+    text = re.sub(r"\(\s*(?:#\d+[,\s]*)+\)", "", text)
+    text = re.sub(r"(?<![\w`])#\d+\b|(?<![\w`.])@[\w-]+\b", "", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def unseen_words(summary: str, original: str) -> list[str]:
+    """요약에 나온 영어 단어 중 원문에 없는 것을 돌려준다. 모델이 지어낸 용어를 걸러내는 데 쓴다.
+
+    Args:
+        summary: 한국어 요약
+        original: 항목 원문
+    Returns:
+        원문에 없는 영어 단어 (대소문자 무시). 모두 있으면 빈 목록
+    """
+    lowered = original.lower()
+    return [w for w in re.findall(r"[A-Za-z][A-Za-z0-9_]{2,}", summary) if w.lower() not in lowered]
+
+
 def _messages(source: Source, entry: Entry, texts: dict[int, str]) -> list[dict]:
     """모델에 보낼 메시지를 만든다.
 
@@ -65,17 +91,17 @@ def _messages(source: Source, entry: Entry, texts: dict[int, str]) -> list[dict]
     Returns:
         시스템과 사용자 메시지 목록
     """
-    lines = "\n".join(f"{n}. {text[:MAX_ITEM_CHARS]}" for n, text in texts.items())
+    lines = "\n".join(f"{n}. {clean_text(text)[:MAX_ITEM_CHARS]}" for n, text in texts.items())
     user = f"도구: {source.name}\n버전: {entry.version or entry.title}\n\n{lines}"
     return [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}]
 
 
-def _parse(content: str, wanted: set[int]) -> dict[int, Summary]:
+def _parse(content: str, texts: dict[int, str]) -> dict[int, Summary]:
     """모델 답을 읽어 검증을 통과한 항목만 번호별로 돌려준다. 통과하지 못한 항목은 들어 있지 않다.
 
     Args:
         content: 모델 답 본문
-        wanted: 기다리는 번호
+        texts: 기다리는 번호별 항목 원문. 요약에 원문에 없는 영어 단어가 있으면 통과시키지 않는다
     Returns:
         번호별 검증된 값. 주제가 목록에 없으면 빈 값으로 바꾼다
     """
@@ -91,7 +117,7 @@ def _parse(content: str, wanted: set[int]) -> dict[int, Summary]:
             summary = Summary.model_validate(raw)
         except ValidationError:
             continue
-        if summary.n in wanted and summary.n not in result:
+        if summary.n in texts and summary.n not in result and not unseen_words(summary.summary_ko, texts[summary.n]):
             if summary.topic not in TOPICS:
                 summary.topic = ""
             result[summary.n] = summary
@@ -117,7 +143,7 @@ def summarize_batch(source: Source, entry: Entry, items: list[Item]) -> None:
             break
         attempts += 1
         content = lm_client.complete(_messages(source, entry, {n: i.raw_text for n, i in waiting.items()}), SCHEMA)
-        for n, summary in _parse(content, set(waiting)).items():
+        for n, summary in _parse(content, {n: i.raw_text for n, i in waiting.items()}).items():
             item = waiting.pop(n)
             item.category = summary.category
             item.topic = summary.topic or None

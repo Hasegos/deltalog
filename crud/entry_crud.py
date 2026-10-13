@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 
 from sqlalchemy import Select, exists, func, select
-from sqlalchemy.orm import Session, defer
+from sqlalchemy.orm import Session
 
 from core.constants.page import IMPORTANT_MIN
 from models.entry_model import Entry
@@ -186,7 +186,7 @@ def top_items(
 ) -> dict[int, list[Item]]:
     """글마다 화면에 펼쳐 보일 항목을 중요도 높은 순으로 최대 `per_entry`개 돌려준다.
 
-    요약이 끝난 항목이 먼저 오고, 같으면 중요도가 높은 항목, 그다음 원문 순서다. 원문(`raw_text`)은 읽지 않는다.
+    요약이 끝난 항목이 먼저 오고, 같으면 중요도가 높은 항목, 그다음 원문 순서다. 원문(`raw_text`)도 함께 읽는다 (화면의 "원문" 비교용).
 
     Args:
         db: DB 세션
@@ -220,7 +220,6 @@ def top_items(
         select(Item)
         .join(ranked, ranked.c.id == Item.id)
         .where(ranked.c.rn <= per_entry)
-        .options(defer(Item.raw_text))
         .order_by(Item.entry_id, ranked.c.rn)
     )
     for item in db.scalars(stmt):

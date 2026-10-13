@@ -150,6 +150,7 @@ def build_home(
         items = [
             {
                 "summary": item.summary_ko,
+                "raw": item.raw_text,
                 "symbol": CATEGORIES.get(item.category, ("", ""))[0],
                 "category": item.category or "",
                 "importance": item.importance or 0,
