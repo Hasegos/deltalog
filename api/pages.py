@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from core.templates import templates
 from db.session import get_db
+from services.web.changes_service import build_changes
 from services.web.home_service import build_home
 from services.web.page_service import build_tools, build_topics
 
@@ -111,3 +112,25 @@ def contact_page(request: Request) -> HTMLResponse:
         렌더링한 문의 페이지
     """
     return templates.TemplateResponse(request, "contact.html", {})
+
+
+@page_router.get("/changes", response_class=HTMLResponse)
+def changes_page(
+    request: Request,
+    tool: str = "",
+    version: str = Query("", max_length=40),
+    level: str = "key",
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """"내 버전부터 최신까지 바뀐 점" 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+        tool: 소스 slug
+        version: 지금 쓰는 버전
+        level: `key`(중요한 것만) 또는 `all`
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 버전 비교 페이지
+    """
+    return templates.TemplateResponse(request, "changes.html", build_changes(db, tool, version.strip(), level))

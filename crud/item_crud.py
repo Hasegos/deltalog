@@ -163,6 +163,22 @@ def list_highlights(db: Session, limit: int) -> list[tuple[Item, Entry, Source]]
     return [tuple(row) for row in db.execute(stmt).all()]
 
 
+def list_done_items(db: Session, entry_ids: list[int], key_only: bool) -> list[Item]:
+    """글들의 요약이 끝난 항목을 돌려준다.
+
+    Args:
+        db: DB 세션
+        entry_ids: 글 ID 목록
+        key_only: `True`면 중요도 `IMPORTANT_MIN` 이상이거나 breaking, 보안인 항목만
+    Returns:
+        항목 목록 (정렬은 부르는 쪽이 한다)
+    """
+    stmt = select(Item).where(Item.entry_id.in_(entry_ids), Item.status == "done")
+    if key_only:
+        stmt = stmt.where(or_(Item.importance >= IMPORTANT_MIN, Item.category.in_(("breaking", "security"))))
+    return list(db.scalars(stmt))
+
+
 def count_pending_items(db: Session) -> int:
     """요약을 기다리는 항목(`pending`) 개수를 돌려준다.
 
