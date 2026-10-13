@@ -9,7 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
-from core.logger import setup_logging
+from core.logger import purge_old_logs, setup_logging
+from core.middleware import access_log
 from db.init_db import init_db
 from services.collector.poller_service import poll_all
 
@@ -35,6 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         max_instances=1,
         coalesce=True,
     )
+    scheduler.add_job(purge_old_logs, "cron", hour=3, minute=0, next_run_time=datetime.now())
     scheduler.start()
     yield
     scheduler.shutdown(wait=False)
@@ -48,6 +50,7 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+app.middleware("http")(access_log)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(page_router)
 app.include_router(api_router)

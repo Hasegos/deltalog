@@ -10,7 +10,7 @@ from core.config import settings
 from core.constants.llm import BATCH_SIZE, MAX_ITEM_CHARS, PROMPT_VERSION, SUMMARY_MAX_CHARS
 from core.constants.prompts import SYSTEM_PROMPT
 from core.constants.taxonomy import TOPICS
-from core.logger import get_logger
+from core.logger import get_logger, log_event
 from crud import item_crud
 from models.entry_model import Entry
 from models.item_model import Item
@@ -18,6 +18,7 @@ from models.source_model import Source
 from services.llm import lm_client
 
 logger = get_logger("summarizer")
+llm_logger = get_logger("llm")
 
 
 class Summary(BaseModel):
@@ -108,9 +109,11 @@ def summarize_batch(source: Source, entry: Entry, items: list[Item]) -> None:
         lm_client.LlmUnavailable: LM Studio에 닿지 못했을 때. 이때 항목 상태는 바꾸지 않는다
     """
     waiting = {n: item for n, item in enumerate(items, start=1)}
+    attempts = 0
     for _ in range(settings.LLM_MAX_RETRIES + 1):
         if not waiting:
             break
+        attempts += 1
         content = lm_client.complete(_messages(source, entry, {n: i.raw_text for n, i in waiting.items()}), SCHEMA)
         for n, summary in _parse(content, set(waiting)).items():
             item = waiting.pop(n)
@@ -123,6 +126,17 @@ def summarize_batch(source: Source, entry: Entry, items: list[Item]) -> None:
             item.prompt_version = PROMPT_VERSION
             item.error = None
 
+    log_event(
+        llm_logger,
+        event="batch",
+        source=source.slug,
+        version=entry.version or entry.title,
+        items=len(items),
+        done=len(items) - len(waiting),
+        failed=len(waiting),
+        attempts=attempts,
+        prompt_version=PROMPT_VERSION,
+    )
     for item in waiting.values():
         item.status = "failed"
         item.model = settings.LM_STUDIO_MODEL
