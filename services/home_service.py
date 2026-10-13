@@ -4,8 +4,8 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
-from core.constant import CATEGORIES, IMPORTANT_MIN, KST, PAGE_SIZE, TOPICS
-from crud import item_crud
+from core.constant import CATEGORIES, IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, SEVERITY, TOPICS
+from crud import entry_crud, item_crud
 
 WEEKDAYS = "월화수목금토일"
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
@@ -82,7 +82,7 @@ def build_home(
     }
 
     sources = item_crud.list_sources(db)
-    per_source = item_crud.count_items_by_source(db)
+    per_source = entry_crud.count_entries_by_source(db)
     tools = [
         {
             "slug": s.slug,
@@ -116,7 +116,7 @@ def build_home(
         {
             "label": label,
             "short": short,
-            "count": item_crud.count_items(db, tool, key, category, topic, q),
+            "count": entry_crud.count_entries(db, tool, key, category, topic, q),
             "active": key == tab,
             "href": _url(no_tab, tab=None if key == "all" else key),
         }
@@ -133,11 +133,29 @@ def build_home(
     page = min(page, pages)
     more = _url(params, page=str(page + 1)) if page < pages else None
 
-    for item, entry, source in item_crud.list_items(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE):
+    entries = entry_crud.list_entries(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE)
+    ids = [entry.id for entry, _ in entries]
+    stats = entry_crud.entry_stats(db, ids)
+    shown = entry_crud.top_items(db, ids, tab, category, topic, SHOWN_ITEMS)
+
+    for entry, source in entries:
         date = entry.published_at.astimezone(KST).strftime("%m-%d")
         row_week = _week_start(entry.published_at)
         weeks_ago = max(0, (start - row_week).days // 7)
-        symbol, label = CATEGORIES.get(item.category, ("", ""))
+        stat = stats[entry.id]
+        top = next((c for c in SEVERITY if c in stat["categories"]), "")
+        symbol, label = CATEGORIES.get(top, ("", ""))
+        items = [
+            {
+                "summary": item.summary_ko,
+                "symbol": CATEGORIES.get(item.category, ("", ""))[0],
+                "category": item.category or "",
+                "importance": item.importance or 0,
+                "topic": item.topic,
+            }
+            for item in shown[entry.id]
+        ]
+        headline = next((i["summary"] for i in items if i["summary"]), None)
         rows.append(
             {
                 "date": date,
@@ -148,13 +166,15 @@ def build_home(
                 "show_date": date != last_date,
                 "name": source.name,
                 "version": entry.version or entry.title,
-                "summary": item.summary_ko,
-                "status": item.status,
-                "category": item.category or "",
+                "count": stat["count"],
+                "done": stat["done"],
+                "headline": headline,
+                "lines": [i for i in items if i["summary"]],
+                "hidden_count": max(0, stat["count"] - len(items)),
+                "category": top,
                 "symbol": symbol,
                 "type_label": label,
-                "importance": item.importance or 0,
-                "topic": item.topic,
+                "importance": stat["importance"],
                 "url": entry.url if entry.url.startswith(("https://", "http://")) else "#",
             }
         )

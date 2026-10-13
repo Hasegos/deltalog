@@ -379,10 +379,51 @@
 
 .xp {
   display: flex;
-  gap: 14px;
-  padding: 0 4px 18px 92px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 4px 20px 92px;
   font-family: var(--mono);
   font-size: 15px;
+  color: var(--dim);
+}
+
+.xp > a {
+  align-self: flex-start;
+}
+
+.xi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.xi li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.xg {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.xm {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.sm em {
+  font-style: normal;
   color: var(--dim);
 }
 
