@@ -41,19 +41,19 @@ def _week_start(now: datetime) -> datetime:
     return datetime.combine(monday, time.min, tzinfo=KST)
 
 
-def _week_title(offset: int) -> tuple[str, str]:
-    """주 오프셋에 맞는 영어 제목과 한국어 이름을 돌려준다.
+def _week_name(offset: int) -> str:
+    """주 오프셋에 맞는 이름을 돌려준다.
 
     Args:
         offset: 0이면 이번 주, -1이면 지난주, -2이면 2주 전
     Returns:
-        `("This week", "이번 주")` 같은 묶음
+        `이번 주`, `지난주`, `N주 전` 중 하나
     """
     if offset == 0:
-        return "This week", "이번 주"
+        return "이번 주"
     if offset == -1:
-        return "Last week", "지난주"
-    return f"{-offset} weeks ago", f"{-offset}주 전"
+        return "지난주"
+    return f"{-offset}주 전"
 
 
 def build_home(
@@ -115,13 +115,13 @@ def build_home(
     end = start + timedelta(weeks=1)
     until = min(end, now + timedelta(microseconds=1))
     week_counts = item_crud.count_categories_since(db, start, until - timedelta(microseconds=1))
-    title_en, title_ko = _week_title(offset)
     last_day = end - timedelta(days=1)
+    oldest = item_crud.oldest_entry_time(db)
+    floor = -((_week_start(now) - _week_start(oldest)).days // 7) if oldest else 0
     week_box = {
-        "title": title_en,
-        "label": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~"
-        + (f" {last_day:%m-%d} ({WEEKDAYS[last_day.weekday()]})" if offset < 0 else ""),
-        "prev": _url(params, week=str(offset - 1)) if offset > MIN_WEEK else None,
+        "title": _week_name(offset),
+        "range": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~ {last_day:%m-%d} ({WEEKDAYS[last_day.weekday()]})",
+        "prev": _url(params, week=str(offset - 1)) if offset > max(floor, MIN_WEEK) else None,
         "next": _url(params, week=str(offset + 1)) if week is not None and offset < 0 else None,
         "reset": _url(params, week=str(offset)) if week is not None else None,
         "cats": [
@@ -187,8 +187,6 @@ def build_home(
         active.append({"label": next((t["name"] for t in tools if t["active"]), tool), "href": _url(params, tool=tool)})
     if topic:
         active.append({"label": topic, "href": _url(params, topic=topic)})
-    if week is not None:
-        active.append({"label": title_ko, "href": week_box["reset"]})
 
     return {
         "tools": tools,

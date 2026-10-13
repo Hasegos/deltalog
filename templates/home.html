@@ -26,11 +26,13 @@
       <div class="wordmark">DELTA<br>LOG</div>
       <div class="wk">
         <div class="wk-h">
-          {% if week.prev %}<a class="wk-a" href="{{ week.prev }}" rel="nofollow" aria-label="이전 주">‹</a>{% else %}<span class="wk-a off">‹</span>{% endif %}
-          <div class="wk-t">{{ week.title }} · {{ week.label }}</div>
-          {% if week.next %}<a class="wk-a" href="{{ week.next }}" rel="nofollow" aria-label="다음 주">›</a>{% else %}<span class="wk-a off">›</span>{% endif %}
+          {% if week.prev %}<a class="wk-a" href="{{ week.prev }}" rel="nofollow" aria-label="이전 주">‹</a>{% else %}<span class="wk-a off" aria-hidden="true">‹</span>{% endif %}
+          <div class="wk-t">
+            <b>{{ week.title }}</b>
+            <span>{{ week.range }}</span>
+          </div>
+          {% if week.next %}<a class="wk-a" href="{{ week.next }}" rel="nofollow" aria-label="다음 주">›</a>{% else %}<span class="wk-a off" aria-hidden="true">›</span>{% endif %}
         </div>
-        {% if week.reset %}<a class="wk-x" href="{{ week.reset }}">주 필터 해제 ×</a>{% endif %}
         <div class="wk-g">
           {% for c in week.cats %}
             <a class="wk-c cat-{{ c.key }}{{ ' on' if c.active }}" href="{{ c.href }}">
@@ -86,6 +88,13 @@
           </select>
         </form>
       </div>
+
+      {% if week.reset %}
+      <div class="wkf">
+        <span><b>{{ week.title }}</b> {{ week.range }} 글만 보는 중</span>
+        <a href="{{ week.reset }}">전체 보기</a>
+      </div>
+      {% endif %}
 
       <div class="list">
         {% for r in rows %}
