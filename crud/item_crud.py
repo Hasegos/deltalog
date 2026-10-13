@@ -10,7 +10,14 @@ from models.source_model import Source
 
 
 def _filter(
-    stmt: Select, tool: str, tab: str, category: str, topic: str, q: str
+    stmt: Select,
+    tool: str,
+    tab: str,
+    category: str,
+    topic: str,
+    q: str,
+    since: datetime | None = None,
+    until: datetime | None = None,
 ) -> Select:
     """항목 조회문에 화면 필터 조건을 덧붙인다.
 
@@ -21,9 +28,15 @@ def _filter(
         category: 유형 값. 빈 문자열이면 거르지 않는다
         topic: 주제 값. 빈 문자열이면 거르지 않는다
         q: 검색어. 요약, 도구 이름, 버전, 주제에서 부분 일치를 찾는다
+        since: 이 시각 이후(포함)에 게시된 글만 남긴다. 비우면 거르지 않는다
+        until: 이 시각 이전(미포함)에 게시된 글만 남긴다. 비우면 거르지 않는다
     Returns:
         조건이 붙은 조회문
     """
+    if since is not None:
+        stmt = stmt.where(Entry.published_at >= since)
+    if until is not None:
+        stmt = stmt.where(Entry.published_at < until)
     if tool:
         stmt = stmt.where(Source.slug == tool)
     if tab == "imp":
@@ -46,13 +59,22 @@ def _filter(
 
 
 def list_items(
-    db: Session, tool: str, tab: str, category: str, topic: str, q: str, limit: int, offset: int = 0
+    db: Session,
+    tool: str,
+    tab: str,
+    category: str,
+    topic: str,
+    q: str,
+    limit: int,
+    offset: int = 0,
+    since: datetime | None = None,
+    until: datetime | None = None,
 ) -> list[tuple[Item, Entry, Source]]:
     """조건에 맞는 항목을 게시일 최신순으로 돌려준다.
 
     Args:
         db: DB 세션
-        tool, tab, category, topic, q: 화면 필터 (`_filter` 참고)
+        tool, tab, category, topic, q, since, until: 화면 필터 (`_filter` 참고)
         limit: 한 쪽에 담을 최대 개수
         offset: 건너뛸 개수
     Returns:
@@ -63,17 +85,26 @@ def list_items(
         .join(Entry, Item.entry_id == Entry.id)
         .join(Source, Entry.source_id == Source.id)
     )
-    stmt = _filter(stmt, tool, tab, category, topic, q)
+    stmt = _filter(stmt, tool, tab, category, topic, q, since, until)
     stmt = stmt.order_by(Entry.published_at.desc(), Entry.id.desc(), Item.seq).limit(limit).offset(offset)
     return [tuple(row) for row in db.execute(stmt).all()]
 
 
-def count_items(db: Session, tool: str, tab: str, category: str, topic: str, q: str) -> int:
+def count_items(
+    db: Session,
+    tool: str,
+    tab: str,
+    category: str,
+    topic: str,
+    q: str,
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> int:
     """조건에 맞는 항목 개수를 돌려준다.
 
     Args:
         db: DB 세션
-        tool, tab, category, topic, q: 화면 필터 (`_filter` 참고)
+        tool, tab, category, topic, q, since, until: 화면 필터 (`_filter` 참고)
     Returns:
         항목 개수
     """
@@ -83,7 +114,7 @@ def count_items(db: Session, tool: str, tab: str, category: str, topic: str, q: 
         .join(Entry, Item.entry_id == Entry.id)
         .join(Source, Entry.source_id == Source.id)
     )
-    return db.scalar(_filter(stmt, tool, tab, category, topic, q)) or 0
+    return db.scalar(_filter(stmt, tool, tab, category, topic, q, since, until)) or 0
 
 
 def list_sources(db: Session) -> list[Source]:

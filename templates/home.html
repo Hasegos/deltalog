@@ -25,7 +25,12 @@
     <section class="hero">
       <div class="wordmark">DELTA<br>LOG</div>
       <div class="wk">
-        <div class="wk-t">This week · {{ week.label }}</div>
+        <div class="wk-h">
+          {% if week.prev %}<a class="wk-a" href="{{ week.prev }}" rel="nofollow" aria-label="이전 주">‹</a>{% else %}<span class="wk-a off">‹</span>{% endif %}
+          <div class="wk-t">{{ week.title }} · {{ week.label }}</div>
+          {% if week.next %}<a class="wk-a" href="{{ week.next }}" rel="nofollow" aria-label="다음 주">›</a>{% else %}<span class="wk-a off">›</span>{% endif %}
+        </div>
+        {% if week.reset %}<a class="wk-x" href="{{ week.reset }}">주 필터 해제 ×</a>{% endif %}
         <div class="wk-g">
           {% for c in week.cats %}
             <a class="wk-c cat-{{ c.key }}{{ ' on' if c.active }}" href="{{ c.href }}">
