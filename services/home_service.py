@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
-from core.constant import CATEGORIES, IMPORTANT_MIN, KST, PAGE_SIZE, TOPICS
+from core.constant import CATEGORIES, IMPORTANT_MIN, KST, MIN_WEEK, PAGE_SIZE, TOPICS
 from crud import item_crud
 
 WEEKDAYS = "월화수목금토일"
@@ -41,8 +41,31 @@ def _week_start(now: datetime) -> datetime:
     return datetime.combine(monday, time.min, tzinfo=KST)
 
 
+def _week_title(offset: int) -> tuple[str, str]:
+    """주 오프셋에 맞는 영어 제목과 한국어 이름을 돌려준다.
+
+    Args:
+        offset: 0이면 이번 주, -1이면 지난주, -2이면 2주 전
+    Returns:
+        `("This week", "이번 주")` 같은 묶음
+    """
+    if offset == 0:
+        return "This week", "이번 주"
+    if offset == -1:
+        return "Last week", "지난주"
+    return f"{-offset} weeks ago", f"{-offset}주 전"
+
+
 def build_home(
-    db: Session, tool: str, tab: str, category: str, topic: str, q: str, page: int = 1, now: datetime | None = None
+    db: Session,
+    tool: str,
+    tab: str,
+    category: str,
+    topic: str,
+    q: str,
+    page: int = 1,
+    week: int | None = None,
+    now: datetime | None = None,
 ) -> dict:
     """홈 화면에 필요한 값을 모두 만든다.
 
@@ -54,15 +77,24 @@ def build_home(
         topic: 주제 필터
         q: 검색어
         page: 쪽 번호. 전체 쪽 수를 넘으면 마지막 쪽으로 본다
+        week: 0이면 이번 주, -1이면 지난주처럼 보고 싶은 주. 값이 있으면 목록도 그 주의 글만 보여주고, 비우면 이번 주 집계만 보여준다
         now: 기준 시각. 비우면 현재 시각
     Returns:
         템플릿에 넘길 값
     """
     now = now or datetime.now(KST)
     tab = tab if tab in ("imp", "risk") else "all"
+    offset = week or 0
     params = {
         key: value
-        for key, value in (("tool", tool), ("tab", tab if tab != "all" else ""), ("type", category), ("topic", topic), ("q", q))
+        for key, value in (
+            ("tool", tool),
+            ("tab", tab if tab != "all" else ""),
+            ("type", category),
+            ("topic", topic),
+            ("q", q),
+            ("week", str(week) if week is not None else ""),
+        )
         if value
     }
 
@@ -79,10 +111,19 @@ def build_home(
         for s in sources
     ]
 
-    start = _week_start(now)
-    week_counts = item_crud.count_categories_since(db, start, now)
-    week = {
-        "label": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~",
+    start = _week_start(now) + timedelta(weeks=offset)
+    end = start + timedelta(weeks=1)
+    until = min(end, now + timedelta(microseconds=1))
+    week_counts = item_crud.count_categories_since(db, start, until - timedelta(microseconds=1))
+    title_en, title_ko = _week_title(offset)
+    last_day = end - timedelta(days=1)
+    week_box = {
+        "title": title_en,
+        "label": f"{start:%m-%d} ({WEEKDAYS[start.weekday()]}) ~"
+        + (f" {last_day:%m-%d} ({WEEKDAYS[last_day.weekday()]})" if offset < 0 else ""),
+        "prev": _url(params, week=str(offset - 1)) if offset > MIN_WEEK else None,
+        "next": _url(params, week=str(offset + 1)) if week is not None and offset < 0 else None,
+        "reset": _url(params, week=str(offset)) if week is not None else None,
         "cats": [
             {
                 "key": key,
@@ -96,12 +137,13 @@ def build_home(
         ],
     }
 
+    span = (start, until) if week is not None else (None, None)
     no_tab = {k: v for k, v in params.items() if k != "tab"}
     tabs = [
         {
             "label": label,
             "short": short,
-            "count": item_crud.count_items(db, tool, key, category, topic, q),
+            "count": item_crud.count_items(db, tool, key, category, topic, q, *span),
             "active": key == tab,
             "href": _url(no_tab, tab=None if key == "all" else key),
         }
@@ -117,7 +159,9 @@ def build_home(
     page = min(page, pages)
     more = _url(params, page=str(page + 1)) if page < pages else None
 
-    for item, entry, source in item_crud.list_items(db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE):
+    for item, entry, source in item_crud.list_items(
+        db, tool, tab, category, topic, q, PAGE_SIZE, (page - 1) * PAGE_SIZE, *span
+    ):
         date = entry.published_at.astimezone(KST).strftime("%m-%d")
         symbol, label = CATEGORIES.get(item.category, ("", ""))
         rows.append(
@@ -143,12 +187,14 @@ def build_home(
         active.append({"label": next((t["name"] for t in tools if t["active"]), tool), "href": _url(params, tool=tool)})
     if topic:
         active.append({"label": topic, "href": _url(params, topic=topic)})
+    if week is not None:
+        active.append({"label": title_ko, "href": week_box["reset"]})
 
     return {
         "tools": tools,
         "total": sum(t["count"] for t in tools),
         "all_href": _url(params, tool=None),
-        "week": week,
+        "week": week_box,
         "tabs": tabs,
         "topics": topics,
         "topic": topic,
