@@ -12,12 +12,23 @@ class Settings(BaseSettings):
     POSTGRESQL_SERVER: str = "db"
     POSTGRESQL_PORT: int = 5432
     POSTGRESQL_DATABASE: str
+    POOL_SIZE: int = 5
+    MAX_OVERFLOW: int = 10
+    POOL_RECYCLE: int = 3600
+    POOL_TIMEOUT: int = 30
+    POOL_PRE_PING: bool = True
+    AUTO_CREATE_TABLES: bool = True
     GITHUB_TOKEN: str = ""
     POLL_INTERVAL_MIN: int = 30
-    LLM_BASE_URL: str = ""
-    LLM_MODEL: str = ""
-    LLM_API_KEY: str = ""
-    LLM_TIMEOUT_SEC: int = 180
+    LM_STUDIO_BASE_URL: str = ""
+    LM_STUDIO_MODEL: str = ""
+    LM_STUDIO_API_KEY: str = ""
+    LM_STUDIO_TIMEOUT: int = 180
+    LLM_TEMPERATURE: float = 0.1
+    LLM_TOP_P: float = 0.9
+    LLM_TOP_K: int = 40
+    LLM_REPEAT_PENALTY: float = 1.0
+    LLM_MAX_TOKENS: int = 4096
     LLM_MAX_RETRIES: int = 2
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

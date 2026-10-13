@@ -20,16 +20,19 @@ def complete(messages: list[dict], schema: dict) -> str:
     Raises:
         LlmUnavailable: 주소나 모델이 비어 있거나, 서버에 닿지 못하거나, 401 · 404 · 5xx를 받았을 때
     """
-    if not settings.LLM_BASE_URL or not settings.LLM_MODEL:
-        raise LlmUnavailable("LLM_BASE_URL과 LLM_MODEL을 .env에 설정하세요")
+    if not settings.LM_STUDIO_BASE_URL or not settings.LM_STUDIO_MODEL:
+        raise LlmUnavailable("LM_STUDIO_BASE_URL과 LM_STUDIO_MODEL을 .env에 설정하세요")
 
-    headers = {"Authorization": f"Bearer {settings.LLM_API_KEY}"} if settings.LLM_API_KEY else {}
-    url = settings.LLM_BASE_URL.rstrip("/") + "/chat/completions"
+    headers = {"Authorization": f"Bearer {settings.LM_STUDIO_API_KEY}"} if settings.LM_STUDIO_API_KEY else {}
+    url = settings.LM_STUDIO_BASE_URL.rstrip("/") + "/chat/completions"
     body = {
-        "model": settings.LLM_MODEL,
+        "model": settings.LM_STUDIO_MODEL,
         "messages": messages,
-        "temperature": 0.1,
-        "max_tokens": 4096,
+        "temperature": settings.LLM_TEMPERATURE,
+        "top_p": settings.LLM_TOP_P,
+        "top_k": settings.LLM_TOP_K,
+        "repeat_penalty": settings.LLM_REPEAT_PENALTY,
+        "max_tokens": settings.LLM_MAX_TOKENS,
         "response_format": {
             "type": "json_schema",
             "json_schema": {"name": "release_summary", "strict": True, "schema": schema},
@@ -37,14 +40,14 @@ def complete(messages: list[dict], schema: dict) -> str:
     }
 
     try:
-        response = httpx.post(url, json=body, headers=headers, timeout=settings.LLM_TIMEOUT_SEC)
+        response = httpx.post(url, json=body, headers=headers, timeout=settings.LM_STUDIO_TIMEOUT)
         if response.status_code == 400:
             del body["response_format"]
-            response = httpx.post(url, json=body, headers=headers, timeout=settings.LLM_TIMEOUT_SEC)
+            response = httpx.post(url, json=body, headers=headers, timeout=settings.LM_STUDIO_TIMEOUT)
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         code = exc.response.status_code
-        hint = {401: "LLM_API_KEY가 없거나 틀렸습니다", 404: "LLM_MODEL 이름이 LM Studio에 없습니다"}.get(code, "")
+        hint = {401: "LM_STUDIO_API_KEY가 없거나 틀렸습니다", 404: "LM_STUDIO_MODEL 이름이 LM Studio에 없습니다"}.get(code, "")
         raise LlmUnavailable(f"LM Studio 응답 {code} {hint}".strip()) from exc
     except httpx.HTTPError as exc:
         raise LlmUnavailable(f"LM Studio에 닿지 못했습니다 ({exc.__class__.__name__})") from exc
