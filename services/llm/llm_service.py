@@ -12,10 +12,12 @@ from core.constants.prompts import SYSTEM_PROMPT
 from core.constants.taxonomy import TOPICS
 from core.logger import get_logger, log_event
 from crud import item_crud
+from db.session import SessionLocal
 from models.entry_model import Entry
 from models.item_model import Item
 from models.source_model import Source
 from services.llm import lm_client
+from services.llm.lm_client import LlmUnavailable
 
 logger = get_logger("summarizer")
 llm_logger = get_logger("llm")
@@ -174,3 +176,28 @@ def summarize_pending(db: Session, limit: int) -> list[tuple[Item, Entry, Source
                 sum(1 for row in batch if row[0].status == "failed"),
             )
     return processed
+
+
+def summarize_job() -> None:
+    """스케줄러가 주기적으로 부른다. 요약 대기 항목을 `SUMMARIZE_BATCH_LIMIT`개까지 요약한다.
+
+    LM Studio에 닿지 못하면 경고만 남기고 끝낸다 (다음 주기에 다시 시도). 한 번에 하나만 돈다.
+    """
+    with SessionLocal() as db:
+        try:
+            rows = summarize_pending(db, settings.SUMMARIZE_BATCH_LIMIT)
+        except LlmUnavailable as exc:
+            db.rollback()
+            logger.warning("summarize: 중단 (%s)", exc)
+            return
+        except Exception:
+            db.rollback()
+            logger.exception("summarize: 실패")
+            return
+    if rows:
+        logger.info(
+            "summarize: %d건 처리 (완료 %d, 실패 %d)",
+            len(rows),
+            sum(1 for row in rows if row[0].status == "done"),
+            sum(1 for row in rows if row[0].status == "failed"),
+        )

@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -13,13 +13,14 @@ from core.logger import purge_old_logs, setup_logging
 from core.middleware import access_log
 from db.init_db import init_db
 from services.collector.poller_service import poll_all
+from services.llm.llm_service import summarize_job
 
 setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """시작할 때 테이블과 기본 소스를 준비하고, 일정 주기로 소스를 가져오는 스케줄러를 켠다.
+    """시작할 때 테이블과 기본 소스를 준비하고, 일정 주기로 소스를 가져오고 새 항목을 요약하는 스케줄러를 켠다.
 
     Args:
         app: 앱 인스턴스
@@ -36,6 +37,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         max_instances=1,
         coalesce=True,
     )
+    if settings.AUTO_SUMMARIZE:
+        scheduler.add_job(
+            summarize_job,
+            "interval",
+            minutes=settings.SUMMARIZE_INTERVAL_MIN,
+            next_run_time=datetime.now() + timedelta(seconds=30),
+            max_instances=1,
+            coalesce=True,
+        )
     scheduler.add_job(purge_old_logs, "cron", hour=3, minute=0, next_run_time=datetime.now())
     scheduler.start()
     yield
