@@ -118,13 +118,13 @@ def summarize_batch(source: Source, entry: Entry, items: list[Item]) -> None:
             item.importance = summary.importance
             item.summary_ko = summary.summary_ko
             item.status = "done"
-            item.model = settings.LLM_MODEL
+            item.model = settings.LM_STUDIO_MODEL
             item.prompt_version = PROMPT_VERSION
             item.error = None
 
     for item in waiting.values():
         item.status = "failed"
-        item.model = settings.LLM_MODEL
+        item.model = settings.LM_STUDIO_MODEL
         item.prompt_version = PROMPT_VERSION
         item.error = "검증 실패 (재시도 횟수 초과)"
 
