@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     LLM_REPEAT_PENALTY: float = 1.0
     LLM_MAX_TOKENS: int = 4096
     LLM_MAX_RETRIES: int = 2
+    LOG_DIR: str = "logs"
+    LOG_RETENTION_DAYS: int = 30
+    TRUST_PROXY: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
