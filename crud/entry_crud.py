@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 
-from sqlalchemy import Select, exists, func, select
+from sqlalchemy import Select, exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from core.constants.page import IMPORTANT_MIN
@@ -58,6 +58,35 @@ def count_entries_by_category_since(db: Session, since: datetime, until: datetim
     return {category: count for category, count in db.execute(stmt).all()}
 
 
+def item_matches(q: str):
+    """항목의 요약, 주제, 영어 원문 중 하나라도 검색어를 포함하는지 나타내는 조건을 만든다. 대소문자를 가리지 않고, 값이 비어 있어도 NULL이 아니라 참 · 거짓으로 나온다 (정렬에 쓰기 위해)."""
+    return or_(
+        func.coalesce(Item.summary_ko, "").icontains(q, autoescape=True),
+        func.coalesce(Item.topic, "").icontains(q, autoescape=True),
+        Item.raw_text.icontains(q, autoescape=True),
+    )
+
+
+def entry_hits(db: Session, entry_ids: list[int], q: str) -> dict[int, int]:
+    """글마다 검색어와 일치하는 항목 개수를 돌려준다.
+
+    Args:
+        db: DB 세션
+        entry_ids: 글 ID 목록
+        q: 검색어
+    Returns:
+        글 ID별 일치 항목 수. 일치하는 항목이 없는 글은 들어 있지 않다
+    """
+    if not entry_ids or not q:
+        return {}
+    stmt = (
+        select(Item.entry_id, func.count(Item.id))
+        .where(Item.entry_id.in_(entry_ids), item_matches(q))
+        .group_by(Item.entry_id)
+    )
+    return {entry_id: count for entry_id, count in db.execute(stmt).all()}
+
+
 def _item_conditions(tab: str, category: str, topic: str) -> list:
     """항목에 걸 조건(탭, 유형, 주제)을 만든다. 조건이 없으면 빈 목록이다."""
     conditions = []
@@ -81,7 +110,7 @@ def _entry_filter(stmt: Select, tool: str, tab: str, category: str, topic: str, 
         tab: `all`, `imp`(중요), `risk`(breaking · 보안)
         category: 유형 값. 빈 문자열이면 거르지 않는다
         topic: 주제 값. 빈 문자열이면 거르지 않는다
-        q: 검색어. 도구 이름, 버전, 제목이나 항목의 요약, 주제에서 부분 일치를 찾는다
+        q: 검색어. 도구 이름, 버전, 제목이나 항목의 요약, 주제, 영어 원문에서 부분 일치를 찾는다
     Returns:
         조건이 붙은 조회문
     """
@@ -91,10 +120,7 @@ def _entry_filter(stmt: Select, tool: str, tab: str, category: str, topic: str, 
     if conditions:
         stmt = stmt.where(exists().where(Item.entry_id == Entry.id, *conditions))
     if q:
-        in_items = exists().where(
-            Item.entry_id == Entry.id,
-            Item.summary_ko.icontains(q, autoescape=True) | Item.topic.icontains(q, autoescape=True),
-        )
+        in_items = exists().where(Item.entry_id == Entry.id, item_matches(q))
         stmt = stmt.where(
             Source.name.icontains(q, autoescape=True)
             | Entry.version.icontains(q, autoescape=True)
@@ -182,17 +208,18 @@ def entry_stats(db: Session, entry_ids: list[int]) -> dict[int, dict]:
 
 
 def top_items(
-    db: Session, entry_ids: list[int], tab: str, category: str, topic: str, per_entry: int
+    db: Session, entry_ids: list[int], tab: str, category: str, topic: str, per_entry: int, q: str = ""
 ) -> dict[int, list[Item]]:
     """글마다 화면에 펼쳐 보일 항목을 중요도 높은 순으로 최대 `per_entry`개 돌려준다.
 
-    요약이 끝난 항목이 먼저 오고, 같으면 중요도가 높은 항목, 그다음 원문 순서다. 원문(`raw_text`)도 함께 읽는다 (화면의 "원문" 비교용).
+    검색어(`q`)가 있으면 일치하는 항목이 먼저 오고, 그다음은 요약이 끝난 항목, 중요도가 높은 항목, 원문 순서다. 원문(`raw_text`)도 함께 읽는다 (화면의 "원문" 비교용).
 
     Args:
         db: DB 세션
         entry_ids: 글 ID 목록
         tab, category, topic: 화면 필터 (`_item_conditions` 참고)
         per_entry: 글마다 가져올 최대 개수
+        q: 검색어. 비어 있으면 쓰지 않는다
     Returns:
         글 ID별 항목 목록
     """
@@ -206,6 +233,7 @@ def top_items(
             .over(
                 partition_by=Item.entry_id,
                 order_by=(
+                    *((item_matches(q).desc(),) if q else ()),
                     (Item.status == "done").desc(),
                     Item.importance.desc().nulls_last(),
                     Item.seq,
