@@ -26,6 +26,45 @@
   text-underline-offset: 3px;
 }
 
+/* ── 약관 · 처리방침 · 문의 ── */
+.doc {
+  max-width: 760px;
+  padding-bottom: 24px;
+}
+
+.doc h2 {
+  margin: 36px 0 8px;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.doc p,
+.doc li {
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+
+.doc p {
+  margin: 8px 0;
+}
+
+.doc ul {
+  margin: 8px 0;
+  padding-left: 22px;
+}
+
+.doc b {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.upd {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--dim);
+}
+
 /* ── 소개 목록 ── */
 .about {
   max-width: 680px;

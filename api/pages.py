@@ -75,3 +75,39 @@ def about_page(request: Request) -> HTMLResponse:
         렌더링한 소개 페이지
     """
     return templates.TemplateResponse(request, "about.html", {})
+
+
+@page_router.get("/privacy", response_class=HTMLResponse)
+def privacy_page(request: Request) -> HTMLResponse:
+    """개인정보 처리방침 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        렌더링한 개인정보 처리방침 페이지
+    """
+    return templates.TemplateResponse(request, "privacy.html", {})
+
+
+@page_router.get("/terms", response_class=HTMLResponse)
+def terms_page(request: Request) -> HTMLResponse:
+    """이용약관 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        렌더링한 이용약관 페이지
+    """
+    return templates.TemplateResponse(request, "terms.html", {})
+
+
+@page_router.get("/contact", response_class=HTMLResponse)
+def contact_page(request: Request) -> HTMLResponse:
+    """문의 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        렌더링한 문의 페이지
+    """
+    return templates.TemplateResponse(request, "contact.html", {})
