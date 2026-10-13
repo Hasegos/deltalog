@@ -39,6 +39,32 @@ def add_entry(db: Session, entry: Entry, item_texts: list[str]) -> None:
     db.add_all(Item(entry_id=entry.id, seq=i, raw_text=text) for i, text in enumerate(item_texts, start=1))
 
 
+def has_versions(db: Session, source_id: int) -> bool:
+    """소스의 글 중 버전이 있는 글이 있는지 알려준다.
+
+    Args:
+        db: DB 세션
+        source_id: 소스 ID
+    Returns:
+        버전이 있으면 `True`
+    """
+    return db.scalar(select(Entry.id).where(Entry.source_id == source_id, Entry.version != "", Entry.version.is_not(None)).limit(1)) is not None
+
+
+def list_source_entries(db: Session, source_id: int, limit: int = 300) -> list[Entry]:
+    """소스의 글을 게시일 최신순으로 돌려준다.
+
+    Args:
+        db: DB 세션
+        source_id: 소스 ID
+        limit: 최대 개수
+    Returns:
+        글 목록
+    """
+    stmt = select(Entry).where(Entry.source_id == source_id).order_by(Entry.published_at.desc()).limit(limit)
+    return list(db.scalars(stmt))
+
+
 def latest_per_source(db: Session, since: datetime) -> dict[int, tuple[Entry, int]]:
     """소스마다 가장 최근 글과, `since` 이후에 나온 글 개수를 돌려준다.
 
