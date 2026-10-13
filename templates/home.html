@@ -114,6 +114,7 @@
                 <span class="ty cat-{{ i.category }}">{{ i.symbol }}</span>
                 <span class="xt">{{ i.summary }}</span>
                 {% if i.topic %}<span class="xg"># {{ i.topic }}</span>{% endif %}
+                <details class="og"><summary>원문</summary><p lang="en">{{ i.raw }}</p></details>
               </li>
               {% endfor %}
             </ul>
@@ -121,6 +122,7 @@
             {% else %}
             <p class="xm">변경 항목 {{ r.count }}개 · 요약이 만들어지면 여기에 항목별 요약이 나옵니다.</p>
             {% endif %}
+            <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.name ~ ' ' ~ r.version) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
             <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
           </div>
         </details>

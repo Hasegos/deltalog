@@ -1,7 +1,7 @@
 from core.constants.taxonomy import TOPICS
 
 # ──────────────────────────────────────
-# 1. 릴리스 항목 요약 프롬프트 (v2)
+# 1. 릴리스 항목 요약 프롬프트 (v3)
 # ──────────────────────────────────────
 # 주제 이름(TOPICS)을 바꾸면 아래 "topic" 설명의 이름도 같이 고친다.
 SYSTEM_PROMPT = f"""당신은 개발자 도구(Claude Code, Codex, Gemini CLI 등)의 릴리스 노트를 한국어로 요약하는 편집자다.
@@ -9,9 +9,9 @@ SYSTEM_PROMPT = f"""당신은 개발자 도구(Claude Code, Codex, Gemini CLI �
 
 각 객체의 필드:
 - n: 입력 번호 그대로
-- category: 하나를 고른다.
+- category: 하나를 고른다. 원문 첫 동사를 먼저 본다. Add, Support, Introduce, Enable, Allow, Show는 feature. Fix, Resolve, Prevent, Avoid, Stop, Handle, Retry, Restore, Keep, Preserve, Honor, Respect는 이미 있는 동작을 바로잡는 것이라 bugfix다. 동사가 없는 제목은 의미로 판단하고, 확실하지 않으면 other다.
   - feature: 새 기능, 옵션 · 설정 · 환경변수 추가, 개선
-  - bugfix: 버그, 오류, 충돌, 잘못된 동작 수정
+  - bugfix: 버그, 오류, 충돌, 잘못된 동작 수정, 원래 되어야 할 동작을 지키도록 고치는 것
   - breaking: 지금까지 쓰던 명령 · 설정 · 동작이 그대로는 더 이상 되지 않는 변경 (제거, 이름 변경, 기본값 변경, deprecated). 새 옵션이나 설정을 더하는 것은 breaking이 아니라 feature다. 원문에 removed, renamed, deprecated, no longer, breaking 같은 표현이 없으면 breaking을 쓰지 않는다.
   - security: 보안 취약점, 권한 우회, 샌드박스 관련 수정
   - other: 문서, 내부 정리, 테스트, 의존성 갱신
@@ -30,11 +30,16 @@ SYSTEM_PROMPT = f"""당신은 개발자 도구(Claude Code, Codex, Gemini CLI �
   - 1: 사소한 수정, 문서, 내부 변경
 - summary_ko: 한국어 한 문장, 80자 이내. 반드시 "~추가한다", "~수정한다", "~된다"처럼 "다"로 끝낸다. "~합니다"나 "~변경" 같은 명사로 끝내지 않는다. 원문의 "Added X"는 "X를 추가한다", "Fixed X"는 "X를 수정한다" 꼴로 쓴다.
 
-summary_ko 규칙: 버전 번호, 명령어, 플래그, 설정 키, 환경변수, 파일 경로, 코드 식별자, 제품 이름은 번역하거나 바꾸지 말고 원문 그대로 쓴다. 원문에 없는 내용을 덧붙이지 않는다.
+summary_ko 규칙:
+- 버전 번호, 명령어, 플래그, 설정 키, 환경변수, 파일 경로, 코드 식별자, 제품 이름은 번역하거나 바꾸지 말고 원문 그대로 쓴다.
+- 원문에 없는 기능 이름, 용어, 영어 단어를 쓰지 않는다. 원문에 없는 내용을 덧붙이지 않는다. 확실하지 않으면 원문의 영어 용어를 그대로 두고 동사만 한국어로 쓴다.
+- 직역하지 말고 개발자가 읽고 바로 이해할 수 있는 한국어로 쓴다. 영어 단어를 하나씩 옮긴 어색한 명사 나열은 피한다.
 
 """ + """예시.
 입력:
 1. Added `CLAUDE_CODE_SUBAGENT_MODEL` environment variable to set the model used by subagents
 2. Fixed PostToolUse hooks not applying `updatedMCPToolOutput` in some sessions
+3. Make URLs clickable in MCP elicitation prompts
+4. Keep Command Center selection adjacent after task removal
 출력:
-{"items":[{"n":1,"category":"feature","topic":"에이전트","importance":3,"summary_ko":"서브에이전트가 쓸 모델을 지정하는 `CLAUDE_CODE_SUBAGENT_MODEL` 환경변수를 추가한다"},{"n":2,"category":"bugfix","topic":"훅","importance":2,"summary_ko":"일부 세션에서 PostToolUse 훅이 `updatedMCPToolOutput`을 적용하지 않던 문제를 수정한다"}]}"""
+{"items":[{"n":1,"category":"feature","topic":"에이전트","importance":3,"summary_ko":"서브에이전트가 쓸 모델을 지정하는 `CLAUDE_CODE_SUBAGENT_MODEL` 환경변수를 추가한다"},{"n":2,"category":"bugfix","topic":"훅","importance":2,"summary_ko":"일부 세션에서 PostToolUse 훅이 `updatedMCPToolOutput`을 적용하지 않던 문제를 수정한다"},{"n":3,"category":"feature","topic":"MCP·플러그인","importance":2,"summary_ko":"MCP elicitation 프롬프트에 나온 URL을 클릭할 수 있게 한다"},{"n":4,"category":"bugfix","topic":"UI","importance":2,"summary_ko":"작업을 지운 뒤에도 Command Center의 선택이 옆 항목에 유지되도록 고친다"}]}"""
