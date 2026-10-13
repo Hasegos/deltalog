@@ -23,13 +23,16 @@
 
   <main>
     <section class="hero">
-      <div class="wordmark">DELTA<br>LOG</div>
+      <div class="hero-t">
+        <h1>AI 코딩 도구,<br>이번엔 뭐가 바뀌었나</h1>
+        <p class="tagline">Claude Code, Codex 같은 개발 도구의 릴리스 노트를 한국어로 요약하고, 중요한 변경부터 보여줍니다.</p>
+      </div>
       <div class="wk">
         <div class="wk-t">Last 7 days · {{ week.label }}</div>
         <div class="wk-g">
           {% for c in week.cats %}
-            <a class="wk-c cat-{{ c.key }}{{ ' on' if c.active }}" href="{{ c.href }}" title="{{ c.label }} 항목이 있는 릴리스 {{ c.count }}개">
-              <b>{{ c.symbol }}{{ c.count }}</b>
+            <a class="wk-c{{ ' on' if c.active }}" href="{{ c.href }}" title="{{ c.label }} 항목이 있는 릴리스 {{ c.count }}개">
+              <b class="cat-{{ c.key }}">{{ c.symbol }}{{ c.count }}</b>
               <span>{{ c.label }}</span>
             </a>
           {% endfor %}
@@ -37,10 +40,40 @@
         {% if week.pending %}<div class="wk-n">릴리스 수 기준 · 요약 대기 {{ week.pending }}건</div>{% endif %}
       </div>
     </section>
-    <p class="tagline">AI 코딩 도구와 IDE의 릴리스 노트를 한국어로 요약해 한곳에 모았습니다.</p>
+
+    {% if highlights %}
+    <section class="blk">
+      <h2 class="sec">주요 변경 <span>중요도 {{ important_min }} 이상</span></h2>
+      <div class="hl-g">
+        {% for h in highlights %}
+        <a class="hl-c" href="{{ h.url }}" target="_blank" rel="noopener">
+          <span class="hl-m"><span class="cat-{{ h.category }}">{{ h.symbol }} {{ h.type_label }}</span><span>{{ h.name }} {{ h.version }} · {{ h.ago }}</span></span>
+          <span class="hl-t">{{ h.summary }}</span>
+          {% if h.topic %}<span class="hl-p"># {{ h.topic }}</span>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
     <section class="blk tools-d" id="tools">
-      <div class="chs">{{ tool_chips(tools, total, all_href) }}</div>
+      <h2 class="sec">도구 <span>최신 버전</span></h2>
+      <div class="st-g">
+        {% for t in status_tools %}
+          {% if t.ready %}
+          <a class="st{{ ' on' if t.active }}" href="{{ t.href }}">
+            <b>{{ t.name }}</b>
+            <span class="st-v">{{ t.version }}</span>
+            <span class="st-a">{{ t.ago }}{% if t.recent %} · 7일 {{ t.recent }}건{% endif %}</span>
+          </a>
+          {% else %}
+          <div class="st off">
+            <b>{{ t.name }}</b>
+            <span class="st-v">수집 준비 중</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
     </section>
 
     <section class="blk">
@@ -48,7 +81,7 @@
         {% for k, v in hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
         <label class="srch">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input type="search" name="q" value="{{ q }}" placeholder="검색: 도구, 기능, 키워드" aria-label="검색">
+          <input type="search" name="q" value="{{ q }}" placeholder="검색: mcp, hook, 서브에이전트…  ( / )" aria-label="검색" autocomplete="off">
         </label>
         <details class="fb">
           <summary>필터{% if active %} {{ active | length }}{% endif %}</summary>
@@ -85,26 +118,23 @@
 
       <div class="list">
         {% for r in rows %}
-        {% if r.show_week %}
-        <div class="wd" data-week="{{ r.week }}"><b>{{ r.week_name }}</b><span>{{ r.week_range }}</span></div>
+        {% if r.show_day %}
+        <div class="dd" data-day="{{ r.day }}"><b>{{ r.day_label }}</b></div>
         {% endif %}
-        <details class="tr" data-week="{{ r.week }}"{{ " open" if q and r.hits }}>
+        <details class="tr" data-day="{{ r.day }}" data-cat="{{ r.category }}"{{ " open" if q and r.hits }}>
           <summary>
-            <span class="dt">{% if r.show_date %}{{ r.date }}{% endif %}</span>
+            <span class="dot" aria-hidden="true"></span>
             <span class="main">
-              <span class="nm"><b>{{ r.name | mark(q) }}</b><span>{{ r.version | mark(q) }}</span></span>
+              <span class="nm"><b>{{ r.name | mark(q) }}</b><span class="vr">{{ r.version | mark(q) }}</span><span class="ag">{{ r.ago }}</span></span>
               <span class="sm">
                 {% if r.headline %}{{ r.headline | mark(q) }}{% if r.count > 1 %} <em>외 {{ r.count - 1 }}개</em>{% endif %}{% if q and r.hits %} <em>· 일치 {{ r.hits }}개</em>{% endif %}
                 {% else %}요약 대기 중 · 변경 항목 {{ r.count }}개{% endif %}
               </span>
-              <span class="mt">
-                <span>{{ r.date }}</span>
-                {% if r.category %}<span class="ty cat-{{ r.category }}">{{ r.symbol }} {{ r.type_label }}</span>{% endif %}
-                {% if r.importance %}<span class="im">{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}</span>{% endif %}
-              </span>
             </span>
-            <span class="ty d cat-{{ r.category }}">{% if r.category %}{{ r.symbol }} {{ r.type_label }}{% endif %}</span>
-            <span class="im d">{% if r.importance %}{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}{% endif %}</span>
+            <span class="meta">
+              {% for c in r.cats %}<span class="bd cat-{{ c.key }}" title="{{ c.count }}개">{{ c.symbol }}{{ c.count }}</span>{% endfor %}
+              {% if r.importance %}<span class="im" title="중요도 {{ r.importance }}">{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}</span>{% endif %}
+            </span>
           </summary>
           <div class="xp">
             {% if r.lines %}
@@ -123,7 +153,7 @@
             <p class="xm">변경 항목 {{ r.count }}개 · 요약이 만들어지면 여기에 항목별 요약이 나옵니다.</p>
             {% endif %}
             <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.name ~ ' ' ~ r.version) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
-            <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
+            <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
           </div>
         </details>
         {% else %}

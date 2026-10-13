@@ -1,5 +1,7 @@
 /* =============================
   common.css — 전체 공통 스타일
+  색: 따뜻한 종이색(밝은 테마)과 숯색(어두운 테마). 유형 색은 diff에서 가져왔다.
+  글꼴: 시스템 글꼴만 쓴다 (외부 글꼴 요청 없음).
   ============================= */
 
 /* ── Reset ── */
@@ -9,36 +11,105 @@
 
 /* ── Variables ── */
 :root {
-  --bg:        #000;
-  --fg:        #ededed;
-  --muted:     #a1a1a1;
-  --dim:       #878787;
-  --faint:     #6b6b6b;
-  --line:      #1f1f1f;
-  --line-soft: #161616;
-  --panel:     #0a0a0a;
-  --red:       #ff6369;
-  --amber:     #f5a524;
+  --bg:        #f7f5f0;
+  --surface:   #ffffff;
+  --fg:        #1c1b18;
+  --muted:     #55514a;
+  --dim:       #6f6a60;
+  --faint:     #8d877b;
+  --line:      #e3ded2;
+  --line-soft: #ebe7dc;
+  --hover:     #efece3;
+  --accent:    #3451d1;
+  --accent-bg: #e8ecfb;
+  --on-fg:     #f7f5f0;
+  --mark:      rgba(250, 204, 21, .45);
 
-  --sans: "Geist", "Noto Sans KR", sans-serif;
-  --mono: "Geist Mono", "Noto Sans KR", monospace;
-  --pixel: "Press Start 2P", monospace;
+  --c-feature:  #167a48;
+  --c-bugfix:   #566273;
+  --c-breaking: #c3352b;
+  --c-security: #a96a0a;
+  --c-other:    #6f6a60;
+
+  --sans: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "D2Coding", monospace;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #131210;
+    --surface:   #1b1a17;
+    --fg:        #f0ede5;
+    --muted:     #b5b0a4;
+    --dim:       #9a9488;
+    --faint:     #7d786d;
+    --line:      #2d2b26;
+    --line-soft: #23211d;
+    --hover:     #1f1e1a;
+    --accent:    #8ea2f5;
+    --accent-bg: #222844;
+    --on-fg:     #131210;
+    --mark:      rgba(250, 204, 21, .32);
+
+    --c-feature:  #4cc38a;
+    --c-bugfix:   #94a0b2;
+    --c-breaking: #ff7b72;
+    --c-security: #e0a63e;
+    --c-other:    #9a9488;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:        #131210;
+  --surface:   #1b1a17;
+  --fg:        #f0ede5;
+  --muted:     #b5b0a4;
+  --dim:       #9a9488;
+  --faint:     #7d786d;
+  --line:      #2d2b26;
+  --line-soft: #23211d;
+  --hover:     #1f1e1a;
+  --accent:    #8ea2f5;
+  --accent-bg: #222844;
+  --on-fg:     #131210;
+  --mark:      rgba(250, 204, 21, .32);
+
+  --c-feature:  #4cc38a;
+  --c-bugfix:   #94a0b2;
+  --c-breaking: #ff7b72;
+  --c-security: #e0a63e;
+  --c-other:    #9a9488;
+
+  color-scheme: dark;
 }
 
 /* ── Base ── */
 body {
   margin: 0 auto;
-  max-width: 1200px;
+  max-width: 1120px;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--sans);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+a:focus-visible,
+summary:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 summary {
@@ -50,34 +121,67 @@ summary::-webkit-details-marker {
   display: none;
 }
 
+/* ── 유형 색 ── */
+.cat-feature  { color: var(--c-feature); }
+.cat-bugfix   { color: var(--c-bugfix); }
+.cat-breaking { color: var(--c-breaking); }
+.cat-security { color: var(--c-security); }
+.cat-other    { color: var(--c-other); }
+
 /* ── Header ── */
 .top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 32px;
+  gap: 24px;
+  padding: 18px 32px;
 }
 
 .brand {
-  font-family: var(--pixel);
-  font-size: 14px;
-  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.2px;
 }
 
-.brand b {
-  font-weight: 400;
-  color: var(--dim);
+.brand i {
+  font-style: normal;
+  color: var(--accent);
 }
 
 .nav {
   display: flex;
-  gap: 20px;
+  gap: 22px;
+  margin-left: auto;
   font-size: 15px;
   color: var(--muted);
 }
 
 .nav a:hover {
   color: var(--fg);
+}
+
+.theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.theme:hover {
+  color: var(--fg);
+  background: var(--hover);
 }
 
 /* ── Header: 모바일 메뉴 ── */
@@ -100,11 +204,12 @@ summary::-webkit-details-marker {
   right: 0;
   top: 44px;
   z-index: 5;
-  min-width: 120px;
+  min-width: 140px;
   padding: 6px;
-  background: var(--panel);
+  background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
 }
 
 .menu div a {
@@ -115,7 +220,7 @@ summary::-webkit-details-marker {
 
 /* ── Footer ── */
 .foot {
-  margin-top: 64px;
+  margin-top: 72px;
   padding: 40px 32px 24px;
   border-top: 1px solid var(--line);
   font-size: 14px;
@@ -160,15 +265,15 @@ summary::-webkit-details-marker {
 }
 
 .foot-col .foot-brand {
-  font-family: var(--pixel);
-  font-size: 14px;
-  letter-spacing: 1px;
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 700;
   color: var(--fg);
 }
 
-.foot-brand b {
-  font-weight: 400;
-  color: var(--dim);
+.foot-brand i {
+  font-style: normal;
+  color: var(--accent);
 }
 
 .foot-bottom {
@@ -186,6 +291,7 @@ summary::-webkit-details-marker {
 /* ── Responsive ── */
 @media (max-width: 560px) {
   .top {
+    gap: 12px;
     padding: 12px 16px;
   }
 
@@ -195,6 +301,10 @@ summary::-webkit-details-marker {
 
   .menu {
     display: block;
+  }
+
+  .top .theme {
+    margin-left: auto;
   }
 
   .foot {

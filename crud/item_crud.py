@@ -134,6 +134,35 @@ def count_items_by_source(db: Session) -> dict[int, int]:
     return {source_id: count for source_id, count in db.execute(stmt).all()}
 
 
+def list_highlights(db: Session, limit: int) -> list[tuple[Item, Entry, Source]]:
+    """요약이 끝난 중요 항목(중요도 `IMPORTANT_MIN` 이상)을 최신 글부터 돌려준다. 글마다 최대 2개다.
+
+    Args:
+        db: DB 세션
+        limit: 최대 개수
+    Returns:
+        `(항목, 글, 소스)` 묶음 목록
+    """
+    ranked = (
+        select(
+            Item.id.label("id"),
+            func.row_number().over(partition_by=Item.entry_id, order_by=(Item.importance.desc(), Item.seq)).label("rn"),
+        )
+        .where(Item.status == "done", Item.importance >= IMPORTANT_MIN)
+        .subquery()
+    )
+    stmt = (
+        select(Item, Entry, Source)
+        .join(ranked, ranked.c.id == Item.id)
+        .join(Entry, Item.entry_id == Entry.id)
+        .join(Source, Entry.source_id == Source.id)
+        .where(ranked.c.rn <= 2)
+        .order_by(Entry.published_at.desc(), ranked.c.rn)
+        .limit(limit)
+    )
+    return [tuple(row) for row in db.execute(stmt).all()]
+
+
 def count_pending_items(db: Session) -> int:
     """요약을 기다리는 항목(`pending`) 개수를 돌려준다.
 

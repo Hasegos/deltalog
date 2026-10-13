@@ -97,8 +97,8 @@
 }
 
 .card:hover {
-  background: var(--panel);
-  border-color: #2a2a2a;
+  background: var(--hover);
+  border-color: var(--accent);
 }
 
 .card b {
@@ -163,7 +163,7 @@
 }
 
 .trow:hover {
-  background: var(--panel);
+  background: var(--hover);
 }
 
 .tr-i {
