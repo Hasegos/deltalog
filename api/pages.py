@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from core.templates import templates
 from db.session import get_db
-from services.home_service import build_home
-from services.page_service import build_tools, build_topics
+from services.web.home_service import build_home
+from services.web.page_service import build_tools, build_topics
 
 page_router = APIRouter(include_in_schema=False)
 

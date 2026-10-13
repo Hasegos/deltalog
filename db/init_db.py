@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import settings
-from core.constant import SOURCES
+from core.constants.source import SOURCES
 from db.base import Base, Source
 from db.session import engine
 

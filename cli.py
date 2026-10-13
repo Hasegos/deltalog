@@ -1,10 +1,10 @@
-import logging
 import sys
 
+from core.logger import setup_logging
 from db.session import SessionLocal
-from services.lm_client import LlmUnavailable
-from services.llm_service import summarize_pending
-from services.poller_service import poll_all
+from services.collector.poller_service import poll_all
+from services.llm.llm_service import summarize_pending
+from services.llm.lm_client import LlmUnavailable
 
 USAGE = "사용법: python cli.py poll | python cli.py summarize [개수]"
 
@@ -35,7 +35,7 @@ def summarize(limit: int) -> None:
 
 def main() -> None:
     """터미널 명령을 실행한다. `poll`은 소스를 지금 한 번 가져오고, `summarize`는 요약을 기다리는 항목을 요약한다."""
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    setup_logging()
     args = sys.argv[1:]
     if args == ["poll"]:
         print(f"새 글 {poll_all()}건")
