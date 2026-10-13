@@ -10,6 +10,8 @@ CATEGORIES = {
     "other": ("·", "기타"),
 }
 
+SEVERITY = ["breaking", "security", "feature", "bugfix", "other"]
+
 TOPICS = ["에이전트", "MCP·플러그인", "훅", "보안·권한", "성능", "UI"]
 
 SOURCES = [
@@ -23,5 +25,6 @@ SOURCES = [
 ]
 
 PAGE_SIZE = 20
+SHOWN_ITEMS = 10
 SPARK_WEEKS = 8
 IMPORTANT_MIN = 4

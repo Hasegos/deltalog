@@ -93,9 +93,8 @@
             <span class="main">
               <span class="nm"><b>{{ r.name }}</b><span>{{ r.version }}</span></span>
               <span class="sm">
-                {% if r.summary %}{{ r.summary }}
-                {% elif r.status == 'failed' %}요약을 만들지 못했습니다. <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기</a>
-                {% else %}요약 대기 중 · <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기</a>{% endif %}
+                {% if r.headline %}{{ r.headline }}{% if r.count > 1 %} <em>외 {{ r.count - 1 }}개</em>{% endif %}
+                {% else %}요약 대기 중 · 변경 항목 {{ r.count }}개{% endif %}
               </span>
               <span class="mt">
                 <span>{{ r.date }}</span>
@@ -107,7 +106,20 @@
             <span class="im d">{% if r.importance %}{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}{% endif %}</span>
           </summary>
           <div class="xp">
-            {% if r.topic %}<span># {{ r.topic }}</span>{% endif %}
+            {% if r.lines %}
+            <ul class="xi">
+              {% for i in r.lines %}
+              <li>
+                <span class="ty cat-{{ i.category }}">{{ i.symbol }}</span>
+                <span class="xt">{{ i.summary }}</span>
+                {% if i.topic %}<span class="xg"># {{ i.topic }}</span>{% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+            {% if r.hidden_count %}<p class="xm">외 {{ r.hidden_count }}개 항목은 원문에서 볼 수 있습니다.</p>{% endif %}
+            {% else %}
+            <p class="xm">변경 항목 {{ r.count }}개 · 요약이 만들어지면 여기에 항목별 요약이 나옵니다.</p>
+            {% endif %}
             <a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
           </div>
         </details>
