@@ -4,11 +4,9 @@ from html import unescape
 
 import httpx
 
+from core.config import settings
 from services.collector.github_release_service import FetchResult, Release
 
-TIMEOUT_SEC = 30
-USER_AGENT = "deltalog/0.1 (+https://github.com/Hasegos/deltalog)"
-MAX_RELEASES = 15
 ISSUE_IDS = re.compile(r"\[(?:[A-Z]+-\d+(?:\s*,\s*)?)+\]|\s+[-–]\s+(?:[A-Z]+-\d+(?:,?\s*(?:and\s+)?)?)+\.?$")
 
 
@@ -34,7 +32,7 @@ def fetch_releases(url: str, name: str) -> FetchResult:
     Raises:
         httpx.HTTPError: 요청이 실패했을 때
     """
-    response = httpx.get(url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_SEC)
+    response = httpx.get(url, headers={"User-Agent": settings.COLLECTOR_USER_AGENT}, timeout=settings.JETBRAINS_TIMEOUT_SEC)
     response.raise_for_status()
     ceiling = datetime.now(timezone.utc) + timedelta(days=1)
     releases = []
@@ -58,4 +56,4 @@ def fetch_releases(url: str, name: str) -> FetchResult:
             )
         )
     releases.sort(key=lambda r: r.published_at, reverse=True)
-    return FetchResult(etag=None, releases=releases[:MAX_RELEASES])
+    return FetchResult(etag=None, releases=releases[: settings.JETBRAINS_MAX_RELEASES])

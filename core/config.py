@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     AUTO_CREATE_TABLES: bool = True
     GITHUB_TOKEN: str = ""
     POLL_INTERVAL_MIN: int = 30
+    GITHUB_API_URL: str = "https://api.github.com/repos/{repo}/releases"
+    GITHUB_PER_PAGE: int = 30
+    GITHUB_TIMEOUT_SEC: int = 20
+    FEED_TIMEOUT_SEC: int = 20
+    FEED_MAX_ENTRIES: int = 15
+    FEED_MAX_ITEM_CHARS: int = 900
+    FEED_PAGE_DELAY_SEC: float = 0.5
+    JETBRAINS_TIMEOUT_SEC: int = 30
+    JETBRAINS_MAX_RELEASES: int = 15
+    COLLECTOR_USER_AGENT: str = "deltalog/0.1 (+https://github.com/Hasegos/deltalog)"
     LM_STUDIO_BASE_URL: str = ""
     LM_STUDIO_MODEL: str = ""
     LM_STUDIO_API_KEY: str = ""

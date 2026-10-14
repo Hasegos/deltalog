@@ -8,16 +8,12 @@ from html.parser import HTMLParser
 
 import httpx
 
+from core.config import settings
 from core.logger import get_logger
 from services.collector.github_release_service import FetchResult, Release
 
 logger = get_logger("feed")
 
-TIMEOUT_SEC = 20
-USER_AGENT = "deltalog/0.1 (+https://github.com/Hasegos/deltalog)"
-MAX_ENTRIES = 15
-MAX_ITEM_CHARS = 900
-PAGE_DELAY_SEC = 0.5
 SKIP_TAGS = {"script", "style", "figure", "nav", "svg", "pre", "noscript"}
 VOID_TAGS = {"img", "br", "hr", "input", "meta", "link", "source", "wbr"}
 SKIP_HINTS = re.compile(r"thank|contribut|download|insiders", re.IGNORECASE)
@@ -82,7 +78,7 @@ class _Items(HTMLParser):
                 self._current = [self.first_title]
                 self.items.append(self._current)
                 self.hints.append("")
-            if self._current is not None and sum(len(p) for p in self._current) < MAX_ITEM_CHARS:
+            if self._current is not None and sum(len(p) for p in self._current) < settings.FEED_MAX_ITEM_CHARS:
                 self._current.append(text)
 
     def handle_data(self, data: str) -> None:
@@ -111,7 +107,7 @@ def html_to_markdown(html: str, item_tag: str, title: str = "") -> str:
             lines.append(f"## {hint}")
         last_hint = hint
         head, rest = parts[0], " ".join(parts[1:])
-        lines.append(f"- {head}: {rest}"[:MAX_ITEM_CHARS] if rest else f"- {head}")
+        lines.append(f"- {head}: {rest}"[: settings.FEED_MAX_ITEM_CHARS] if rest else f"- {head}")
     return "\n".join(lines)
 
 
@@ -123,7 +119,7 @@ def _studio_body(html: str) -> str:
         for raw in re.findall(r"<div>(.*?)</div>", rest, flags=re.DOTALL):
             text = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", raw))).strip()
             if text and not text.startswith("Issue #"):
-                lines.append(f"- {category.strip()}: {text}"[:MAX_ITEM_CHARS])
+                lines.append(f"- {category.strip()}: {text}"[: settings.FEED_MAX_ITEM_CHARS])
     return "\n".join(lines)
 
 
@@ -197,14 +193,14 @@ def fetch_feed(slug: str, url: str, etag: str | None) -> FetchResult:
     Raises:
         httpx.HTTPError: 요청이 실패했을 때
     """
-    headers = {"User-Agent": USER_AGENT}
+    headers = {"User-Agent": settings.COLLECTOR_USER_AGENT}
     if etag:
         headers["If-None-Match"] = etag
-    response = httpx.get(url, headers=headers, timeout=TIMEOUT_SEC, follow_redirects=True)
+    response = httpx.get(url, headers=headers, timeout=settings.FEED_TIMEOUT_SEC, follow_redirects=True)
     if response.status_code == 304:
         return FetchResult(etag=etag, releases=None)
     response.raise_for_status()
-    return FetchResult(etag=response.headers.get("ETag"), releases=_entries(response.text, slug)[:MAX_ENTRIES])
+    return FetchResult(etag=response.headers.get("ETag"), releases=_entries(response.text, slug)[: settings.FEED_MAX_ENTRIES])
 
 
 def fill_bodies(slug: str, releases: list[Release]) -> None:
@@ -220,9 +216,9 @@ def fill_bodies(slug: str, releases: list[Release]) -> None:
         if release.body:
             continue
         try:
-            page = httpx.get(release.url, headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT_SEC, follow_redirects=True)
+            page = httpx.get(release.url, headers={"User-Agent": settings.COLLECTOR_USER_AGENT}, timeout=settings.FEED_TIMEOUT_SEC, follow_redirects=True)
             page.raise_for_status()
             release.body = html_to_markdown(page.text, "h3")
         except httpx.HTTPError as exc:
             logger.warning("feed %s %s: 본문 요청 실패 (%s)", slug, release.version, exc.__class__.__name__)
-        time.sleep(PAGE_DELAY_SEC)
+        time.sleep(settings.FEED_PAGE_DELAY_SEC)
