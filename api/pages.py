@@ -1,21 +1,17 @@
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
-from core.config import settings
-from core.templates import templates
+from core.templates import site_url, templates
 from db.session import get_db
 from services.web.changes_service import build_changes
 from services.web.home_service import build_home
 from services.web.page_service import build_tools, build_topics
+from services.web.release_service import build_release, sitemap_urls
 
 page_router = APIRouter(include_in_schema=False)
 SITEMAP_PATHS = ("/", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
 
-
-def _site_url(request: Request) -> str:
-    """`SITE_URL` 설정 값을, 비어 있으면 요청의 주소를 끝 `/` 없이 돌려준다."""
-    return (settings.SITE_URL or str(request.base_url)).rstrip("/")
 
 
 @page_router.get("/", response_class=HTMLResponse)
@@ -143,6 +139,16 @@ def changes_page(
     return templates.TemplateResponse(request, "changes.html", build_changes(db, tool, version.strip(), level))
 
 
+@page_router.get("/healthz", response_class=PlainTextResponse)
+def healthz() -> PlainTextResponse:
+    """프록시나 모니터가 앱이 떠 있는지 확인하는 주소. DB는 보지 않는다.
+
+    Returns:
+        `ok`
+    """
+    return PlainTextResponse("ok")
+
+
 @page_router.get("/robots.txt", response_class=PlainTextResponse)
 def robots(request: Request) -> PlainTextResponse:
     """검색 로봇 안내문을 돌려준다. API는 막고 사이트맵 주소를 알린다.
@@ -152,19 +158,41 @@ def robots(request: Request) -> PlainTextResponse:
     Returns:
         `robots.txt` 본문
     """
-    return PlainTextResponse(f"User-agent: *\nDisallow: /api/\n\nSitemap: {_site_url(request)}/sitemap.xml\n")
+    return PlainTextResponse(f"User-agent: *\nDisallow: /api/\n\nSitemap: {site_url(request)}/sitemap.xml\n")
 
 
 @page_router.get("/sitemap.xml")
-def sitemap(request: Request) -> Response:
-    """공개 페이지 주소를 담은 `sitemap.xml`을 돌려준다.
+def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
+    """공개 페이지와 릴리스 상세 페이지 주소를 담은 `sitemap.xml`을 돌려준다.
 
     Args:
         request: 현재 요청
+        db: 요청에 쓸 DB 세션
     Returns:
         사이트맵 XML
     """
-    base = _site_url(request)
+    base = site_url(request)
     urls = "".join(f"<url><loc>{base}{path}</loc></url>" for path in SITEMAP_PATHS)
+    urls += "".join(f"<url><loc>{base}{path}</loc><lastmod>{day}</lastmod></url>" for path, day in sitemap_urls(db))
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(xml, media_type="application/xml")
+
+
+@page_router.get("/r/{slug}/{key}", response_class=HTMLResponse)
+def release_page(request: Request, slug: str, key: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    """릴리스 하나의 변경 사항을 항목별 요약으로 보여주는 상세 페이지를 그린다.
+
+    Args:
+        request: 현재 요청
+        slug: 소스 slug
+        key: 버전 (버전이 없는 글은 글 ID)
+        db: 요청에 쓸 DB 세션
+    Returns:
+        릴리스 상세 페이지
+    Raises:
+        HTTPException: 그런 릴리스가 없을 때 (404)
+    """
+    context = build_release(db, slug, key, site_url(request))
+    if context is None:
+        raise HTTPException(status_code=404, detail="릴리스를 찾을 수 없습니다")
+    return templates.TemplateResponse(request, "release.html", context)

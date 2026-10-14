@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
 from crud import entry_crud, item_crud
+from services.web.release_service import release_path
 
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
 WEEKDAYS = "월화수목금토일"
@@ -165,6 +166,7 @@ def build_home(
                     "version": entry.version or entry.title,
                     "ago": _ago(entry.published_at, now),
                     "url": entry.url if entry.url.startswith(("https://", "http://")) else "#",
+                    "path": release_path(source.slug, entry),
                 }
             )
 
@@ -242,6 +244,7 @@ def build_home(
                 ],
                 "importance": stat["importance"],
                 "url": entry.url if entry.url.startswith(("https://", "http://")) else "#",
+                "path": release_path(source.slug, entry),
             }
         )
         last_day = day

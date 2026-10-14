@@ -10,7 +10,7 @@ from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
 from core.logger import purge_old_logs, setup_logging
-from core.middleware import access_log
+from core.middleware import access_log, security_headers
 from db.init_db import init_db
 from services.collector.poller_service import poll_all
 from services.llm.llm_service import summarize_job
@@ -61,6 +61,7 @@ app = FastAPI(
     openapi_url=None,
 )
 app.middleware("http")(access_log)
+app.middleware("http")(security_headers)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(page_router)
 app.include_router(api_router)

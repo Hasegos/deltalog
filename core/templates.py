@@ -4,6 +4,7 @@ import re
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
+from core.config import settings
 from core.constants.source import SOURCES
 from core.constants.taxonomy import TOPICS
 
@@ -43,3 +44,16 @@ def asset(path: str) -> str:
 
 
 templates.env.globals["asset"] = asset
+
+
+def site_url(request) -> str:
+    """사이트 주소를 끝 `/` 없이 돌려준다. `SITE_URL` 설정을 쓰고, 비어 있으면 요청 주소를 쓴다."""
+    return (settings.SITE_URL or str(request.base_url)).rstrip("/")
+
+
+def canonical_url(request) -> str:
+    """현재 페이지의 대표 주소를 돌려준다. 검색어 같은 쿼리는 뺀다."""
+    return site_url(request) + request.url.path
+
+
+templates.env.globals["canonical_url"] = canonical_url

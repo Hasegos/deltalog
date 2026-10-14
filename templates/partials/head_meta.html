@@ -1,5 +1,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ seo_title }}</title>
+<meta name="description" content="{{ seo_desc }}">
+<link rel="canonical" href="{{ canonical_url(request) }}">
+{% if noindex or request.url.query %}<meta name="robots" content="noindex,follow">{% endif %}
+<meta property="og:site_name" content="Deltalog">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:type" content="{{ seo_type or 'website' }}">
+<meta property="og:title" content="{{ seo_title }}">
+<meta property="og:description" content="{{ seo_desc }}">
+<meta property="og:url" content="{{ canonical_url(request) }}">
+<meta name="twitter:card" content="summary">
+{% if jsonld %}<script type="application/ld+json">{{ jsonld | safe }}</script>{% endif %}
 <script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="{{ asset('css/common.css') }}">
 <script src="{{ asset('js/theme.js') }}" defer></script>

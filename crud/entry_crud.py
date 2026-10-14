@@ -295,3 +295,66 @@ def top_items(
     for item in db.scalars(stmt):
         result[item.entry_id].append(item)
     return result
+
+
+def get_entry_by_key(db: Session, slug: str, key: str) -> tuple[Entry, Source] | None:
+    """소스 slug와 버전(버전이 없는 글은 글 ID)으로 글 하나를 찾는다.
+
+    Args:
+        db: DB 세션
+        slug: 소스 slug
+        key: 버전 또는 글 ID
+    Returns:
+        `(글, 소스)`. 없으면 `None`. 같은 버전이 여럿이면 가장 최근 글
+    """
+    source = db.scalar(select(Source).where(Source.slug == slug))
+    if source is None:
+        return None
+    entry = db.scalar(
+        select(Entry).where(Entry.source_id == source.id, Entry.version == key).order_by(Entry.published_at.desc()).limit(1)
+    )
+    if entry is None and key.isdigit():
+        entry = db.scalar(
+            select(Entry).where(Entry.source_id == source.id, Entry.id == int(key), or_(Entry.version.is_(None), Entry.version == ""))
+        )
+    return (entry, source) if entry else None
+
+
+def list_entry_items(db: Session, entry_id: int) -> list[Item]:
+    """글의 항목을 순서대로 돌려준다.
+
+    Args:
+        db: DB 세션
+        entry_id: 글 ID
+    Returns:
+        항목 목록 (`seq` 순)
+    """
+    return list(db.scalars(select(Item).where(Item.entry_id == entry_id).order_by(Item.seq)))
+
+
+def neighbor_entries(db: Session, entry: Entry) -> tuple[Entry | None, Entry | None]:
+    """같은 소스에서 바로 앞(더 오래된)과 바로 뒤(더 새로운) 글을 찾는다.
+
+    Args:
+        db: DB 세션
+        entry: 기준 글
+    Returns:
+        `(더 오래된 글, 더 새로운 글)`. 없으면 `None`
+    """
+    same = Entry.source_id == entry.source_id
+    older = db.scalar(select(Entry).where(same, Entry.published_at < entry.published_at).order_by(Entry.published_at.desc()).limit(1))
+    newer = db.scalar(select(Entry).where(same, Entry.published_at > entry.published_at).order_by(Entry.published_at.asc()).limit(1))
+    return older, newer
+
+
+def list_summarized_entries(db: Session) -> list[tuple[Entry, Source]]:
+    """요약이 끝난 항목이 하나라도 있는 글을 최신순으로 돌려준다 (사이트맵용).
+
+    Args:
+        db: DB 세션
+    Returns:
+        `(글, 소스)` 목록
+    """
+    has_done = exists().where(Item.entry_id == Entry.id, Item.status == "done")
+    stmt = select(Entry, Source).join(Source, Source.id == Entry.source_id).where(has_done).order_by(Entry.published_at.desc())
+    return [(entry, source) for entry, source in db.execute(stmt).all()]

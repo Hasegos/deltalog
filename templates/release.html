@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › <a href="/?tool={{ slug }}">{{ name }}</a> › {{ version }}</nav>
+      <h1>{{ name }} {{ version }}</h1>
+      <p class="lead">{{ date }} 릴리스{% if prerelease %} · 프리릴리스{% endif %} · 변경 항목 {{ total }}개{% if done < total %} · 요약된 항목 {{ done }}개{% endif %}</p>
+      {% if url %}<p><a href="{{ url }}" target="_blank" rel="noopener">원문 릴리스 노트 보기 ↗</a></p>{% endif %}
+
+      {% for g in groups %}
+      <div class="cg">
+        <h2><span class="cat-{{ g.key }}">{{ g.symbol }} {{ g.label }}</span> <span class="cf-note">{{ g.rows | length }}개</span></h2>
+        <ul class="cl">
+          {% for i in g.rows %}
+          <li>
+            {% if i.summary %}<span>{{ i.summary }}</span>{% else %}<span lang="en">{{ i.raw }}</span>{% endif %}
+            {% if i.topic %}<span class="ct"># {{ i.topic }}</span>{% elif not i.summary %}<span class="ct">요약 대기</span>{% endif %}
+            {% if i.summary %}<details><summary>원문</summary><p lang="en">{{ i.raw }}</p></details>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% else %}
+      <p class="cf-note">이 릴리스의 변경 항목이 아직 없습니다.</p>
+      {% endfor %}
+
+      <p class="cf-note">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ name ~ ' ' ~ version) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+
+      <nav class="pn" aria-label="이전 · 다음 릴리스">
+        {% if older %}<a href="{{ older.path }}" rel="prev">← {{ older.label }}</a>{% else %}<span></span>{% endif %}
+        {% if newer %}<a href="{{ newer.path }}" rel="next">{{ newer.label }} →</a>{% endif %}
+      </nav>
+      {% if has_version %}<p class="cf-note"><a href="/changes?tool={{ slug }}&version={{ version | urlencode }}">이 버전부터 최신까지 바뀐 점 모아 보기</a></p>{% endif %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>
