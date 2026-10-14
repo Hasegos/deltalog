@@ -385,3 +385,8 @@
     height: 28px;
   }
 }
+
+.rl li > span:first-child a {
+  font-family: var(--mono);
+  font-weight: 600;
+}

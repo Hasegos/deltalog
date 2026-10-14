@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from core.constants.page import KST
 from core.constants.taxonomy import CATEGORIES, SEVERITY
-from crud import entry_crud
+from crud import entry_crud, item_crud
 from models.entry_model import Entry
 
 DESCRIPTION_CHARS = 150
@@ -127,3 +127,104 @@ def sitemap_urls(db: Session) -> list[tuple[str, str]]:
         (release_path(source.slug, entry), entry.published_at.astimezone(timezone.utc).strftime("%Y-%m-%d"))
         for entry, source in entry_crud.list_summarized_entries(db)
     ]
+
+
+INDEX_ROWS = 5
+MAX_LIST = 300
+
+
+def _rows(db: Session, slug: str, entries: list[Entry]) -> list[dict]:
+    """글 목록을 릴리스 목록 화면의 행으로 바꾼다. 행마다 가장 중요한 요약 한 줄을 붙인다."""
+    ids = [e.id for e in entries]
+    stats = entry_crud.entry_stats(db, ids)
+    tops = entry_crud.top_items(db, ids, "all", "", "", 1)
+    return [
+        {
+            "version": e.version or e.title,
+            "path": release_path(slug, e),
+            "date": e.published_at.astimezone(KST).strftime("%Y-%m-%d"),
+            "count": stats[e.id]["count"],
+            "headline": next((i.summary_ko for i in tops.get(e.id, []) if i.summary_ko), ""),
+            "prerelease": e.is_prerelease,
+        }
+        for e in entries
+    ]
+
+
+def build_release_index(db: Session, slug: str) -> dict | None:
+    """릴리스 목록 화면의 값을 만든다. `slug`가 비면 도구마다 최근 몇 개를, 있으면 그 도구의 전체를 보여준다.
+
+    Args:
+        db: DB 세션
+        slug: 소스 slug 또는 빈 문자열
+    Returns:
+        템플릿에 넘길 값. 그런 도구가 없으면 `None`
+    """
+    sources = item_crud.list_sources(db)
+    if slug:
+        sources = [s for s in sources if s.slug == slug]
+        if not sources:
+            return None
+    groups = []
+    for source in sources:
+        entries = entry_crud.list_source_entries(db, source.id, MAX_LIST if slug else INDEX_ROWS)
+        if entries:
+            groups.append({"name": source.name, "slug": source.slug, "rows": _rows(db, source.slug, entries), "more": not slug})
+    if slug and groups:
+        name, rows = groups[0]["name"], groups[0]["rows"]
+        title = f"{name} 릴리스 목록 · 변경 사항 한국어 요약 · Deltalog"
+        desc = f"{name}의 릴리스 {len(rows)}개의 변경 사항을 한국어로 요약해 모았습니다. 최신 버전은 {rows[0]['version']}입니다."
+    else:
+        name = ""
+        title = "릴리스 목록 · Deltalog"
+        desc = "도구별 최근 릴리스와 변경 사항 한국어 요약으로 바로 가는 목록입니다."
+    return {"name": name, "slug": slug, "groups": groups, "seo_title": title, "seo_desc": desc}
+
+
+def list_releases_json(db: Session, slug: str, limit: int) -> list[dict] | None:
+    """API용 릴리스 목록을 만든다.
+
+    Args:
+        db: DB 세션
+        slug: 소스 slug
+        limit: 최대 개수
+    Returns:
+        릴리스 요약 목록(최신순). 그런 도구가 없으면 `None`
+    """
+    source = next((s for s in item_crud.list_sources(db) if s.slug == slug), None)
+    if source is None:
+        return None
+    entries = entry_crud.list_source_entries(db, source.id, limit)
+    stats = entry_crud.entry_stats(db, [e.id for e in entries])
+    return [_release_json(slug, e, stats[e.id]["count"]) for e in entries]
+
+
+def release_json(db: Session, slug: str, key: str) -> dict | None:
+    """API용 릴리스 하나와 그 항목을 만든다.
+
+    Args:
+        db: DB 세션
+        slug: 소스 slug
+        key: 버전 또는 글 ID
+    Returns:
+        릴리스 값과 `items`. 없으면 `None`
+    """
+    found = entry_crud.get_entry_by_key(db, slug, key)
+    if found is None:
+        return None
+    entry, _ = found
+    items = entry_crud.list_entry_items(db, entry.id)
+    return {**_release_json(slug, entry, len(items)), "items": items}
+
+
+def _release_json(slug: str, entry: Entry, count: int) -> dict:
+    return {
+        "tool": slug,
+        "version": entry.version or "",
+        "title": entry.title,
+        "published_at": entry.published_at,
+        "url": entry.url,
+        "prerelease": entry.is_prerelease,
+        "item_count": count,
+        "page": release_path(slug, entry),
+    }

@@ -3,14 +3,15 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from core.templates import site_url, templates
+from crud import item_crud
 from db.session import get_db
 from services.web.changes_service import build_changes
 from services.web.home_service import build_home
 from services.web.page_service import build_tools, build_topics
-from services.web.release_service import build_release, sitemap_urls
+from services.web.release_service import build_release, build_release_index, sitemap_urls
 
 page_router = APIRouter(include_in_schema=False)
-SITEMAP_PATHS = ("/", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
+SITEMAP_PATHS = ("/", "/r", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
 
 
 
@@ -173,6 +174,7 @@ def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
     """
     base = site_url(request)
     urls = "".join(f"<url><loc>{base}{path}</loc></url>" for path in SITEMAP_PATHS)
+    urls += "".join(f"<url><loc>{base}/r/{s.slug}</loc></url>" for s in item_crud.list_sources(db))
     urls += "".join(f"<url><loc>{base}{path}</loc><lastmod>{day}</lastmod></url>" for path, day in sitemap_urls(db))
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(xml, media_type="application/xml")
@@ -196,3 +198,23 @@ def release_page(request: Request, slug: str, key: str, db: Session = Depends(ge
     if context is None:
         raise HTTPException(status_code=404, detail="릴리스를 찾을 수 없습니다")
     return templates.TemplateResponse(request, "release.html", context)
+
+
+@page_router.get("/r", response_class=HTMLResponse)
+@page_router.get("/r/{slug}", response_class=HTMLResponse)
+def release_index_page(request: Request, slug: str = "", db: Session = Depends(get_db)) -> HTMLResponse:
+    """릴리스 목록 화면을 그린다. `/r`은 도구마다 최근 릴리스, `/r/<도구>`는 그 도구의 전체 릴리스다.
+
+    Args:
+        request: 현재 요청
+        slug: 소스 slug. 비우면 모든 도구
+        db: 요청에 쓸 DB 세션
+    Returns:
+        릴리스 목록 페이지
+    Raises:
+        HTTPException: 그런 도구가 없을 때 (404)
+    """
+    context = build_release_index(db, slug)
+    if context is None:
+        raise HTTPException(status_code=404, detail="도구를 찾을 수 없습니다")
+    return templates.TemplateResponse(request, "releases.html", context)
