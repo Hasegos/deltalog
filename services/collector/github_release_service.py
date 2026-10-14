@@ -4,9 +4,7 @@ from datetime import datetime
 
 import httpx
 
-API_URL = "https://api.github.com/repos/{repo}/releases"
-PER_PAGE = 30
-TIMEOUT_SEC = 20
+from core.config import settings
 
 
 @dataclass
@@ -60,7 +58,10 @@ def fetch_releases(repo: str, etag: str | None, token: str = "") -> FetchResult:
         headers["Authorization"] = f"Bearer {token}"
 
     response = httpx.get(
-        API_URL.format(repo=repo), params={"per_page": PER_PAGE}, headers=headers, timeout=TIMEOUT_SEC
+        settings.GITHUB_API_URL.format(repo=repo),
+        params={"per_page": settings.GITHUB_PER_PAGE},
+        headers=headers,
+        timeout=settings.GITHUB_TIMEOUT_SEC,
     )
     if response.status_code == 304:
         return FetchResult(etag=etag, releases=None)
