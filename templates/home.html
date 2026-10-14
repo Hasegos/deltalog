@@ -1,8 +1,9 @@
 <!doctype html>
 <html lang="ko">
 <head>
+  {% set seo_title = "Deltalog · AI 코딩 도구 릴리스 노트 한국어 요약" %}
+  {% set seo_desc = "Claude Code, Codex, Gemini CLI, VS Code, Cursor, Android Studio, JetBrains IDE의 릴리스 노트를 한국어로 요약하고 중요한 변경부터 모아 보여줍니다." %}
   {% include "partials/head_meta.html" %}
-  <title>Deltalog</title>
   <link rel="stylesheet" href="{{ asset('css/home.css') }}">
 </head>
 <body>
@@ -153,6 +154,7 @@
             <p class="xm">변경 항목 {{ r.count }}개 · 요약이 만들어지면 여기에 항목별 요약이 나옵니다.</p>
             {% endif %}
             <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.name ~ ' ' ~ r.version) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+            <a class="orig" href="{{ r.path }}">변경 사항 페이지</a>
             <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
           </div>
         </details>

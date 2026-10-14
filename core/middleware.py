@@ -25,7 +25,7 @@ def client_ip(request: Request) -> str:
 
 
 async def access_log(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
-    """요청 1건을 `api.log`에 남긴다. `/static` 요청은 남기지 않는다.
+    """요청 1건을 `api.log`에 남긴다. `/static`과 `/healthz` 요청은 남기지 않는다.
 
     Args:
         request: 요청
@@ -40,7 +40,7 @@ async def access_log(request: Request, call_next: Callable[[Request], Awaitable[
         status = response.status_code
         return response
     finally:
-        if not request.url.path.startswith("/static"):
+        if not request.url.path.startswith(("/static", "/healthz")):
             log_event(
                 logger,
                 ip=client_ip(request),
@@ -52,3 +52,19 @@ async def access_log(request: Request, call_next: Callable[[Request], Awaitable[
                 ua=request.headers.get("user-agent", ""),
                 ref=request.headers.get("referer", ""),
             )
+
+
+async def security_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """모든 응답에 기본 보안 헤더를 붙인다. HTTPS 강제(HSTS)는 프록시가 맡는다.
+
+    Args:
+        request: 요청
+        call_next: 다음 처리
+    Returns:
+        헤더가 붙은 응답
+    """
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response

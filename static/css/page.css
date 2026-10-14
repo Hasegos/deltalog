@@ -191,6 +191,22 @@
   overflow-wrap: anywhere;
 }
 
+/* ── 릴리스 상세 ── */
+.bc {
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.pn {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 32px;
+  font-family: var(--mono);
+  font-size: 14px;
+}
+
 /* ── 소개 목록 ── */
 .about {
   max-width: 680px;
