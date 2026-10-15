@@ -5,7 +5,7 @@ from core.constants.page import KST
 from core.logger import setup_logging
 from db.session import SessionLocal
 from services.collector.poller_service import poll_all
-from services.llm.llm_service import summarize_pending
+from services.llm.llm_service import pick_provider, summarize_pending
 from services.llm.lm_client import LlmUnavailable
 from services.log_service import day_stats
 
@@ -20,7 +20,11 @@ def summarize(limit: int) -> None:
     """
     with SessionLocal() as db:
         try:
-            rows = summarize_pending(db, limit)
+            provider = pick_provider(db)
+            if provider is None:
+                print("중단: 쓸 수 있는 제공자가 없습니다 (Gemini 한도 소진 또는 대기 중)")
+                sys.exit(1)
+            rows = summarize_pending(db, limit, provider)
         except LlmUnavailable as exc:
             print(f"중단: {exc}")
             sys.exit(1)

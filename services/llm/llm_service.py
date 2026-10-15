@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from itertools import groupby
 from typing import Literal
 
@@ -11,13 +12,13 @@ from core.constants.llm import BATCH_SIZE, MAX_ITEM_CHARS, PROMPT_VERSION, SUMMA
 from core.constants.prompts import SYSTEM_PROMPT
 from core.constants.taxonomy import TOPICS
 from core.logger import get_logger, log_event
-from crud import item_crud
+from crud import item_crud, llm_usage_crud
 from db.session import SessionLocal
 from models.entry_model import Entry
 from models.item_model import Item
 from models.source_model import Source
 from services.llm import lm_client
-from services.llm.lm_client import LlmUnavailable
+from services.llm.lm_client import LlmBudgetExhausted, LlmRateLimited, LlmUnavailable
 
 logger = get_logger("summarizer")
 llm_logger = get_logger("llm")
@@ -124,39 +125,89 @@ def _parse(content: str, texts: dict[int, str]) -> dict[int, Summary]:
     return result
 
 
-def summarize_batch(source: Source, entry: Entry, items: list[Item]) -> None:
-    """같은 릴리스의 항목 몇 개를 한 번에 요약해 결과를 항목에 채운다. 커밋은 부르는 쪽이 한다.
+_gemini_blocked_until = 0.0
 
-    검증에 실패한 항목만 `LLM_MAX_RETRIES`번까지 다시 보내고, 그래도 안 되면 `failed`로 둔다.
+
+def _model_name(provider: str) -> str:
+    return settings.GEMINI_MODEL if provider == "gemini" else settings.LM_STUDIO_MODEL
+
+
+def block_gemini() -> None:
+    """한도 초과(429)나 인증 오류를 받은 Gemini를 `GEMINI_COOLDOWN_MIN`분 동안 쉬게 한다."""
+    global _gemini_blocked_until
+    _gemini_blocked_until = time.monotonic() + settings.GEMINI_COOLDOWN_MIN * 60
+
+
+def pick_provider(db: Session) -> str | None:
+    """이번에 쓸 제공자를 고른다.
+
+    `LLM_PROVIDER`가 `local`이면 항상 로컬이다. `gemini`는 Gemini만 쓰고 한도가 차거나 쉬는 중이면 `None`이다.
+    `auto`는 Gemini를 먼저 쓰고, 오늘 한도를 다 썼거나 쉬는 중이면 로컬로 넘어간다.
 
     Args:
+        db: DB 세션
+    Returns:
+        `local`, `gemini`, 쓸 수 있는 제공자가 없으면 `None`
+    """
+    mode = settings.LLM_PROVIDER
+    if mode == "local":
+        return "local"
+    ready = (
+        bool(settings.GEMINI_API_KEY)
+        and time.monotonic() >= _gemini_blocked_until
+        and llm_usage_crud.calls_today(db, "gemini") < settings.GEMINI_DAILY_LIMIT
+    )
+    if ready:
+        return "gemini"
+    return "local" if mode == "auto" else None
+
+
+def summarize_batch(db: Session, source: Source, entry: Entry, items: list[Item], provider: str = "local") -> None:
+    """같은 릴리스의 항목 몇 개를 한 번에 요약해 결과를 항목에 채운다. 커밋은 부르는 쪽이 한다 (Gemini 호출 수를 세면서 한 번 커밋한다).
+
+    검증에 실패한 항목만 `LLM_MAX_RETRIES`번까지 다시 보내고, 그래도 안 되면 `failed`로 두고 `attempts`를 올린다.
+    Gemini는 호출마다 하루 한도를 확인하고 센다.
+
+    Args:
+        db: DB 세션
         source: 소스
         entry: 글(릴리스)
         items: 같은 글에 속한 항목들
+        provider: `local` 또는 `gemini`
     Raises:
-        lm_client.LlmUnavailable: LM Studio에 닿지 못했을 때. 이때 항목 상태는 바꾸지 않는다
+        lm_client.LlmRateLimited: 429를 받았을 때
+        lm_client.LlmBudgetExhausted: Gemini의 오늘 호출 한도를 다 썼을 때
+        lm_client.LlmUnavailable: 제공자에 닿지 못했을 때. 이때 항목 상태는 바꾸지 않는다
     """
     waiting = {n: item for n, item in enumerate(items, start=1)}
     attempts = 0
+    model = _model_name(provider)
     for _ in range(settings.LLM_MAX_RETRIES + 1):
         if not waiting:
             break
+        if provider == "gemini":
+            if llm_usage_crud.calls_today(db, "gemini") >= settings.GEMINI_DAILY_LIMIT:
+                raise LlmBudgetExhausted("Gemini 오늘 호출 한도를 모두 썼습니다")
+            llm_usage_crud.add_call(db, "gemini")
         attempts += 1
-        content = lm_client.complete(_messages(source, entry, {n: i.raw_text for n, i in waiting.items()}), SCHEMA)
-        for n, summary in _parse(content, {n: i.raw_text for n, i in waiting.items()}).items():
+        completion = lm_client.complete(_messages(source, entry, {n: i.raw_text for n, i in waiting.items()}), SCHEMA, provider)
+        model = completion.model
+        for n, summary in _parse(completion.content, {n: i.raw_text for n, i in waiting.items()}).items():
             item = waiting.pop(n)
             item.category = summary.category
             item.topic = summary.topic or None
             item.importance = summary.importance
             item.summary_ko = summary.summary_ko
             item.status = "done"
-            item.model = settings.LM_STUDIO_MODEL
+            item.model = model
             item.prompt_version = PROMPT_VERSION
             item.error = None
 
     log_event(
         llm_logger,
         event="batch",
+        provider=provider,
+        model=model,
         source=source.slug,
         version=entry.version or entry.title,
         items=len(items),
@@ -167,34 +218,40 @@ def summarize_batch(source: Source, entry: Entry, items: list[Item]) -> None:
     )
     for item in waiting.values():
         item.status = "failed"
-        item.model = settings.LM_STUDIO_MODEL
+        item.model = model
         item.prompt_version = PROMPT_VERSION
         item.error = "검증 실패 (재시도 횟수 초과)"
+        item.attempts = (item.attempts or 0) + 1
 
 
-def summarize_pending(db: Session, limit: int) -> list[tuple[Item, Entry, Source]]:
-    """요약을 기다리는 항목을 최신 글부터 `limit`개까지 요약한다. 묶음마다 커밋해서 중간에 멈춰도 결과가 남는다.
+def summarize_pending(db: Session, limit: int, provider: str = "local") -> list[tuple[Item, Entry, Source]]:
+    """요약을 기다리는 항목을 `limit`개까지 요약한다. 묶음마다 커밋해서 중간에 멈춰도 결과가 남는다.
+
+    한 번에 보내는 개수는 제공자마다 다르다 (로컬 `BATCH_SIZE`, Gemini `GEMINI_BATCH_SIZE`).
 
     Args:
         db: DB 세션
         limit: 처리할 최대 항목 수
+        provider: `local` 또는 `gemini`
     Returns:
         처리한 `(항목, 글, 소스)` 목록. 항목의 `status`가 `done` 또는 `failed`다
     Raises:
-        lm_client.LlmUnavailable: LM Studio에 닿지 못했을 때. 그때까지 끝낸 묶음은 저장돼 있다
+        lm_client.LlmUnavailable: 제공자에 닿지 못했을 때 (`LlmRateLimited`, `LlmBudgetExhausted` 포함). 그때까지 끝낸 묶음은 저장돼 있다
     """
+    size = settings.GEMINI_BATCH_SIZE if provider == "gemini" else BATCH_SIZE
     rows = item_crud.list_pending_items(db, limit)
     processed: list[tuple[Item, Entry, Source]] = []
     for _, group in groupby(rows, key=lambda row: row[1].id):
         group_rows = list(group)
         entry, source = group_rows[0][1], group_rows[0][2]
-        for start in range(0, len(group_rows), BATCH_SIZE):
-            batch = group_rows[start : start + BATCH_SIZE]
-            summarize_batch(source, entry, [row[0] for row in batch])
+        for start in range(0, len(group_rows), size):
+            batch = group_rows[start : start + size]
+            summarize_batch(db, source, entry, [row[0] for row in batch], provider)
             db.commit()
             processed.extend(batch)
             logger.info(
-                "summarize %s %s: %d건 처리 (완료 %d, 실패 %d)",
+                "summarize[%s] %s %s: %d건 처리 (완료 %d, 실패 %d)",
+                provider,
                 source.slug,
                 entry.version or entry.id,
                 len(batch),
@@ -207,16 +264,29 @@ def summarize_pending(db: Session, limit: int) -> list[tuple[Item, Entry, Source
 def summarize_job() -> None:
     """스케줄러가 주기적으로 부른다. 요약 대기 항목이 없어질 때까지 `SUMMARIZE_BATCH_LIMIT`개씩 이어서 요약한다.
 
-    LM Studio에 닿지 못하면 경고만 남기고 끝낸다 (다음 주기에 다시 시도). 한 번에 하나만 돈다.
+    제공자는 `pick_provider`가 고른다. Gemini가 한도 초과(429)나 호출 한도 소진, 인증 오류를 내면 롤백한 뒤 Gemini를 쉬게 하고
+    (`auto`면) 로컬로 이어서 한다. 로컬에 닿지 못하면 경고만 남기고 끝낸다 (다음 주기에 다시 시도). 한 번에 하나만 돈다.
     """
     total = done = failed = 0
     with SessionLocal() as db:
         while True:
+            provider = pick_provider(db)
+            if provider is None:
+                logger.info("summarize: 쓸 수 있는 제공자가 없어 쉰다 (Gemini 한도 소진 또는 대기 중)")
+                break
             try:
-                rows = summarize_pending(db, settings.SUMMARIZE_BATCH_LIMIT)
+                rows = summarize_pending(db, settings.SUMMARIZE_BATCH_LIMIT, provider)
+            except (LlmRateLimited, LlmBudgetExhausted) as exc:
+                db.rollback()
+                logger.warning("summarize[%s]: 쉼 (%s)", provider, exc)
+                block_gemini()
+                continue
             except LlmUnavailable as exc:
                 db.rollback()
-                logger.warning("summarize: 중단 (%s)", exc)
+                logger.warning("summarize[%s]: 중단 (%s)", provider, exc)
+                if provider == "gemini" and settings.LLM_PROVIDER == "auto":
+                    block_gemini()
+                    continue
                 break
             except Exception:
                 db.rollback()
@@ -230,3 +300,11 @@ def summarize_job() -> None:
                 break
     if total:
         logger.info("summarize: %d건 처리 (완료 %d, 실패 %d)", total, done, failed)
+
+
+def requeue_failed_job() -> None:
+    """하루에 한 번 실패한 항목(시도 `FAILED_MAX_ATTEMPTS`회 미만)을 요약 대기로 되돌린다."""
+    with SessionLocal() as db:
+        count = item_crud.requeue_failed(db, settings.FAILED_MAX_ATTEMPTS)
+    if count:
+        logger.info("requeue: 실패 항목 %d건을 다시 대기로 돌렸다", count)
