@@ -20,9 +20,9 @@ def release_path(slug: str, entry: Entry) -> str:
         slug: 소스 slug
         entry: 글
     Returns:
-        `/r/<slug>/<버전 또는 글 ID>`
+        `/releases/<slug>/<버전 또는 글 ID>`
     """
-    return f"/r/{slug}/{quote(entry.version or str(entry.id), safe='')}"
+    return f"/releases/{slug}/{quote(entry.version or str(entry.id), safe='')}"
 
 
 def _json_ld(data: dict) -> str:

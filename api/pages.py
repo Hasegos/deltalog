@@ -1,5 +1,7 @@
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from core.templates import site_url, templates
@@ -11,7 +13,7 @@ from services.web.page_service import build_tools, build_topics
 from services.web.release_service import build_release, build_release_index, sitemap_urls
 
 page_router = APIRouter(include_in_schema=False)
-SITEMAP_PATHS = ("/", "/r", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
+SITEMAP_PATHS = ("/", "/releases", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
 
 
 
@@ -140,16 +142,6 @@ def changes_page(
     return templates.TemplateResponse(request, "changes.html", build_changes(db, tool, version.strip(), level))
 
 
-@page_router.get("/healthz", response_class=PlainTextResponse)
-def healthz() -> PlainTextResponse:
-    """프록시나 모니터가 앱이 떠 있는지 확인하는 주소. DB는 보지 않는다.
-
-    Returns:
-        `ok`
-    """
-    return PlainTextResponse("ok")
-
-
 @page_router.get("/robots.txt", response_class=PlainTextResponse)
 def robots(request: Request) -> PlainTextResponse:
     """검색 로봇 안내문을 돌려준다. API는 막고 사이트맵 주소를 알린다.
@@ -174,13 +166,13 @@ def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
     """
     base = site_url(request)
     urls = "".join(f"<url><loc>{base}{path}</loc></url>" for path in SITEMAP_PATHS)
-    urls += "".join(f"<url><loc>{base}/r/{s.slug}</loc></url>" for s in item_crud.list_sources(db))
+    urls += "".join(f"<url><loc>{base}/releases/{s.slug}</loc></url>" for s in item_crud.list_sources(db))
     urls += "".join(f"<url><loc>{base}{path}</loc><lastmod>{day}</lastmod></url>" for path, day in sitemap_urls(db))
     xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
     return Response(xml, media_type="application/xml")
 
 
-@page_router.get("/r/{slug}/{key}", response_class=HTMLResponse)
+@page_router.get("/releases/{slug}/{key}", response_class=HTMLResponse)
 def release_page(request: Request, slug: str, key: str, db: Session = Depends(get_db)) -> HTMLResponse:
     """릴리스 하나의 변경 사항을 항목별 요약으로 보여주는 상세 페이지를 그린다.
 
@@ -200,10 +192,10 @@ def release_page(request: Request, slug: str, key: str, db: Session = Depends(ge
     return templates.TemplateResponse(request, "release.html", context)
 
 
-@page_router.get("/r", response_class=HTMLResponse)
-@page_router.get("/r/{slug}", response_class=HTMLResponse)
+@page_router.get("/releases", response_class=HTMLResponse)
+@page_router.get("/releases/{slug}", response_class=HTMLResponse)
 def release_index_page(request: Request, slug: str = "", db: Session = Depends(get_db)) -> HTMLResponse:
-    """릴리스 목록 화면을 그린다. `/r`은 도구마다 최근 릴리스, `/r/<도구>`는 그 도구의 전체 릴리스다.
+    """릴리스 목록 화면을 그린다. `/releases`는 도구마다 최근 릴리스, `/releases/<도구>`는 그 도구의 전체 릴리스다.
 
     Args:
         request: 현재 요청
@@ -218,3 +210,20 @@ def release_index_page(request: Request, slug: str = "", db: Session = Depends(g
     if context is None:
         raise HTTPException(status_code=404, detail="도구를 찾을 수 없습니다")
     return templates.TemplateResponse(request, "releases.html", context)
+
+
+@page_router.get("/r")
+@page_router.get("/r/{rest:path}")
+def legacy_release_path(request: Request, rest: str = "") -> RedirectResponse:
+    """옛 릴리스 주소(`/r/...`)를 새 주소(`/releases/...`)로 영구 이동시킨다.
+
+    Args:
+        request: 현재 요청
+        rest: `/r/` 뒤의 경로
+    Returns:
+        301 응답
+    """
+    target = "/releases" + (f"/{quote(rest)}" if rest else "")
+    if request.url.query:
+        target += f"?{request.url.query}"
+    return RedirectResponse(target, status_code=301)

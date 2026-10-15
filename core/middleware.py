@@ -25,7 +25,7 @@ def client_ip(request: Request) -> str:
 
 
 async def access_log(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
-    """요청 1건을 `api.log`에 남긴다. `/static`과 `/healthz` 요청은 남기지 않는다.
+    """요청 1건을 `api.log`에 남긴다. `/static` 요청은 남기지 않는다.
 
     Args:
         request: 요청
@@ -40,7 +40,7 @@ async def access_log(request: Request, call_next: Callable[[Request], Awaitable[
         status = response.status_code
         return response
     finally:
-        if not request.url.path.startswith(("/static", "/healthz")):
+        if not request.url.path.startswith("/static"):
             log_event(
                 logger,
                 ip=client_ip(request),

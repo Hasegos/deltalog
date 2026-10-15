@@ -9,13 +9,13 @@
 
   <main>
     <section class="page">
-      <nav class="bc" aria-label="경로"><a href="/">홈</a> › {% if slug %}<a href="/r">릴리스</a> › {{ name }}{% else %}릴리스{% endif %}</nav>
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › {% if slug %}<a href="/releases">릴리스</a> › {{ name }}{% else %}릴리스{% endif %}</nav>
       <h1>{{ name ~ ' ' if name }}릴리스 목록</h1>
       <p class="lead">릴리스를 누르면 그 릴리스의 변경 항목을 한국어 요약으로 봅니다.</p>
 
       {% for g in groups %}
       <div class="cg">
-        <h2>{% if g.more %}<a href="/r/{{ g.slug }}">{{ g.name }}</a>{% else %}{{ g.name }}{% endif %} <span class="cf-note">{{ g.rows | length }}개{% if g.more %} · <a href="/r/{{ g.slug }}">전체 보기</a>{% endif %}</span></h2>
+        <h2>{% if g.more %}<a href="/releases/{{ g.slug }}">{{ g.name }}</a>{% else %}{{ g.name }}{% endif %} <span class="cf-note">{{ g.rows | length }}개{% if g.more %} · <a href="/releases/{{ g.slug }}">전체 보기</a>{% endif %}</span></h2>
         <ul class="cl rl">
           {% for r in g.rows %}
           <li>
