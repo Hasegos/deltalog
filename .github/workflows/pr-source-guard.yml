@@ -1,0 +1,16 @@
+name: PR Source Guard
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: master 로 가는 PR 은 dev 에서만 허용
+        run: |
+          if [ "${{ github.head_ref }}" != "dev" ]; then
+            echo "master 로 병합하는 PR 은 dev 브랜치에서만 올릴 수 있다 (현재: ${{ github.head_ref }})"
+            exit 1
+          fi

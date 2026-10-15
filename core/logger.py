@@ -39,7 +39,7 @@ class DailyFileHandler(logging.Handler):
 
 
 def setup_logging() -> None:
-    """로깅을 설정한다. 진입점(`main.py`, `cli.py`)에서 한 번 부른다.
+    """로깅을 설정한다. 진입점(`main.py`)에서 한 번 부른다.
 
     - 터미널과 `app.log`: 루트 로거(INFO). 앱, 수집, 요약 진행, 스케줄러, uvicorn 시작 · 오류
     - `api.log`: `deltalog.api` 로거 전용. HTTP 요청 1건당 JSON 한 줄
