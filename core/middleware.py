@@ -68,3 +68,22 @@ async def security_headers(request: Request, call_next: Callable[[Request], Awai
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     return response
+
+
+async def api_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """`/api` 아래 모든 응답(404 포함)에 색인 금지와 캐시 금지 헤더를 붙인다. 끝 `/`가 있는 주소는 리다이렉트로 API 존재가 드러나지 않게 바로 404로 돌려준다.
+
+    Args:
+        request: 요청
+        call_next: 다음 처리
+    Returns:
+        헤더가 붙은 응답
+    """
+    in_api = request.url.path.lower().startswith("/api")
+    if in_api and request.url.path.endswith("/"):
+        return Response(status_code=404, headers={"X-Robots-Tag": "noindex, nofollow", "Cache-Control": "no-store"})
+    response = await call_next(request)
+    if in_api:
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        response.headers["Cache-Control"] = "no-store"
+    return response
