@@ -1,3 +1,5 @@
+import re
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
@@ -59,6 +61,7 @@ class Settings(BaseSettings):
     TRUST_PROXY: bool = False
     SITE_URL: str = ""
     API_KEY: str = ""
+    ADSENSE_CLIENT: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -73,6 +76,12 @@ class Settings(BaseSettings):
             비어 있지 않은 이름
         """
         return value or "Deltalog"
+
+    @property
+    def adsense_client(self) -> str:
+        """`ADSENSE_CLIENT`가 `ca-pub-숫자` 모양일 때만 그 값을, 아니면 빈 값을 돌려준다. 빈 값이면 광고 코드를 넣지 않는다."""
+        value = self.ADSENSE_CLIENT.strip()
+        return value if re.fullmatch(r"ca-pub-\d+", value) else ""
 
     @property
     def DATABASE_URL(self) -> URL:

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
+from core.config import settings
 from core.templates import site_url, templates
 from db.session import get_db
 from services.web.changes_service import build_changes
@@ -239,3 +240,18 @@ def legacy_release_path(request: Request, rest: str = "") -> RedirectResponse:
     if request.url.query:
         target += f"?{request.url.query}"
     return RedirectResponse(target, status_code=301)
+
+
+@page_router.get("/ads.txt", response_class=PlainTextResponse)
+def ads_txt() -> PlainTextResponse:
+    """애드센스 판매자 확인 파일. `ADSENSE_CLIENT`가 없으면 404.
+
+    Returns:
+        `google.com, pub-<숫자>, DIRECT, f08c47fec0942fa0` 한 줄
+    Raises:
+        HTTPException: 광고 설정이 비어 있을 때 (404)
+    """
+    client = settings.adsense_client
+    if not client:
+        raise HTTPException(status_code=404, detail="Not Found")
+    return PlainTextResponse(f"google.com, {client.removeprefix('ca-')}, DIRECT, f08c47fec0942fa0\n")
