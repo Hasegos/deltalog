@@ -115,20 +115,6 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
     }
 
 
-def sitemap_urls(db: Session) -> list[tuple[str, str]]:
-    """사이트맵에 넣을 릴리스 상세 페이지 주소와 게시일을 돌려준다. 요약된 항목이 있는 글만 넣는다.
-
-    Args:
-        db: DB 세션
-    Returns:
-        `(경로, 게시일 YYYY-MM-DD)` 목록. 최신순
-    """
-    return [
-        (release_path(source.slug, entry), entry.published_at.astimezone(timezone.utc).strftime("%Y-%m-%d"))
-        for entry, source in entry_crud.list_summarized_entries(db)
-    ]
-
-
 INDEX_ROWS = 5
 MAX_LIST = 300
 
