@@ -50,13 +50,13 @@ def _spark(times: list[datetime], starts: list[datetime]) -> dict:
 
 
 def build_tools(db: Session, now: datetime | None = None) -> dict:
-    """도구 목록 화면에 필요한 값을 만든다.
+    """도구 순위 화면에 필요한 값을 만든다.
 
     Args:
         db: DB 세션
         now: 기준 시각. 비우면 현재 시각
     Returns:
-        소스별 이름, 저장소 또는 사이트 주소(`sub`), 홈으로 가는 주소, 최근 몇 주의 릴리스 추이. 추이 합계가 큰 순서다
+        소스별 이름, 저장소 또는 사이트 주소(`sub`), 릴리스 목록으로 가는 주소, 최근 몇 주의 릴리스 추이. 추이 합계가 큰 순서다
     """
     starts = _week_starts(now or datetime.now(KST))
     by_source = defaultdict(list)
@@ -67,7 +67,7 @@ def build_tools(db: Session, now: datetime | None = None) -> dict:
         {
             "name": s.name,
             "sub": s.repo or urlparse(s.feed_url or "").netloc,
-            "href": f"/?tool={s.slug}",
+            "href": f"/releases/{s.slug}",
             "spark": _spark(by_source[s.id], starts),
         }
         for s in item_crud.list_sources(db)

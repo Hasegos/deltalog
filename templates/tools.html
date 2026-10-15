@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  {% set seo_title = "도구 · Deltalog" %}
-  {% set seo_desc = "Deltalog가 추적하는 AI 코딩 에이전트와 IDE 목록과 도구별 최신 릴리스입니다." %}
+  {% set seo_title = "도구 순위 · Deltalog" %}
+  {% set seo_desc = "Deltalog가 추적하는 AI 코딩 에이전트와 IDE를 최근 몇 주 릴리스가 많은 순서로 보여줍니다." %}
   {% include "partials/head_meta.html" %}
   <link rel="stylesheet" href="{{ asset('css/page.css') }}">
 </head>
@@ -12,8 +12,8 @@
 
   <main>
     <section class="page">
-      <h1>도구</h1>
-      <p class="lead">릴리스 노트를 모으는 도구입니다. 최근 {{ weeks }}주 릴리스가 많은 순서이고, 누르면 그 도구의 목록만 봅니다.</p>
+      <h1>도구 순위</h1>
+      <p class="lead">릴리스 노트를 모으는 도구입니다. 최근 {{ weeks }}주 릴리스가 많은 순서이고, 누르면 그 도구의 릴리스 목록으로 갑니다.</p>
       <div class="trows">
         <div class="thead">
           <span>#</span>

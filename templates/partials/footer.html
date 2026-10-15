@@ -10,7 +10,7 @@
       <a href="/">전체 릴리스</a>
       <a href="/?tab=imp">중요 릴리스</a>
       <a href="/?tab=risk">breaking · 보안</a>
-      <a href="/r">릴리스 목록</a>
+      <a href="/releases">릴리스 목록</a>
       <a href="/changes">버전 비교</a>
       <a href="/tools">도구 순위</a>
       <a href="/topics">주제</a>
@@ -19,7 +19,7 @@
     <nav class="foot-col" aria-label="도구">
       <h2>도구</h2>
       {% for slug, name in footer_tools %}
-      <a href="/r/{{ slug }}">{{ name }}</a>
+      <a href="/releases/{{ slug }}">{{ name }}</a>
       {% endfor %}
     </nav>
 

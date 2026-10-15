@@ -9,7 +9,7 @@
 
   <main>
     <section class="page">
-      <nav class="bc" aria-label="경로"><a href="/">홈</a> › <a href="/r">릴리스</a> › <a href="/r/{{ slug }}">{{ name }}</a> › {{ version }}</nav>
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › <a href="/releases">릴리스</a> › <a href="/releases/{{ slug }}">{{ name }}</a> › {{ version }}</nav>
       <h1>{{ name }} {{ version }}</h1>
       <p class="lead">{{ date }} 릴리스{% if prerelease %} · 프리릴리스{% endif %} · 변경 항목 {{ total }}개{% if done < total %} · 요약된 항목 {{ done }}개{% endif %}</p>
       {% if url %}<p><a href="{{ url }}" target="_blank" rel="noopener">원문 릴리스 노트 보기 ↗</a></p>{% endif %}
