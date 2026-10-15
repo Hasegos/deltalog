@@ -1,8 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from api.security import require_api_key
 from api.endpoints import item_endpoint, release_endpoint, source_endpoint
 
-api_router = APIRouter()
+api_router = APIRouter(dependencies=[Depends(require_api_key)])
 
 api_router.include_router(item_endpoint.router, prefix="/api/items", tags=["items"])
 api_router.include_router(source_endpoint.router, prefix="/api/sources", tags=["sources"])

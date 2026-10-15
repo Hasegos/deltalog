@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     LOG_RETENTION_DAYS: int = 30
     TRUST_PROXY: bool = False
     SITE_URL: str = ""
+    API_KEY: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
