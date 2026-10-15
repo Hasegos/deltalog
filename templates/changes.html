@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "버전 비교 · Deltalog" %}
+  {% set seo_desc = "지금 쓰는 버전을 입력하면 그 뒤 최신 버전까지 바뀐 점을 중요한 것부터 한국어로 모아 보여줍니다." %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <h1>내 버전부터 최신까지</h1>
+      <p class="lead">지금 쓰는 도구의 버전을 입력하면, 그 뒤로 바뀐 점을 중요한 것부터 모아 보여줍니다.</p>
+
+      <form class="cf" method="get" action="/changes">
+        <label>도구
+          <select name="tool" required>
+            <option value="">고르세요</option>
+            {% for t in tools %}<option value="{{ t.slug }}"{{ ' selected' if t.slug == tool }}>{{ t.name }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>지금 버전
+          <input name="version" value="{{ version }}" placeholder="2.1.290" required maxlength="40" autocomplete="off">
+        </label>
+        <label>범위
+          <select name="level">
+            {% for key, label in levels %}<option value="{{ key }}"{{ ' selected' if key == level }}>{{ label }}</option>{% endfor %}
+          </select>
+        </label>
+        <button type="submit">모아 보기</button>
+      </form>
+
+      {% if error %}<p class="cf-err">{{ error }}</p>{% endif %}
+
+      {% if result %}
+        {% if result.older_than_collected %}
+        <p class="cf-note">입력한 버전이 수집한 가장 오래된 릴리스({{ result.oldest }})보다 낮습니다. 그 사이 바뀐 점은 일부만 보일 수 있습니다.</p>
+        {% endif %}
+
+        {% if result.releases == 0 %}
+        <div class="cs">{{ result.source }} {{ version }}은(는) 이미 수집된 최신 버전({{ result.newest }}) 이상입니다.</div>
+        {% else %}
+        <div class="cs">
+          <b>{{ result.source }} {{ version }} → {{ result.newest }}</b> · 릴리스 {{ result.releases }}개 · 보여주는 항목 {{ result.shown }}개
+          {% if result.pending %}<br><span class="cf-note">요약 대기 중인 항목 {{ result.pending }}개는 아직 포함되지 않았습니다.</span>{% endif %}
+        </div>
+
+        {% for g in result.groups %}
+        <div class="cg">
+          <h2><span class="cat-{{ g.key }}">{{ g.symbol }} {{ g.label }}</span> <span class="cf-note">{{ g.rows | length }}개</span></h2>
+          <ul class="cl">
+            {% for i in g.rows %}
+            <li>
+              <span>{{ i.summary }}</span>
+              <span class="cv"><a href="{{ i.url }}" target="_blank" rel="noopener">{{ i.version }}</a></span>
+              {% if i.topic %}<span class="ct"># {{ i.topic }}</span>{% endif %}
+              <details><summary>원문</summary><p lang="en">{{ i.raw }}</p></details>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% else %}
+        <p class="cf-note">조건에 맞는 요약이 아직 없습니다. 범위를 "요약된 전부"로 바꿔 보세요.</p>
+        {% endfor %}
+        {% endif %}
+      {% endif %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

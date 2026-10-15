@@ -1,0 +1,333 @@
+/* =============================
+  common.css — 전체 공통 스타일
+  색: 따뜻한 종이색(밝은 테마)과 숯색(어두운 테마). 유형 색은 diff에서 가져왔다.
+  글꼴: 시스템 글꼴만 쓴다 (외부 글꼴 요청 없음).
+  ============================= */
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ── Variables ── */
+:root {
+  --bg:        #f7f5f0;
+  --surface:   #ffffff;
+  --fg:        #1c1b18;
+  --muted:     #55514a;
+  --dim:       #6f6a60;
+  --faint:     #8d877b;
+  --line:      #e3ded2;
+  --line-soft: #ebe7dc;
+  --hover:     #efece3;
+  --accent:    #3451d1;
+  --accent-bg: #e8ecfb;
+  --on-fg:     #f7f5f0;
+  --mark:      rgba(250, 204, 21, .45);
+
+  --c-feature:  #167a48;
+  --c-bugfix:   #566273;
+  --c-breaking: #c3352b;
+  --c-security: #a96a0a;
+  --c-other:    #6f6a60;
+
+  --sans: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "D2Coding", monospace;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #131210;
+    --surface:   #1b1a17;
+    --fg:        #f0ede5;
+    --muted:     #b5b0a4;
+    --dim:       #9a9488;
+    --faint:     #7d786d;
+    --line:      #2d2b26;
+    --line-soft: #23211d;
+    --hover:     #1f1e1a;
+    --accent:    #8ea2f5;
+    --accent-bg: #222844;
+    --on-fg:     #131210;
+    --mark:      rgba(250, 204, 21, .32);
+
+    --c-feature:  #4cc38a;
+    --c-bugfix:   #94a0b2;
+    --c-breaking: #ff7b72;
+    --c-security: #e0a63e;
+    --c-other:    #9a9488;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:        #131210;
+  --surface:   #1b1a17;
+  --fg:        #f0ede5;
+  --muted:     #b5b0a4;
+  --dim:       #9a9488;
+  --faint:     #7d786d;
+  --line:      #2d2b26;
+  --line-soft: #23211d;
+  --hover:     #1f1e1a;
+  --accent:    #8ea2f5;
+  --accent-bg: #222844;
+  --on-fg:     #131210;
+  --mark:      rgba(250, 204, 21, .32);
+
+  --c-feature:  #4cc38a;
+  --c-bugfix:   #94a0b2;
+  --c-breaking: #ff7b72;
+  --c-security: #e0a63e;
+  --c-other:    #9a9488;
+
+  color-scheme: dark;
+}
+
+/* ── Base ── */
+body {
+  margin: 0 auto;
+  max-width: 1120px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible,
+summary:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ── 유형 색 ── */
+.cat-feature  { color: var(--c-feature); }
+.cat-bugfix   { color: var(--c-bugfix); }
+.cat-breaking { color: var(--c-breaking); }
+.cat-security { color: var(--c-security); }
+.cat-other    { color: var(--c-other); }
+
+/* ── Header ── */
+.top {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 32px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+}
+
+.brand i {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  gap: 22px;
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.nav a:hover {
+  color: var(--fg);
+}
+
+.theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.theme:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
+/* ── Header: 모바일 메뉴 ── */
+.menu {
+  display: none;
+  position: relative;
+}
+
+.menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 20px;
+}
+
+.menu div {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  z-index: 5;
+  min-width: 140px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+.menu div a {
+  display: block;
+  padding: 10px 12px;
+  color: var(--muted);
+}
+
+/* ── Footer ── */
+.foot {
+  margin-top: 72px;
+  padding: 40px 32px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.foot-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr));
+  gap: 32px;
+}
+
+.foot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.foot-col h2 {
+  margin: 0 0 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.foot-col a {
+  color: var(--muted);
+}
+
+.foot-col a:hover {
+  color: var(--fg);
+}
+
+.foot-about p {
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+.foot-col .foot-brand {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.foot-brand i {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.foot-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13px;
+  color: var(--faint);
+}
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+  .top {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .menu {
+    display: block;
+  }
+
+  .top .theme {
+    margin-left: auto;
+  }
+
+  .foot {
+    margin-top: 48px;
+    padding: 28px 16px 20px;
+  }
+
+  .foot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 16px;
+  }
+
+  .foot-about {
+    grid-column: 1 / -1;
+  }
+
+  .foot-col a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+
+  .foot-bottom {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "도구 순위 · Deltalog" %}
+  {% set seo_desc = "Deltalog가 추적하는 AI 코딩 에이전트와 IDE를 최근 몇 주 릴리스가 많은 순서로 보여줍니다." %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+</head>
+<body>
+  {% from "partials/spark.html" import spark %}
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <h1>도구 순위</h1>
+      <p class="lead">릴리스 노트를 모으는 도구입니다. 최근 {{ weeks }}주 릴리스가 많은 순서이고, 누르면 그 도구의 릴리스 목록으로 갑니다.</p>
+      <div class="trows">
+        <div class="thead">
+          <span>#</span>
+          <span>도구</span>
+          <span class="tr-g">{{ weeks }}주 추이</span>
+          <span class="tr-n">릴리스</span>
+        </div>
+        {% for t in tools %}
+        <a class="trow" href="{{ t.href }}">
+          <span class="tr-i">{{ loop.index }}</span>
+          <span class="tr-m"><b>{{ t.name }}</b><span>{{ t.sub }}</span></span>
+          <span class="tr-g">{{ spark(t.spark, '주별 릴리스') }}</span>
+          <span class="tr-n">{{ t.spark.total }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

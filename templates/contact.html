@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "문의 · Deltalog" %}
+  {% set seo_desc = "Deltalog에 대한 문의, 요약 오류 제보, 개인정보 관련 요청을 보내는 방법입니다." %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <article class="page doc">
+      <h1>문의</h1>
+      <p class="lead">서비스에 대한 질문, 요약 오류 제보, 소스 추가 요청, 개인정보 관련 요청을 받습니다.</p>
+
+      <h2>이메일</h2>
+      <p><a href="mailto:csw020106@naver.com">csw020106@naver.com</a></p>
+      <p>개인정보 열람, 삭제 요청은 이 주소로 보내 주세요. 접속 기록은 IP 주소로만 구분되므로 해당 IP 주소와 접속 시각을 함께 알려 주시면 됩니다.</p>
+
+      <h2>GitHub</h2>
+      <p>공개해도 되는 내용은 <a href="https://github.com/Hasegos/deltalog/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 남겨 주세요. 소스 코드도 그곳에 있습니다.</p>
+
+      <h2>요약 오류 제보</h2>
+      <p>요약이 원문과 다르거나 이해하기 어려운 경우, 목록에서 릴리스를 펼치면 나오는 "오류 제보" 링크를 누르면 도구와 버전이 채워진 이슈가 열립니다. 이메일로 보내실 때는 아래 내용을 적어 주세요.</p>
+      <ul>
+        <li>도구 이름과 버전 (예: Claude Code 2.1.296)</li>
+        <li>어떤 항목이 어떻게 다른지 (요약 문장 또는 항목 번호)</li>
+        <li>맞는 내용 (알고 계시면)</li>
+      </ul>
+
+      <h2>답변</h2>
+      <p>개인이 운영하는 서비스라 답변에 며칠 걸릴 수 있습니다.</p>
+    </article>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

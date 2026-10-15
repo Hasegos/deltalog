@@ -1,0 +1,18 @@
+# keelkit
+.env
+.keel-backup/
+docs/
+CLAUDE.md
+.claude/
+AGENTS.md
+.agents/
+
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+
+### Claude Code ###
+.serena
+logs/

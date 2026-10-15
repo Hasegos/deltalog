@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "Deltalog · AI 코딩 도구 릴리스 노트 한국어 요약" %}
+  {% set seo_desc = "Claude Code, Codex, Gemini CLI, VS Code, Cursor, Android Studio, JetBrains IDE의 릴리스 노트를 한국어로 요약하고 중요한 변경부터 모아 보여줍니다." %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+{% macro tool_chips(tools, total, all_href) %}
+  <a class="ch{{ ' on' if not (tools | selectattr('active') | list) }}" href="{{ all_href }}">전체<em>{{ total }}</em></a>
+  {% for t in tools %}
+    <a class="ch{{ ' on' if t.active }}" href="{{ t.href }}">{{ t.name }}<em>{{ t.count }}</em></a>
+  {% endfor %}
+{% endmacro %}
+
+{% macro topic_chips(topics) %}
+  {% for t in topics %}
+    <a class="ch{{ ' on' if t.active }}" href="{{ t.href }}">{{ t.name }}</a>
+  {% endfor %}
+{% endmacro %}
+
+  <main>
+    <section class="hero">
+      <div class="hero-t">
+        <h1>AI 코딩 도구,<br>이번엔 뭐가 바뀌었나</h1>
+        <p class="tagline">Claude Code, Codex 같은 개발 도구의 릴리스 노트를 한국어로 요약하고, 중요한 변경부터 보여줍니다.</p>
+      </div>
+      <div class="wk">
+        <div class="wk-t">Last 7 days · {{ week.label }}</div>
+        <div class="wk-g">
+          {% for c in week.cats %}
+            <a class="wk-c{{ ' on' if c.active }}" href="{{ c.href }}" title="{{ c.label }} 항목이 있는 릴리스 {{ c.count }}개">
+              <b class="cat-{{ c.key }}">{{ c.symbol }}{{ c.count }}</b>
+              <span>{{ c.label }}</span>
+            </a>
+          {% endfor %}
+        </div>
+        {% if week.pending %}<div class="wk-n">릴리스 수 기준 · 요약 대기 {{ week.pending }}건</div>{% endif %}
+      </div>
+    </section>
+
+    {% if highlights %}
+    <section class="blk">
+      <h2 class="sec">주요 변경 <span>중요도 {{ important_min }} 이상</span></h2>
+      <div class="hl-g">
+        {% for h in highlights %}
+        <a class="hl-c" href="{{ h.url }}" target="_blank" rel="noopener">
+          <span class="hl-m"><span class="cat-{{ h.category }}">{{ h.symbol }} {{ h.type_label }}</span><span>{{ h.name }} {{ h.version }} · {{ h.ago }}</span></span>
+          <span class="hl-t">{{ h.summary }}</span>
+          {% if h.topic %}<span class="hl-p"># {{ h.topic }}</span>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="blk tools-d" id="tools">
+      <h2 class="sec">도구 <span>최신 버전</span></h2>
+      <div class="st-g">
+        {% for t in status_tools %}
+          {% if t.ready %}
+          <a class="st{{ ' on' if t.active }}" href="{{ t.href }}">
+            <b>{{ t.name }}</b>
+            <span class="st-v">{{ t.version }}</span>
+            <span class="st-a">{{ t.ago }}{% if t.recent %} · 7일 {{ t.recent }}건{% endif %}</span>
+          </a>
+          {% else %}
+          <div class="st off">
+            <b>{{ t.name }}</b>
+            <span class="st-v">수집 준비 중</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="blk">
+      <form class="sr" method="get" action="/">
+        {% for k, v in hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <label class="srch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" name="q" value="{{ q }}" placeholder="검색: mcp, hook, 서브에이전트…  ( / )" aria-label="검색" autocomplete="off">
+        </label>
+        <details class="fb">
+          <summary>필터{% if active %} {{ active | length }}{% endif %}</summary>
+          <div class="fb-p">
+            <div class="lab">도구</div>
+            <div class="chs">{{ tool_chips(tools, total, all_href) }}</div>
+            <div class="lab">주제</div>
+            <div class="chs">{{ topic_chips(topics) }}</div>
+          </div>
+        </details>
+      </form>
+
+      {% if active %}
+      <div class="act">
+        {% for a in active %}<a class="ch on" href="{{ a.href }}">{{ a.label }} ×</a>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="bar" id="topics">
+        <nav class="tabs">
+          {% for t in tabs %}
+            <a class="tb{{ ' on' if t.active }}" href="{{ t.href }}"><span class="dsk">{{ t.label }}</span><span class="mob">{{ t.short }}</span> ({{ t.count }})</a>
+          {% endfor %}
+        </nav>
+        <form class="sel" method="get" action="/">
+          {% for k, v in hidden.items() if k != 'topic' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+          {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+          <select name="topic" aria-label="주제" onchange="this.form.submit()">
+            <option value="">주제: 전체</option>
+            {% for t in topics %}<option value="{{ t.name }}"{{ ' selected' if t.active }}>주제: {{ t.name }}</option>{% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <div class="list">
+        {% for r in rows %}
+        {% if r.show_day %}
+        <div class="dd" data-day="{{ r.day }}"><b>{{ r.day_label }}</b></div>
+        {% endif %}
+        <details class="tr" data-day="{{ r.day }}" data-cat="{{ r.category }}"{{ " open" if q and r.hits }}>
+          <summary>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="main">
+              <span class="nm"><b>{{ r.name | mark(q) }}</b><span class="vr">{{ r.version | mark(q) }}</span><span class="ag">{{ r.ago }}</span></span>
+              <span class="sm">
+                {% if r.headline %}{{ r.headline | mark(q) }}{% if r.count > 1 %} <em>외 {{ r.count - 1 }}개</em>{% endif %}{% if q and r.hits %} <em>· 일치 {{ r.hits }}개</em>{% endif %}
+                {% else %}요약 대기 중 · 변경 항목 {{ r.count }}개{% endif %}
+              </span>
+            </span>
+            <span class="meta">
+              {% for c in r.cats %}<span class="bd cat-{{ c.key }}" title="{{ c.count }}개">{{ c.symbol }}{{ c.count }}</span>{% endfor %}
+              {% if r.importance %}<span class="im" title="중요도 {{ r.importance }}">{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}</span>{% endif %}
+            </span>
+          </summary>
+          <div class="xp">
+            {% if r.lines %}
+            <ul class="xi">
+              {% for i in r.lines %}
+              <li>
+                <span class="ty cat-{{ i.category }}">{{ i.symbol }}</span>
+                <span class="xt">{{ (i.summary or i.raw) | mark(q) }}{% if not i.summary %} <em class="pd">요약 대기</em>{% endif %}</span>
+                {% if i.topic %}<span class="xg"># {{ i.topic | mark(q) }}</span>{% endif %}
+                <details class="og"{{ " open" if i.raw_only }}><summary>원문</summary><p lang="en">{{ i.raw | mark(q) }}</p></details>
+              </li>
+              {% endfor %}
+            </ul>
+            {% if r.hidden_count %}<p class="xm">외 {{ r.hidden_count }}개 항목은 원문에서 볼 수 있습니다.</p>{% endif %}
+            {% else %}
+            <p class="xm">변경 항목 {{ r.count }}개 · 요약이 만들어지면 여기에 항목별 요약이 나옵니다.</p>
+            {% endif %}
+            <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.name ~ ' ' ~ r.version) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+            <a class="orig" href="{{ r.path }}">변경 사항 페이지</a>
+            <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
+          </div>
+        </details>
+        {% else %}
+        <div class="empty">{% if total == 0 %}아직 수집된 릴리스가 없습니다.{% else %}조건에 맞는 항목이 없습니다.{% endif %}</div>
+        {% endfor %}
+      </div>
+
+      {% if more %}
+      <a class="more" id="more" href="{{ more }}" rel="next">더 보기</a>
+      {% endif %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+  <script src="{{ asset('js/home.js') }}"></script>
+</body>
+</html>
