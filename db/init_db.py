@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from core.config import settings
@@ -14,6 +14,8 @@ def init_db() -> None:
     if not settings.AUTO_CREATE_TABLES:
         return
     Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE item ADD COLUMN IF NOT EXISTS attempts SMALLINT NOT NULL DEFAULT 0"))
     with Session(engine) as session:
         existing = {s.slug: s for s in session.scalars(select(Source))}
         for row in SOURCES:

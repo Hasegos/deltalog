@@ -40,6 +40,17 @@ class Settings(BaseSettings):
     LLM_REPEAT_PENALTY: float = 1.0
     LLM_MAX_TOKENS: int = 4096
     LLM_MAX_RETRIES: int = 2
+    LLM_PROVIDER: str = "local"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    GEMINI_DAILY_LIMIT: int = 20
+    GEMINI_RPM: int = 5
+    GEMINI_BATCH_SIZE: int = 25
+    GEMINI_MAX_TOKENS: int = 8192
+    GEMINI_REASONING_EFFORT: str = ""
+    GEMINI_COOLDOWN_MIN: int = 10
+    FAILED_MAX_ATTEMPTS: int = 3
     AUTO_SUMMARIZE: bool = True
     SUMMARIZE_INTERVAL_MIN: int = 3
     SUMMARIZE_BATCH_LIMIT: int = 200

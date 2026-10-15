@@ -32,3 +32,4 @@ class Item(Base):
     model: Mapped[str | None] = mapped_column(String(100))
     prompt_version: Mapped[str | None] = mapped_column(String(20))
     error: Mapped[str | None] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(SmallInteger, server_default="0")

@@ -13,7 +13,7 @@ from core.logger import purge_old_logs, setup_logging
 from core.middleware import access_log, api_headers, security_headers
 from db.init_db import init_db
 from services.collector.poller_service import poll_all
-from services.llm.llm_service import summarize_job
+from services.llm.llm_service import requeue_failed_job, summarize_job
 
 setup_logging()
 
@@ -47,6 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             coalesce=True,
         )
     scheduler.add_job(purge_old_logs, "cron", hour=3, minute=0, next_run_time=datetime.now())
+    scheduler.add_job(requeue_failed_job, "cron", hour=4, minute=0)
     scheduler.start()
     yield
     scheduler.shutdown(wait=False)

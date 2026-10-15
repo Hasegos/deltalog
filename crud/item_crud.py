@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from core.constants.llm import PROMPT_VERSION
@@ -88,7 +88,7 @@ def count_items(db: Session, tool: str, tab: str, category: str, topic: str, q: 
 
 
 def list_pending_items(db: Session, limit: int) -> list[tuple[Item, Entry, Source]]:
-    """요약을 기다리는 항목(`pending`, 이전 프롬프트 버전으로 요약된 `done`)을 최신 글부터, 글 안에서는 원문 순서로 돌려준다.
+    """요약을 기다리는 항목(`pending`, 이전 프롬프트 버전으로 요약된 `done`)을 돌려준다. 이미 실패한 적이 있는 항목은 뒤로 미루고, 나머지는 최신 글부터, 글 안에서는 원문 순서다.
 
     Args:
         db: DB 세션
@@ -101,10 +101,26 @@ def list_pending_items(db: Session, limit: int) -> list[tuple[Item, Entry, Sourc
         .join(Entry, Item.entry_id == Entry.id)
         .join(Source, Entry.source_id == Source.id)
         .where(or_(Item.status == "pending", and_(Item.status == "done", Item.prompt_version != PROMPT_VERSION)))
-        .order_by(Entry.published_at.desc(), Entry.id.desc(), Item.seq)
+        .order_by(Item.attempts, Entry.published_at.desc(), Entry.id.desc(), Item.seq)
         .limit(limit)
     )
     return [tuple(row) for row in db.execute(stmt).all()]
+
+
+def requeue_failed(db: Session, max_attempts: int) -> int:
+    """실패한 항목 중 시도 횟수가 `max_attempts` 미만인 것을 `pending`으로 되돌린다.
+
+    Args:
+        db: DB 세션
+        max_attempts: 이 횟수에 이른 항목은 되돌리지 않는다
+    Returns:
+        되돌린 항목 수
+    """
+    result = db.execute(
+        update(Item).where(Item.status == "failed", Item.attempts < max_attempts).values(status="pending")
+    )
+    db.commit()
+    return result.rowcount
 
 
 def list_sources(db: Session) -> list[Source]:
