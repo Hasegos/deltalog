@@ -5,16 +5,14 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse,
 from sqlalchemy.orm import Session
 
 from core.templates import site_url, templates
-from crud import item_crud
 from db.session import get_db
 from services.web.changes_service import build_changes
 from services.web.home_service import build_home
 from services.web.page_service import build_tools, build_topics
-from services.web.release_service import build_release, build_release_index, sitemap_urls
+from services.web import sitemap_service
+from services.web.release_service import build_release, build_release_index
 
 page_router = APIRouter(include_in_schema=False)
-SITEMAP_PATHS = ("/", "/releases", "/changes", "/tools", "/topics", "/about", "/contact", "/privacy", "/terms")
-
 
 
 @page_router.get("/", response_class=HTMLResponse)
@@ -156,7 +154,7 @@ def robots(request: Request) -> PlainTextResponse:
 
 @page_router.get("/sitemap.xml")
 def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
-    """공개 페이지와 릴리스 상세 페이지 주소를 담은 `sitemap.xml`을 돌려준다.
+    """공개 페이지와 글 상세 페이지 주소를 담은 `sitemap.xml`을 돌려준다. 주소가 많으면 색인이 되어 `/sitemap-<쪽>.xml`을 가리킨다.
 
     Args:
         request: 현재 요청
@@ -164,11 +162,25 @@ def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
     Returns:
         사이트맵 XML
     """
-    base = site_url(request)
-    urls = "".join(f"<url><loc>{base}{path}</loc></url>" for path in SITEMAP_PATHS)
-    urls += "".join(f"<url><loc>{base}/releases/{s.slug}</loc></url>" for s in item_crud.list_sources(db))
-    urls += "".join(f"<url><loc>{base}{path}</loc><lastmod>{day}</lastmod></url>" for path, day in sitemap_urls(db))
-    xml = f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
+    return Response(sitemap_service.render(site_url(request), sitemap_service.collect_urls(db), None), media_type="application/xml")
+
+
+@page_router.get("/sitemap-{page}.xml")
+def sitemap_part(request: Request, page: int, db: Session = Depends(get_db)) -> Response:
+    """사이트맵을 나눴을 때 한 쪽을 돌려준다.
+
+    Args:
+        request: 현재 요청
+        page: 쪽 번호(1부터)
+        db: 요청에 쓸 DB 세션
+    Returns:
+        사이트맵 XML
+    Raises:
+        HTTPException: 그런 쪽이 없을 때 (404)
+    """
+    xml = sitemap_service.render(site_url(request), sitemap_service.collect_urls(db), page)
+    if xml is None or page < 1:
+        raise HTTPException(status_code=404, detail="Not Found")
     return Response(xml, media_type="application/xml")
 
 

@@ -358,3 +358,15 @@ def list_summarized_entries(db: Session) -> list[tuple[Entry, Source]]:
     has_done = exists().where(Item.entry_id == Entry.id, Item.status == "done")
     stmt = select(Entry, Source).join(Source, Source.id == Entry.source_id).where(has_done).order_by(Entry.published_at.desc())
     return [(entry, source) for entry, source in db.execute(stmt).all()]
+
+
+def latest_published_per_source(db: Session) -> dict[int, datetime]:
+    """소스마다 가장 최근 글의 게시일을 돌려준다 (사이트맵의 `lastmod`용).
+
+    Args:
+        db: DB 세션
+    Returns:
+        소스 ID별 가장 최근 게시일
+    """
+    stmt = select(Entry.source_id, func.max(Entry.published_at)).group_by(Entry.source_id)
+    return {source_id: moment for source_id, moment in db.execute(stmt).all()}
