@@ -57,3 +57,4 @@ def canonical_url(request) -> str:
 
 
 templates.env.globals["canonical_url"] = canonical_url
+templates.env.globals["adsense_client"] = settings.adsense_client
