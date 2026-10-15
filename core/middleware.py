@@ -10,7 +10,7 @@ logger = get_logger("api")
 
 
 def client_ip(request: Request) -> str:
-    """접속자 IP를 돌려준다. `TRUST_PROXY`가 켜져 있으면 프록시가 넣은 `X-Forwarded-For`의 첫 값을 쓴다.
+    """접속자 IP를 돌려준다. `TRUST_PROXY`가 켜져 있으면 Cloudflare가 항상 덮어써 넣는 `CF-Connecting-IP`를 쓴다 (`X-Forwarded-For`의 첫 값은 방문자가 위조할 수 있어 쓰지 않는다).
 
     Args:
         request: 요청
@@ -18,9 +18,9 @@ def client_ip(request: Request) -> str:
         IP 문자열. 알 수 없으면 `-`
     """
     if settings.TRUST_PROXY:
-        forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        if forwarded:
-            return forwarded
+        real = request.headers.get("cf-connecting-ip", "").strip()
+        if real:
+            return real
     return request.client.host if request.client else "-"
 
 
