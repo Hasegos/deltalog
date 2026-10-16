@@ -74,6 +74,8 @@ def clean_text(text: str) -> str:
 def unseen_words(summary: str, original: str) -> list[str]:
     """요약에 나온 영어 단어 중 원문에 없는 것을 돌려준다. 모델이 지어낸 용어를 걸러내는 데 쓴다.
 
+    원문 단어 2~5개의 머리글자를 이은 약어(`byte-order mark` → `BOM`)는 지어낸 말이 아니므로 통과시킨다.
+
     Args:
         summary: 한국어 요약
         original: 항목 원문
@@ -81,7 +83,9 @@ def unseen_words(summary: str, original: str) -> list[str]:
         원문에 없는 영어 단어 (대소문자 무시). 모두 있으면 빈 목록
     """
     lowered = original.lower()
-    return [w for w in re.findall(r"[A-Za-z][A-Za-z0-9_]{2,}", summary) if w.lower() not in lowered]
+    words = re.findall(r"[a-z0-9]+", lowered)
+    acronyms = {"".join(w[0] for w in words[i : i + n]) for n in range(2, 6) for i in range(len(words) - n + 1)}
+    return [w for w in re.findall(r"[A-Za-z][A-Za-z0-9_]{2,}", summary) if w.lower() not in lowered and w.lower() not in acronyms]
 
 
 def _messages(source: Source, entry: Entry, texts: dict[int, str]) -> list[dict]:
