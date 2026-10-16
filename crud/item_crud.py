@@ -206,6 +206,17 @@ def count_pending_items(db: Session) -> int:
     return db.scalar(select(func.count(Item.id)).where(Item.status == "pending")) or 0
 
 
+def count_items_by_status(db: Session) -> dict[str, int]:
+    """요약 상태(`pending`, `done`, `failed`)별 항목 개수를 돌려준다.
+
+    Args:
+        db: DB 세션
+    Returns:
+        상태별 개수. 항목이 없는 상태는 들어 있지 않다
+    """
+    return {status: count for status, count in db.execute(select(Item.status, func.count(Item.id)).group_by(Item.status)).all()}
+
+
 def count_items_by_topic(db: Session) -> dict[str, int]:
     """주제별 항목 개수를 돌려준다.
 
