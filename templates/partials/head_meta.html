@@ -10,7 +10,14 @@
 <meta property="og:title" content="{{ seo_title }}">
 <meta property="og:description" content="{{ seo_desc }}">
 <meta property="og:url" content="{{ canonical_url(request) }}">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="{{ site_url(request) }}/static/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{{ site_url(request) }}/static/og.png">
+<link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 {% if jsonld %}<script type="application/ld+json">{{ jsonld | safe }}</script>{% endif %}
 {% if adsense_client %}<meta name="google-adsense-account" content="{{ adsense_client }}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client }}" crossorigin="anonymous"></script>{% endif %}

@@ -1,7 +1,7 @@
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from core.config import settings
@@ -16,7 +16,19 @@ from services.web.release_service import build_release, build_release_index
 page_router = APIRouter(include_in_schema=False)
 
 
-@page_router.get("/", response_class=HTMLResponse)
+def page(path: str, **kwargs):
+    """`GET`과 `HEAD`를 함께 받는 페이지 라우트 데코레이터. 업타임 확인이나 `curl -I`가 `HEAD`로 오기 때문이다.
+
+    Args:
+        path: 라우트 주소
+        **kwargs: `APIRouter.api_route`에 넘길 값 (예: `response_class`)
+    Returns:
+        라우트 데코레이터
+    """
+    return page_router.api_route(path, methods=["GET", "HEAD"], **kwargs)
+
+
+@page("/", response_class=HTMLResponse)
 def home_page(
     request: Request,
     tool: str = "",
@@ -45,7 +57,7 @@ def home_page(
     return templates.TemplateResponse(request, "home.html", context)
 
 
-@page_router.get("/tools", response_class=HTMLResponse)
+@page("/tools", response_class=HTMLResponse)
 def tools_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """도구 목록 화면을 그린다.
 
@@ -58,7 +70,7 @@ def tools_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     return templates.TemplateResponse(request, "tools.html", build_tools(db))
 
 
-@page_router.get("/topics", response_class=HTMLResponse)
+@page("/topics", response_class=HTMLResponse)
 def topics_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """주제 목록 화면을 그린다.
 
@@ -71,7 +83,7 @@ def topics_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse
     return templates.TemplateResponse(request, "topics.html", build_topics(db))
 
 
-@page_router.get("/about", response_class=HTMLResponse)
+@page("/about", response_class=HTMLResponse)
 def about_page(request: Request) -> HTMLResponse:
     """소개 화면을 그린다.
 
@@ -83,7 +95,7 @@ def about_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "about.html", {})
 
 
-@page_router.get("/privacy", response_class=HTMLResponse)
+@page("/privacy", response_class=HTMLResponse)
 def privacy_page(request: Request) -> HTMLResponse:
     """개인정보 처리방침 화면을 그린다.
 
@@ -95,7 +107,7 @@ def privacy_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "privacy.html", {})
 
 
-@page_router.get("/terms", response_class=HTMLResponse)
+@page("/terms", response_class=HTMLResponse)
 def terms_page(request: Request) -> HTMLResponse:
     """이용약관 화면을 그린다.
 
@@ -107,7 +119,7 @@ def terms_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "terms.html", {})
 
 
-@page_router.get("/contact", response_class=HTMLResponse)
+@page("/contact", response_class=HTMLResponse)
 def contact_page(request: Request) -> HTMLResponse:
     """문의 화면을 그린다.
 
@@ -119,7 +131,7 @@ def contact_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "contact.html", {})
 
 
-@page_router.get("/changes", response_class=HTMLResponse)
+@page("/changes", response_class=HTMLResponse)
 def changes_page(
     request: Request,
     tool: str = "",
@@ -141,7 +153,7 @@ def changes_page(
     return templates.TemplateResponse(request, "changes.html", build_changes(db, tool, version.strip(), level))
 
 
-@page_router.get("/robots.txt", response_class=PlainTextResponse)
+@page("/robots.txt", response_class=PlainTextResponse)
 def robots(request: Request) -> PlainTextResponse:
     """검색 로봇 안내문을 돌려준다. API는 막고 사이트맵 주소를 알린다.
 
@@ -153,7 +165,7 @@ def robots(request: Request) -> PlainTextResponse:
     return PlainTextResponse(f"User-agent: *\nDisallow: /api/\n\nSitemap: {site_url(request)}/sitemap.xml\n")
 
 
-@page_router.get("/sitemap.xml")
+@page("/sitemap.xml")
 def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
     """공개 페이지와 글 상세 페이지 주소를 담은 `sitemap.xml`을 돌려준다. 주소가 많으면 색인이 되어 `/sitemap-<쪽>.xml`을 가리킨다.
 
@@ -166,7 +178,7 @@ def sitemap(request: Request, db: Session = Depends(get_db)) -> Response:
     return Response(sitemap_service.render(site_url(request), sitemap_service.collect_urls(db), None), media_type="application/xml")
 
 
-@page_router.get("/sitemap-{page}.xml")
+@page("/sitemap-{page}.xml")
 def sitemap_part(request: Request, page: int, db: Session = Depends(get_db)) -> Response:
     """사이트맵을 나눴을 때 한 쪽을 돌려준다.
 
@@ -185,7 +197,7 @@ def sitemap_part(request: Request, page: int, db: Session = Depends(get_db)) -> 
     return Response(xml, media_type="application/xml")
 
 
-@page_router.get("/releases/{slug}/{key}", response_class=HTMLResponse)
+@page("/releases/{slug}/{key}", response_class=HTMLResponse)
 def release_page(request: Request, slug: str, key: str, db: Session = Depends(get_db)) -> HTMLResponse:
     """릴리스 하나의 변경 사항을 항목별 요약으로 보여주는 상세 페이지를 그린다.
 
@@ -205,8 +217,8 @@ def release_page(request: Request, slug: str, key: str, db: Session = Depends(ge
     return templates.TemplateResponse(request, "release.html", context)
 
 
-@page_router.get("/releases", response_class=HTMLResponse)
-@page_router.get("/releases/{slug}", response_class=HTMLResponse)
+@page("/releases", response_class=HTMLResponse)
+@page("/releases/{slug}", response_class=HTMLResponse)
 def release_index_page(request: Request, slug: str = "", db: Session = Depends(get_db)) -> HTMLResponse:
     """릴리스 목록 화면을 그린다. `/releases`는 도구마다 최근 릴리스, `/releases/<도구>`는 그 도구의 전체 릴리스다.
 
@@ -225,8 +237,8 @@ def release_index_page(request: Request, slug: str = "", db: Session = Depends(g
     return templates.TemplateResponse(request, "releases.html", context)
 
 
-@page_router.get("/r")
-@page_router.get("/r/{rest:path}")
+@page("/r")
+@page("/r/{rest:path}")
 def legacy_release_path(request: Request, rest: str = "") -> RedirectResponse:
     """옛 릴리스 주소(`/r/...`)를 새 주소(`/releases/...`)로 영구 이동시킨다.
 
@@ -242,7 +254,7 @@ def legacy_release_path(request: Request, rest: str = "") -> RedirectResponse:
     return RedirectResponse(target, status_code=301)
 
 
-@page_router.get("/ads.txt", response_class=PlainTextResponse)
+@page("/ads.txt", response_class=PlainTextResponse)
 def ads_txt() -> PlainTextResponse:
     """애드센스 판매자 확인 파일. `ADSENSE_CLIENT`가 없으면 404.
 
@@ -255,3 +267,13 @@ def ads_txt() -> PlainTextResponse:
     if not client:
         raise HTTPException(status_code=404, detail="Not Found")
     return PlainTextResponse(f"google.com, {client.removeprefix('ca-')}, DIRECT, f08c47fec0942fa0\n")
+
+
+@page("/favicon.ico")
+def favicon() -> FileResponse:
+    """브라우저와 검색 로봇이 기본으로 찾는 `/favicon.ico`를 돌려준다.
+
+    Returns:
+        `static/favicon.ico` 파일 (하루 캐시)
+    """
+    return FileResponse("static/favicon.ico", media_type="image/x-icon", headers={"Cache-Control": "public, max-age=86400"})
