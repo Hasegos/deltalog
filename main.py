@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
 from core.logger import purge_old_logs, setup_logging
-from core.middleware import access_log, api_headers, security_headers
+from core.middleware import access_log, api_headers, metrics_guard, security_headers
 from db.init_db import init_db
 from services.collector.poller_service import poll_all
 from services.llm.llm_service import requeue_failed_job, summarize_job
@@ -64,6 +65,8 @@ app = FastAPI(
 app.middleware("http")(access_log)
 app.middleware("http")(security_headers)
 app.middleware("http")(api_headers)
+app.middleware("http")(metrics_guard)
+Instrumentator(should_ignore_untemplated=True, excluded_handlers=["/metrics"]).instrument(app).expose(app, include_in_schema=False)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(page_router)
 app.include_router(api_router)

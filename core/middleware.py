@@ -24,8 +24,22 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "-"
 
 
+async def metrics_guard(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """`/metrics`를 서버 안에서 직접 오는 수집(Prometheus)에만 열고, Cloudflare를 거친 요청(`CF-Connecting-IP`가 있는 요청)에는 404를 돌려준다.
+
+    Args:
+        request: 요청
+        call_next: 다음 처리
+    Returns:
+        응답
+    """
+    if request.url.path == "/metrics" and request.headers.get("cf-connecting-ip"):
+        return Response(status_code=404)
+    return await call_next(request)
+
+
 async def access_log(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
-    """요청 1건을 `api.log`에 남긴다. `/static` 요청은 남기지 않는다.
+    """요청 1건을 `api.log`에 남긴다. `/static`과 `/metrics` 요청은 남기지 않는다.
 
     Args:
         request: 요청
@@ -40,7 +54,7 @@ async def access_log(request: Request, call_next: Callable[[Request], Awaitable[
         status = response.status_code
         return response
     finally:
-        if not request.url.path.startswith("/static"):
+        if not request.url.path.startswith(("/static", "/metrics")):
             log_event(
                 logger,
                 ip=client_ip(request),
