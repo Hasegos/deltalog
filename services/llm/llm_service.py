@@ -46,8 +46,10 @@ class Summary(BaseModel):
             NUL과 마침표를 뗀 요약
         """
         value = value.replace("\x00", "").strip().rstrip(".").strip()
-        if not value.endswith("다") or len(value) > SUMMARY_MAX_CHARS:
-            raise ValueError("요약은 80자 안팎의 '~다' 문장이어야 한다")
+        if not value.endswith("다"):
+            raise ValueError("'~다'로 끝나지 않음")
+        if len(value) > SUMMARY_MAX_CHARS:
+            raise ValueError(f"길이 초과({len(value)}자)")
         return value
 
 
@@ -103,32 +105,44 @@ def _messages(source: Source, entry: Entry, texts: dict[int, str]) -> list[dict]
     return [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}]
 
 
-def _parse(content: str, texts: dict[int, str]) -> dict[int, Summary]:
-    """모델 답을 읽어 검증을 통과한 항목만 번호별로 돌려준다. 통과하지 못한 항목은 들어 있지 않다.
+def _parse(content: str, texts: dict[int, str]) -> tuple[dict[int, Summary], dict[int, str]]:
+    """모델 답을 읽어 검증을 통과한 항목을 번호별로 돌려주고, 통과하지 못한 항목은 이유를 함께 돌려준다.
 
     Args:
         content: 모델 답 본문
         texts: 기다리는 번호별 항목 원문. 요약에 원문에 없는 영어 단어가 있으면 통과시키지 않는다
     Returns:
-        번호별 검증된 값. 주제가 목록에 없으면 빈 값으로 바꾼다
+        (번호별 검증된 값, 통과하지 못한 번호별 이유). 주제가 목록에 없으면 빈 값으로 바꾼다
     """
     text = re.sub(r"^```(?:json)?|```$", "", content.strip(), flags=re.MULTILINE).strip()
     try:
         raw_items = json.loads(text)["items"]
     except (ValueError, KeyError, TypeError):
-        return {}
+        return {}, {n: "응답 형식 오류(JSON)" for n in texts}
 
     result: dict[int, Summary] = {}
+    reasons: dict[int, str] = {}
     for raw in raw_items if isinstance(raw_items, list) else []:
+        n = raw.get("n") if isinstance(raw, dict) else None
         try:
             summary = Summary.model_validate(raw)
-        except ValidationError:
+        except ValidationError as exc:
+            error = exc.errors()[0]
+            field = str(error["loc"][-1]) if error["loc"] else "형식"
+            msg = error["msg"].removeprefix("Value error, ")
+            if isinstance(n, int) and n in texts:
+                reasons[n] = msg if field == "summary_ko" else f"{field}: {msg}"
             continue
-        if summary.n in texts and summary.n not in result and not unseen_words(summary.summary_ko, texts[summary.n]):
-            if summary.topic not in TOPICS:
-                summary.topic = ""
-            result[summary.n] = summary
-    return result
+        if summary.n not in texts or summary.n in result:
+            continue
+        bad = unseen_words(summary.summary_ko, texts[summary.n])
+        if bad:
+            reasons[summary.n] = "원문에 없는 영어: " + ", ".join(dict.fromkeys(bad))
+            continue
+        if summary.topic not in TOPICS:
+            summary.topic = ""
+        result[summary.n] = summary
+    return result, {n: reasons.get(n, "모델이 이 번호를 빼먹음") for n in texts if n not in result}
 
 
 _gemini_blocked_until = 0.0
@@ -187,6 +201,7 @@ def summarize_batch(db: Session, source: Source, entry: Entry, items: list[Item]
     """
     waiting = {n: item for n, item in enumerate(items, start=1)}
     attempts = 0
+    reasons: dict[int, str] = {}
     model = _model_name(provider)
     for _ in range(settings.LLM_MAX_RETRIES + 1):
         if not waiting:
@@ -198,7 +213,8 @@ def summarize_batch(db: Session, source: Source, entry: Entry, items: list[Item]
         attempts += 1
         completion = lm_client.complete(_messages(source, entry, {n: i.raw_text for n, i in waiting.items()}), SCHEMA, provider)
         model = completion.model
-        for n, summary in _parse(completion.content, {n: i.raw_text for n, i in waiting.items()}).items():
+        parsed, reasons = _parse(completion.content, {n: i.raw_text for n, i in waiting.items()})
+        for n, summary in parsed.items():
             item = waiting.pop(n)
             item.category = summary.category
             item.topic = summary.topic or None
@@ -222,11 +238,11 @@ def summarize_batch(db: Session, source: Source, entry: Entry, items: list[Item]
         attempts=attempts,
         prompt_version=PROMPT_VERSION,
     )
-    for item in waiting.values():
+    for n, item in waiting.items():
         item.status = "failed"
         item.model = model
         item.prompt_version = PROMPT_VERSION
-        item.error = "검증 실패 (재시도 횟수 초과)"
+        item.error = f"{reasons.get(n, '검증 실패')} (시도 {attempts}회)"
         item.attempts = (item.attempts or 0) + 1
 
 
@@ -252,8 +268,16 @@ def summarize_pending(db: Session, limit: int, provider: str = "local") -> list[
         entry, source = group_rows[0][1], group_rows[0][2]
         for start in range(0, len(group_rows), size):
             batch = group_rows[start : start + size]
-            summarize_batch(db, source, entry, [row[0] for row in batch], provider)
-            db.commit()
+            try:
+                summarize_batch(db, source, entry, [row[0] for row in batch], provider)
+                db.commit()
+            except LlmUnavailable:
+                raise
+            except Exception as exc:
+                db.rollback()
+                logger.exception("summarize: %s %s 묶음 처리 실패", source.slug, entry.version or entry.id)
+                item_crud.mark_failed(db, [row[0].id for row in batch], f"처리 오류({exc.__class__.__name__})")
+                db.commit()
             processed.extend(batch)
             logger.info(
                 "summarize[%s] %s %s: %d건 처리 (완료 %d, 실패 %d)",
