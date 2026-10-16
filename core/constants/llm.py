@@ -7,3 +7,5 @@ PROMPT_VERSION = "v3"
 BATCH_SIZE = 8
 MAX_ITEM_CHARS = 700
 SUMMARY_MAX_CHARS = 160
+# 서버에 연결하는 단계의 제한 시간(초). 호스트 PC가 꺼져 있으면 응답 없이 기다리게 되므로 읽기 제한(`LM_STUDIO_TIMEOUT`)과 따로 짧게 둔다.
+CONNECT_TIMEOUT = 5
