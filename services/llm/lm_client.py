@@ -127,6 +127,9 @@ def complete(messages: list[dict], schema: dict, provider: str = "local") -> Com
 
     data = response.json()
     usage = data.get("usage") or {}
+    choice = data["choices"][0]
+    content = choice["message"]["content"] or ""
+    finish = choice.get("finish_reason")
     log_event(
         logger,
         event="call",
@@ -135,6 +138,9 @@ def complete(messages: list[dict], schema: dict, provider: str = "local") -> Com
         ms=round((perf_counter() - started) * 1000),
         prompt_tokens=usage.get("prompt_tokens"),
         completion_tokens=usage.get("completion_tokens"),
+        finish=finish,
         **event,
     )
-    return Completion(content=data["choices"][0]["message"]["content"] or "", model=target["model"])
+    if finish == "length":
+        log_event(logger, event="truncated", chars=len(content), head=content[:300], tail=content[-300:], **event)
+    return Completion(content=content, model=target["model"])
