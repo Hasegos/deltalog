@@ -56,5 +56,6 @@ def canonical_url(request) -> str:
     return site_url(request) + request.url.path
 
 
+templates.env.globals["site_url"] = site_url
 templates.env.globals["canonical_url"] = canonical_url
 templates.env.globals["adsense_client"] = settings.adsense_client
