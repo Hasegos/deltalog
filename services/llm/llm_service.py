@@ -36,14 +36,16 @@ class Summary(BaseModel):
     @field_validator("summary_ko")
     @classmethod
     def check_summary(cls, value: str) -> str:
-        """끝의 마침표를 떼고, "~다"로 끝나지 않거나 너무 길면 검증 실패로 돌려보낸다.
+        """NUL 문자(`\\x00`)를 지우고 끝의 마침표를 떼며, "~다"로 끝나지 않거나 너무 길면 검증 실패로 돌려보낸다.
+
+        PostgreSQL 문자열 컬럼은 NUL을 저장하지 못한다. 원문에 `\\x00` 이스케이프가 나오는 릴리스는 모델이 진짜 NUL을 돌려줘서 커밋이 실패하고 같은 묶음이 계속 재시도된다.
 
         Args:
             value: 모델이 만든 한 줄 요약
         Returns:
-            마침표를 뗀 요약
+            NUL과 마침표를 뗀 요약
         """
-        value = value.strip().rstrip(".").strip()
+        value = value.replace("\x00", "").strip().rstrip(".").strip()
         if not value.endswith("다") or len(value) > SUMMARY_MAX_CHARS:
             raise ValueError("요약은 80자 안팎의 '~다' 문장이어야 한다")
         return value
