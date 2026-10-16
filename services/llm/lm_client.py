@@ -5,6 +5,7 @@ from time import perf_counter
 import httpx
 
 from core.config import settings
+from core.constants.llm import CONNECT_TIMEOUT
 from core.logger import get_logger, log_event
 
 logger = get_logger("llm")
@@ -108,12 +109,13 @@ def complete(messages: list[dict], schema: dict, provider: str = "local") -> Com
     _throttle(provider)
     started = perf_counter()
     event = {"provider": provider, "model": target["model"], "schema": True}
+    timeout = httpx.Timeout(target["timeout"], connect=CONNECT_TIMEOUT)
     try:
-        response = httpx.post(target["url"], json=body, headers=headers, timeout=target["timeout"])
+        response = httpx.post(target["url"], json=body, headers=headers, timeout=timeout)
         if response.status_code == 400:
             del body["response_format"]
             event["schema"] = False
-            response = httpx.post(target["url"], json=body, headers=headers, timeout=target["timeout"])
+            response = httpx.post(target["url"], json=body, headers=headers, timeout=timeout)
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         code = exc.response.status_code
