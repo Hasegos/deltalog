@@ -274,6 +274,6 @@ def favicon() -> FileResponse:
     """브라우저와 검색 로봇이 기본으로 찾는 `/favicon.ico`를 돌려준다.
 
     Returns:
-        `static/favicon.ico` 파일 (하루 캐시)
+        `static/img/favicon.ico` 파일 (하루 캐시)
     """
-    return FileResponse("static/favicon.ico", media_type="image/x-icon", headers={"Cache-Control": "public, max-age=86400"})
+    return FileResponse("static/img/favicon.ico", media_type="image/x-icon", headers={"Cache-Control": "public, max-age=86400"})
