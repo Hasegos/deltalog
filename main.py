@@ -16,7 +16,7 @@ from core.middleware import access_log, api_headers, metrics_guard, security_hea
 from db.init_db import init_db
 from services.collector.poller_service import poll_all
 from services.llm.llm_service import requeue_failed_job, summarize_job
-from services.web.metrics_service import ItemStatusCollector
+from services.web.metrics_service import AppStateCollector
 
 setup_logging()
 
@@ -69,7 +69,7 @@ app.middleware("http")(security_headers)
 app.middleware("http")(api_headers)
 app.middleware("http")(metrics_guard)
 Instrumentator(should_ignore_untemplated=True, excluded_handlers=["/metrics"]).instrument(app).expose(app, include_in_schema=False)
-REGISTRY.register(ItemStatusCollector())
+REGISTRY.register(AppStateCollector())
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(page_router)
 app.include_router(api_router)
