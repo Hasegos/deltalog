@@ -123,6 +123,17 @@ def requeue_failed(db: Session, max_attempts: int) -> int:
     return result.rowcount
 
 
+def mark_failed(db: Session, item_ids: list[int], error: str) -> None:
+    """항목들을 `failed`로 바꾸고 이유를 남기며 시도 횟수를 하나 올린다. 커밋은 부르는 쪽이 한다.
+
+    Args:
+        db: DB 세션
+        item_ids: 대상 항목 번호
+        error: `item.error`에 남길 이유
+    """
+    db.execute(update(Item).where(Item.id.in_(item_ids)).values(status="failed", error=error, attempts=Item.attempts + 1))
+
+
 def list_sources(db: Session) -> list[Source]:
     """소스를 등록 순서대로 돌려준다.
 
