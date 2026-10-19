@@ -159,3 +159,22 @@ def latest_published(db: Session) -> datetime | None:
 def count_pending(db: Session) -> int:
     """요약을 기다리는(`pending`) 글 개수를 돌려준다."""
     return db.scalar(select(func.count(News.id)).where(News.status == "pending")) or 0
+
+
+def list_for_feed(db: Session, companies: list[str], min_importance: int, limit: int) -> list[News]:
+    """RSS에 넣을 요약이 끝난 글을 최신순으로 돌려준다.
+
+    Args:
+        db: DB 세션
+        companies: 이 제작사의 글만. 비우면 모든 제작사
+        min_importance: 이 중요도 이상인 글만
+        limit: 최대 개수
+    Returns:
+        글 목록
+    """
+    stmt = select(News).where(News.status == "done")
+    if min_importance > 1:
+        stmt = stmt.where(News.importance >= min_importance)
+    if companies:
+        stmt = stmt.where(News.company.in_(companies))
+    return list(db.scalars(stmt.order_by(News.published_at.desc(), News.id.desc()).limit(limit)))
