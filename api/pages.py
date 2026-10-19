@@ -188,6 +188,18 @@ def topics_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse
     return templates.TemplateResponse(request, "topics.html", build_topics(db))
 
 
+@page("/agents", response_class=HTMLResponse)
+def agents_page(request: Request) -> HTMLResponse:
+    """AI 에이전트(Claude Code, Cursor 등)에 MCP 서버(`/mcp`)를 연결하는 방법을 안내하는 페이지를 그린다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        렌더링한 안내 페이지
+    """
+    return templates.TemplateResponse(request, "agents.html", {})
+
+
 @page("/about", response_class=HTMLResponse)
 def about_page(request: Request) -> HTMLResponse:
     """소개 화면을 그린다.
