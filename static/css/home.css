@@ -631,6 +631,12 @@ mark {
   color: var(--dim);
 }
 
+.sr-note {
+  margin: 12px 2px 0;
+  font-size: 14px;
+  color: var(--dim);
+}
+
 /* ── 더 보기 (무한 스크롤) ── */
 .more {
   display: block;
