@@ -1,8 +1,13 @@
 # ──────────────────────────────────────
 # 1. 뉴스 소스
 # ──────────────────────────────────────
-# 피드가 있는 제작사만 넣는다. Anthropic, Cursor, xAI는 피드가 없어 HTML 수집이 필요해 뒤로 미뤘다.
+# `kind`가 없으면 RSS/Atom 피드다. 피드가 없는 제작사는 `kind`로 글 주소 목록을 얻고 글 페이지를 직접 읽는다.
+# - sitemap: `url`의 sitemap.xml에서 `prefix`로 시작하는 주소(하위 경로 없음)를 `lastmod` 최신순으로 쓴다
+# - index: `url`의 HTML 링크 중 `prefix`로 시작하는 주소(하위 경로 없음)를 나온 순서대로 쓴다
 NEWS_FEEDS = [
+    {"slug": "anthropic", "company": "Anthropic", "kind": "sitemap", "url": "https://www.anthropic.com/sitemap.xml", "prefix": "https://www.anthropic.com/news/"},
+    {"slug": "cursor-blog", "company": "Cursor", "kind": "index", "url": "https://cursor.com/blog", "prefix": "https://cursor.com/blog/"},
+    {"slug": "xai", "company": "xAI", "kind": "sitemap", "url": "https://x.ai/sitemap.xml", "prefix": "https://x.ai/news/"},
     {"slug": "openai", "company": "OpenAI", "url": "https://openai.com/news/rss.xml"},
     {"slug": "google-ai", "company": "Google", "url": "https://blog.google/technology/ai/rss/"},
     {"slug": "google-dev", "company": "Google", "url": "https://developers.googleblog.com/feeds/posts/default"},
@@ -10,7 +15,7 @@ NEWS_FEEDS = [
     {"slug": "jetbrains", "company": "JetBrains", "url": "https://blog.jetbrains.com/feed/"},
     {"slug": "jetbrains-ai", "company": "JetBrains", "url": "https://blog.jetbrains.com/ai/feed/"},
 ]
-NEWS_COMPANIES = ["OpenAI", "Google", "Microsoft", "JetBrains"]
+NEWS_COMPANIES = ["Anthropic", "OpenAI", "Google", "Microsoft", "JetBrains", "Cursor", "xAI"]
 
 
 # ──────────────────────────────────────

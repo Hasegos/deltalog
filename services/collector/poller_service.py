@@ -113,7 +113,16 @@ def poll_news_feed(db: Session, feed: dict) -> int:
     Returns:
         새로 저장한 글 개수
     """
-    articles = news_service.fetch_feed(feed["url"])
+    if feed.get("kind"):
+        urls = news_service.fetch_listing(feed)
+        if urls is None:
+            articles = None
+        else:
+            # 글 페이지는 DB에 없는 주소만 읽는다. 30일을 넘어 저장하지 않은 글은 다음에 또 읽는다 (ponytail: 주소 목록이 20개로 제한돼 있어 요청이 많지 않다)
+            seen = news_crud.existing_urls(db, urls)
+            articles = [a for a in (news_service.fetch_page(u) for u in urls if u not in seen) if a]
+    else:
+        articles = news_service.fetch_feed(feed["url"])
     if articles is None:
         logger.info("news %s: 변경 없음 (304)", feed["slug"])
         return 0
@@ -122,7 +131,7 @@ def poll_news_feed(db: Session, feed: dict) -> int:
     fresh = list({a.url: a for a in articles if a.url not in known}.values())
     oldest = now - timedelta(days=NEWS_MAX_AGE_DAYS)
     for a in fresh:
-        if a.published_at is None:
+        if a.published_at is None and not feed.get("kind"):
             a.published_at = news_service.page_date(a.url)
     fresh = [a for a in fresh if a.published_at is None or a.published_at >= oldest]
     news_crud.add_news(

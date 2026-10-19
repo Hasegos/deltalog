@@ -6,7 +6,7 @@
 - SNAPSHOT_WAIT: 원본이 응답하기를 기다리는 초 (기본 180)
 - SKIP_IF_DOWN: 1이면 원본이 꺼져 있을 때 오류 없이 끝낸다. 출력 폴더는 만들지 않는다
 - SNAPSHOT_URL: 지금 배포된 스냅샷 주소. 굽은 sitemap.xml과 홈이 같으면 출력 폴더를 지워 배포를 생략한다
-홈의 필터(도구, 탭, 유형, 주제) 화면은 한 개와 두 개 조합마다 _f/<키>-<값>~<키>-<값>.html로 따로 굽는다.
+홈의 필터(도구, 탭, 유형, 주제) 화면은 한 개와 두 개 조합마다 _f/<키>-<값>~<키>-<값>.html로, 소식(/news)의 필터(회사, 탭, 주제)는 _f/news~<키>-<값>~<키>-<값>.html로 따로 굽는다.
 원본이 아니라 Worker 폴백(X-Served-By 헤더)이 응답한 페이지는 실패로 보고, 하나라도 실패하면 종료 코드 1로 끝난다.
 Cloudflare가 요청마다 끼워 넣는 봇 판별 스크립트(__CF$cv$params)는 굽는 값이 매번 달라져서 지운다.
 """
@@ -29,6 +29,7 @@ SKIP_IF_DOWN = os.environ.get("SKIP_IF_DOWN") == "1"
 SNAPSHOT_URL = os.environ.get("SNAPSHOT_URL", "").rstrip("/")
 OPTIONAL_ASSETS = {"/ads.txt"}
 FILTER_KEYS = ("tool", "tab", "type", "topic")
+NEWS_FILTER_KEYS = ("company", "tab", "topic")
 MAX_FILTERS = 2
 WORKERS = 6
 MIN_PAGES = 100
@@ -125,23 +126,23 @@ def comparable(body: bytes) -> bytes:
     return EMAIL_RE.sub(b"", body)
 
 
-def filter_links(body: bytes) -> set[tuple[tuple[str, str], ...]]:
-    """홈 HTML의 필터 링크와 주제 선택 항목에서 (키, 값) 조합을 모은다. 필터가 아닌 쿼리(검색어, 쪽)가 섞인 링크는 뺀다."""
+def filter_links(body: bytes, path: str = "/", keys: tuple[str, ...] = FILTER_KEYS) -> set[tuple[tuple[str, str], ...]]:
+    """`path` 페이지 HTML의 필터 링크와 주제 선택 항목에서 (키, 값) 조합을 모은다. 필터가 아닌 쿼리(검색어, 쪽)가 섞인 링크는 뺀다."""
     text = body.decode("utf-8", "ignore")
     found = set()
-    for href in re.findall(r'href="(/\?[^"]*)"', text):
+    for href in re.findall(rf'href="({re.escape(path)}\?[^"]*)"', text):
         query = urllib.parse.parse_qs(urllib.parse.urlparse(html.unescape(href)).query)
-        if query and set(query) <= set(FILTER_KEYS):
-            found.add(tuple((k, query[k][0]) for k in FILTER_KEYS if k in query))
+        if query and set(query) <= set(keys):
+            found.add(tuple((k, query[k][0]) for k in keys if k in query))
     for value in re.findall(r'<option value="([^"]+)"', text):
         found.add((("topic", html.unescape(value)),))
     return found
 
 
-def bake_filter(combo: tuple[tuple[str, str], ...]) -> tuple[str, bytes]:
-    """필터 조합 하나를 _f/<키>-<값>~<키>-<값>.html로 굽는다."""
-    name = "~".join(f"{k}-{v}" for k, v in combo)
-    query = "/?" + urllib.parse.urlencode(combo)
+def bake_filter(combo: tuple[tuple[str, str], ...], path: str = "/", prefix: str = "") -> tuple[str, bytes]:
+    """필터 조합 하나를 _f/<prefix><키>-<값>~<키>-<값>.html로 굽는다. 홈은 `prefix`가 없고 소식(`/news`)은 `news~`다."""
+    name = prefix + "~".join(f"{k}-{v}" for k, v in combo)
+    query = path + "?" + urllib.parse.urlencode(combo)
     if "/" in name:
         errors.append(f"filter name has slash: {name}")
         return query, b""
@@ -190,16 +191,17 @@ def main() -> None:
     saved = sum(1 for _, body in results if body)
     print(f"pages saved: {saved}")
 
-    home = dict(results).get("/", b"")
-    baked: dict[tuple[tuple[str, str], ...], bytes] = {}
-    pending = {c for c in filter_links(home) if len(c) <= MAX_FILTERS}
-    while pending:
-        with ThreadPoolExecutor(WORKERS) as pool:
-            done = list(pool.map(bake_filter, sorted(pending)))
-        baked.update({c: b for c, (_, b) in zip(sorted(pending), done)})
-        results += done
-        pending = {c for body in baked.values() for c in filter_links(body) if len(c) <= MAX_FILTERS} - set(baked)
-    print(f"filter pages saved: {len(baked)}")
+    for path, keys, prefix in (("/", FILTER_KEYS, ""), ("/news", NEWS_FILTER_KEYS, "news~")):
+        seed = dict(results).get(path, b"")
+        baked: dict[tuple[tuple[str, str], ...], bytes] = {}
+        pending = {c for c in filter_links(seed, path, keys) if len(c) <= MAX_FILTERS}
+        while pending:
+            with ThreadPoolExecutor(WORKERS) as pool:
+                done = list(pool.map(lambda c: bake_filter(c, path, prefix), sorted(pending)))
+            baked.update({c: b for c, (_, b) in zip(sorted(pending), done)})
+            results += done
+            pending = {c for body in baked.values() for c in filter_links(body, path, keys) if len(c) <= MAX_FILTERS} - set(baked)
+        print(f"filter pages saved ({path}): {len(baked)}")
 
     status, body = fetch("/__snapshot_404_probe__")
     if status == 404:
