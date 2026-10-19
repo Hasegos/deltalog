@@ -851,3 +851,16 @@ mark {
     min-height: 36px;
   }
 }
+
+.disc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.disc a {
+  margin: 0 4px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
