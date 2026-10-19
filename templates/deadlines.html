@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "종료 일정 · Deltalog" %}
+  {% set seo_desc = "Anthropic, OpenAI, Google이 공식 문서에 예고한 모델 · API 종료 일정을 한곳에 모아 날짜순으로 보여줍니다. 캘린더에 구독할 수 있습니다." %}
+  {% set jsonld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": "종료 일정", "url": site_url(request) ~ "/deadlines", "inLanguage": "ko", "description": seo_desc, "isPartOf": {"@type": "WebSite", "name": "Deltalog", "url": site_url(request)}} | tojson %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/deadlines.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">종료 일정 <span>모델 · API가 언제 멈추는지, 제공사가 공식 문서에 예고한 날짜만</span></h1>
+
+      <div class="dl-sub">
+        <p>예고된 종료일이 {{ upcoming }}건 남았습니다. 캘린더에 구독하면 새 일정이 자동으로 들어옵니다.</p>
+        <p class="dl-cal">
+          <a class="ch" href="webcal://{{ request.url.netloc }}/deadlines.ics">캘린더에 구독</a>
+          <a class="ch" href="/deadlines.ics">.ics 파일</a>
+        </p>
+      </div>
+
+      <div class="chs nw-co">
+        <a class="ch{{ ' on' if all_active }}" href="/deadlines">전체<em>{{ total }}</em></a>
+        {% for p in providers %}
+        <a class="ch{{ ' on' if p.active }}" href="{{ p.href }}">{{ p.name }}<em>{{ p.count }}</em></a>
+        {% endfor %}
+      </div>
+
+      {% for s in sections %}
+      <h2 class="dl-h dl-h-{{ s.key }}">{{ s.title }}</h2>
+      <div class="dl-l">
+        {% for r in s.rows %}
+        <article class="dl-r{{ ' soon' if r.soon }}{{ ' past' if r.past }}">
+          <div class="dl-d"><b>{{ r.badge }}</b><span>{{ r.date_label }}</span></div>
+          <div class="dl-b">
+            <div class="dl-t"><b>{{ r.name }}</b><i>{{ r.kind }}</i><em>{{ r.provider }}</em></div>
+            <p>{{ r.summary }}</p>
+            <p class="dl-m">{% if r.replacement %}대체: <code>{{ r.replacement }}</code>{% endif %}{% if r.announced %}{{ ' · ' if r.replacement }}폐기 공지 {{ r.announced }}{% endif %}{{ ' · ' if r.replacement or r.announced }}<a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a></p>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">{% if filtered %}이 제공사의 예고된 종료 일정이 없습니다.{% else %}아직 모은 종료 일정이 없습니다. 공식 문서를 확인하는 중입니다.{% endif %}</div>
+      {% endfor %}
+
+      <p class="dl-note">날짜와 요약은 AI(Google Gemini)가 공식 폐기 안내 문서에서 뽑았고, 문서에 날짜가 글로 적혀 있는지 한 번 더 확인합니다. 중요한 결정 전에는 꼭 원문을 확인해 주세요. 확정되지 않은 일정("미정", "빨라야 ~")은 싣지 않습니다.</p>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>
