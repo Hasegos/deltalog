@@ -31,6 +31,9 @@ jobs:
           POSTGRESQL_USERNAME: ci
           POSTGRESQL_PASSWORD: ci
           POSTGRESQL_DATABASE: ci
+          GEMINI_MODEL: ci
+          GEMINI_DAILY_LIMIT: "1"
+          GEMINI_RPM: "1"
         run: python -c "import main"
 
   deploy:
