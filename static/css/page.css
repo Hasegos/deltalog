@@ -390,3 +390,23 @@
   font-family: var(--mono);
   font-weight: 600;
 }
+
+/* ── 오류 화면 ── */
+.err-code {
+  margin: 0 0 8px;
+  font-size: 64px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--dim);
+}
+
+.err h1 {
+  word-break: keep-all;
+}
+
+.err-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 28px 0 0;
+}
