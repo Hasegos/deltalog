@@ -32,24 +32,17 @@ class Settings(BaseSettings):
     JETBRAINS_TIMEOUT_SEC: int = 30
     JETBRAINS_MAX_RELEASES: int = 15
     COLLECTOR_USER_AGENT: str = "deltalog/0.1 (+https://github.com/Hasegos/deltalog)"
-    LM_STUDIO_BASE_URL: str = ""
-    LM_STUDIO_MODEL: str = ""
-    LM_STUDIO_API_KEY: str = ""
-    LM_STUDIO_TIMEOUT: int = 180
     LLM_TEMPERATURE: float = 0.1
     LLM_TOP_P: float = 0.9
-    LLM_TOP_K: int = 40
-    LLM_REPEAT_PENALTY: float = 1.0
-    LLM_MAX_TOKENS: int = 4096
     LLM_MAX_RETRIES: int = 2
-    LLM_PROVIDER: str = "local"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GEMINI_MODEL: str
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    GEMINI_DAILY_LIMIT: int = 20
-    GEMINI_RPM: int = 5
+    GEMINI_DAILY_LIMIT: int
+    GEMINI_RPM: int
     GEMINI_BATCH_SIZE: int = 25
     GEMINI_MAX_TOKENS: int = 8192
+    GEMINI_TIMEOUT: int = 180
     GEMINI_REASONING_EFFORT: str = ""
     GEMINI_COOLDOWN_MIN: int = 10
     FAILED_MAX_ATTEMPTS: int = 3
