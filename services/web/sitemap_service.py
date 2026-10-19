@@ -11,7 +11,7 @@ from services.web.release_service import release_path
 SITEMAP_LIMIT = 45000
 SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
 DATA_PAGES = ("/", "/releases", "/changes", "/tools", "/topics")
-FILE_PAGES = {"/about": "about.html", "/contact": "contact.html", "/privacy": "privacy.html", "/terms": "terms.html"}
+FILE_PAGES = {"/about": "about.html", "/agents": "agents.html", "/contact": "contact.html", "/privacy": "privacy.html", "/terms": "terms.html"}
 ENTRY_PATHS = {"release": release_path}
 
 

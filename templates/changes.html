@@ -47,6 +47,28 @@
           {% if result.pending %}<br><span class="cf-note">요약 대기 중인 항목 {{ result.pending }}개는 아직 포함되지 않았습니다.</span>{% endif %}
         </div>
 
+        {% if result.counts %}
+        <p class="cf-note">유형별: {% for c in result.counts %}<span class="cat-{{ c.key }}">{{ c.symbol }} {{ c.label }} {{ c.count }}</span>{{ ' · ' if not loop.last }}{% endfor %}</p>
+        {% endif %}
+
+        <div class="cg">
+          <h2>업그레이드 전 확인 <span class="cf-note">breaking · 보안 {{ result.must_total }}개</span></h2>
+          {% if result.must %}
+          <ul class="cl">
+            {% for i in result.must %}
+            <li>
+              <span><span class="cat-{{ i.key }}">{{ i.symbol }}</span> {{ i.summary }}</span>
+              <span class="cv"><a href="{{ i.url }}" target="_blank" rel="noopener">{{ i.version }}</a></span>
+              {% if i.topic %}<span class="ct"># {{ i.topic }}</span>{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% if result.must_total > result.must | length %}<p class="cf-note">나머지 {{ result.must_total - result.must | length }}개는 아래 유형별 목록에 있습니다.</p>{% endif %}
+          {% else %}
+          <p class="cf-note">요약이 끝난 변경 중에 breaking이나 보안 항목이 없습니다.</p>
+          {% endif %}
+        </div>
+
         {% for g in result.groups %}
         <div class="cg">
           <h2><span class="cat-{{ g.key }}">{{ g.symbol }} {{ g.label }}</span> <span class="cf-note">{{ g.rows | length }}개</span></h2>
