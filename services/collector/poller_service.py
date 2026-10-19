@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from core.constants.source import GITHUB_TAG_PATTERNS
 from core.constants.news import NEWS_EXPIRED_REASON, NEWS_FEEDS, NEWS_MAX_AGE_DAYS, NEWS_PROMPT_VERSION
 from core.logger import get_logger
 from crud import entry_crud, news_crud
@@ -80,7 +81,7 @@ def _fetch(source: Source) -> FetchResult:
         return feed_service.fetch_feed(source.slug, source.feed_url, source.etag)
     if source.kind == "html":
         return jetbrains_service.fetch_releases(source.feed_url, source.name)
-    return github_release_service.fetch_releases(source.repo, source.etag, settings.GITHUB_TOKEN)
+    return github_release_service.fetch_releases(source.repo, source.etag, settings.GITHUB_TOKEN, GITHUB_TAG_PATTERNS.get(source.slug, ""))
 
 
 def poll_all() -> int:

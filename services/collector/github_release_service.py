@@ -39,13 +39,14 @@ def version_of(tag: str) -> str:
     return re.sub(r"^\D*", "", tag) or tag
 
 
-def fetch_releases(repo: str, etag: str | None, token: str = "") -> FetchResult:
+def fetch_releases(repo: str, etag: str | None, token: str = "", tag_pattern: str = "") -> FetchResult:
     """GitHub에서 최근 릴리스를 받는다. 저장해 둔 ETag를 보내 변경이 없으면 304로 끝낸다.
 
     Args:
         repo: `owner/name`
         etag: 지난번 응답의 ETag. 없으면 처음 받는다
         token: GitHub 토큰. 비워도 되지만 호출 한도가 낮다
+        tag_pattern: 비어 있지 않으면 태그가 이 정규식으로 시작하는 릴리스만 받는다 (한 저장소에 여러 제품이 섞인 경우)
     Returns:
         새 ETag와 릴리스 목록. 304면 목록이 `None`
     Raises:
@@ -78,6 +79,6 @@ def fetch_releases(repo: str, etag: str | None, token: str = "") -> FetchResult:
             prerelease=bool(raw.get("prerelease")),
         )
         for raw in response.json()
-        if not raw.get("draft") and raw.get("published_at")
+        if not raw.get("draft") and raw.get("published_at") and (not tag_pattern or re.match(tag_pattern, raw["tag_name"]))
     ]
     return FetchResult(etag=response.headers.get("ETag"), releases=releases)
