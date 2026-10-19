@@ -15,8 +15,9 @@ from core.errors import register_exception_handlers
 from core.logger import purge_old_logs, setup_logging
 from core.middleware import access_log, api_headers, metrics_guard, security_headers
 from db.init_db import init_db
-from services.collector.poller_service import poll_all
+from services.collector.poller_service import poll_all, poll_news
 from services.llm.llm_service import requeue_failed_job, summarize_job
+from services.llm.news_llm_service import summarize_news_job
 from services.web.metrics_service import ItemStatusCollector
 
 setup_logging()
@@ -41,12 +42,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         max_instances=1,
         coalesce=True,
     )
+    scheduler.add_job(
+        poll_news,
+        "interval",
+        minutes=settings.NEWS_POLL_INTERVAL_MIN,
+        next_run_time=datetime.now() + timedelta(seconds=20),
+        max_instances=1,
+        coalesce=True,
+    )
     if settings.AUTO_SUMMARIZE:
         scheduler.add_job(
             summarize_job,
             "interval",
             minutes=settings.SUMMARIZE_INTERVAL_MIN,
             next_run_time=datetime.now() + timedelta(seconds=30),
+            max_instances=1,
+            coalesce=True,
+        )
+        scheduler.add_job(
+            summarize_news_job,
+            "interval",
+            minutes=settings.SUMMARIZE_INTERVAL_MIN,
+            next_run_time=datetime.now() + timedelta(seconds=90),
             max_instances=1,
             coalesce=True,
         )

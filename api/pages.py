@@ -9,6 +9,7 @@ from core.templates import site_url, templates
 from db.session import get_db
 from services.web.changes_service import build_changes
 from services.web.home_service import build_home
+from services.web.news_service import build_news
 from services.web.page_service import build_tools, build_topics
 from services.web import sitemap_service
 from services.web.release_service import build_release, build_release_index
@@ -55,6 +56,30 @@ def home_page(
     """
     context = build_home(db, tool, tab, category, topic, q.strip(), page)
     return templates.TemplateResponse(request, "home.html", context)
+
+
+@page("/news", response_class=HTMLResponse)
+def news_page(
+    request: Request,
+    company: str = "",
+    tab: str = "all",
+    topic: str = "",
+    page: int = Query(1, ge=1, le=10000),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    """소식(제작사 공식 발표) 화면을 그린다. 쿼리 값으로 제작사, 탭, 주제를 거른다.
+
+    Args:
+        request: 현재 요청
+        company: 제작사 이름
+        tab: `all`, `imp`, `model`, `pricing`, `security`
+        topic: 주제
+        page: 쪽 번호 (1부터)
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 소식 페이지
+    """
+    return templates.TemplateResponse(request, "news.html", build_news(db, company, tab, topic, page))
 
 
 @page("/tools", response_class=HTMLResponse)

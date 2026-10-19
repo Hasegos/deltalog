@@ -1,5 +1,6 @@
 import json
 import re
+import threading
 import time
 from itertools import groupby
 from typing import Literal
@@ -12,7 +13,7 @@ from core.constants.llm import MAX_ITEM_CHARS, PROMPT_VERSION, SUMMARY_MAX_CHARS
 from core.constants.prompts import SYSTEM_PROMPT
 from core.constants.taxonomy import TOPICS
 from core.logger import get_logger, log_event
-from crud import item_crud, llm_usage_crud
+from crud import item_crud, llm_usage_crud, news_crud
 from db.session import SessionLocal
 from models.entry_model import Entry
 from models.item_model import Item
@@ -146,6 +147,7 @@ def _parse(content: str, texts: dict[int, str]) -> tuple[dict[int, Summary], dic
 
 
 _gemini_blocked_until = 0.0
+LLM_LOCK = threading.Lock()
 
 
 def block_gemini() -> None:
@@ -275,7 +277,13 @@ def summarize_pending(db: Session, limit: int) -> list[tuple[Item, Entry, Source
 
 
 def summarize_job() -> None:
-    """스케줄러가 주기적으로 부른다. 요약 대기 항목이 없어질 때까지 `SUMMARIZE_BATCH_LIMIT`개씩 이어서 요약한다.
+    """스케줄러가 주기적으로 부르는 릴리스 요약 작업. 뉴스 요약 작업과 동시에 Gemini를 부르지 않게 `LLM_LOCK`을 잡고 `_summarize_releases`를 돈다."""
+    with LLM_LOCK:
+        _summarize_releases()
+
+
+def _summarize_releases() -> None:
+    """요약 대기 항목이 없어질 때까지 `SUMMARIZE_BATCH_LIMIT`개씩 이어서 요약한다.
 
     Gemini가 한도 초과(429)나 호출 한도 소진을 내면 롤백한 뒤 Gemini를 `GEMINI_COOLDOWN_MIN`분 쉬게 하고 끝낸다.
     Gemini에 닿지 못하면 경고만 남기고 끝낸다 (다음 주기에 다시 시도). 한 번에 하나만 돈다.
@@ -312,8 +320,9 @@ def summarize_job() -> None:
 
 
 def requeue_failed_job() -> None:
-    """하루에 한 번 실패한 항목(시도 `FAILED_MAX_ATTEMPTS`회 미만)을 요약 대기로 되돌린다."""
+    """하루에 한 번 실패한 항목과 뉴스(시도 `FAILED_MAX_ATTEMPTS`회 미만)를 요약 대기로 되돌린다."""
     with SessionLocal() as db:
         count = item_crud.requeue_failed(db, settings.FAILED_MAX_ATTEMPTS)
-    if count:
-        logger.info("requeue: 실패 항목 %d건을 다시 대기로 돌렸다", count)
+        news_count = news_crud.requeue_failed(db, settings.FAILED_MAX_ATTEMPTS)
+    if count or news_count:
+        logger.info("requeue: 실패 항목 %d건, 뉴스 %d건을 다시 대기로 돌렸다", count, news_count)

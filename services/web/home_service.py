@@ -4,9 +4,10 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
+from core.constants.news import NEWS_HOME_COUNT
 from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
-from crud import entry_crud, item_crud
+from crud import entry_crud, item_crud, news_crud
 from services.web.release_service import release_path
 
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
@@ -135,6 +136,7 @@ def build_home(
     week_counts = entry_crud.count_entries_by_category_since(db, since, now)
     week = {
         "label": f"{since:%m-%d} ~ {now:%m-%d}",
+        "news": news_crud.count_since(db, since),
         "pending": item_crud.count_pending_items(db),
         "cats": [
             {
@@ -150,7 +152,12 @@ def build_home(
     }
 
     highlights = []
+    latest_news = []
     if not (tool or tab != "all" or category or topic or q):
+        latest_news = [
+            {"company": n.company, "title": n.title_ko or n.title, "ago": _ago(n.published_at, now), "url": n.url if n.url.startswith(("https://", "http://")) else "#"}
+            for n in news_crud.list_news(db, "", "all", "", NEWS_HOME_COUNT)
+        ]
         for item, entry, source in item_crud.list_highlights(db, HIGHLIGHTS):
             symbol, label = CATEGORIES.get(item.category, ("", ""))
             highlights.append(
@@ -262,6 +269,7 @@ def build_home(
         "all_href": _url(params, tool=None),
         "week": week,
         "highlights": highlights,
+        "latest_news": latest_news,
         "tabs": tabs,
         "topics": topics,
         "topic": topic,

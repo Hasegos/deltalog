@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     AUTO_CREATE_TABLES: bool = True
     GITHUB_TOKEN: str = ""
     POLL_INTERVAL_MIN: int = 30
+    NEWS_POLL_INTERVAL_MIN: int = 60
     GITHUB_API_URL: str = "https://api.github.com/repos/{repo}/releases"
     GITHUB_PER_PAGE: int = 30
     GITHUB_TIMEOUT_SEC: int = 20

@@ -78,6 +78,20 @@
   color: var(--dim);
 }
 
+.wk-g5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.wk-news {
+  color: var(--accent);
+  border-left: 1px solid var(--line);
+  border-radius: 0 8px 8px 0;
+}
+
+.wk-news span {
+  color: var(--accent);
+}
+
 .wk-c.on {
   background: var(--accent-bg);
   border-color: var(--accent);
@@ -154,6 +168,63 @@
   font-family: var(--mono);
   font-size: 12.5px;
   color: var(--dim);
+}
+
+/* ── 최신 소식 ── */
+.sec-go {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--accent);
+}
+
+.nl {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.nl-r {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 12px 18px;
+}
+
+.nl-r + .nl-r {
+  border-top: 1px solid var(--line);
+}
+
+.nl-r:hover .nl-t {
+  color: var(--accent);
+}
+
+.nl-m {
+  flex: none;
+  min-width: 128px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.nl-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .nl-r {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nl-t {
+    white-space: normal;
+  }
 }
 
 /* ── 도구 상태 ── */
