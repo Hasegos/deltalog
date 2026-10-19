@@ -30,6 +30,6 @@
 })();
 
 document.addEventListener("click", function (e) {
-  const more = document.querySelector("details.more[open]");
+  const more = document.querySelector("details.nav-more[open]");
   if (more && !more.contains(e.target)) more.removeAttribute("open");
 });
