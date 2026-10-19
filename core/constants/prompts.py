@@ -147,3 +147,20 @@ claude-new-2 | Active | N/A | Not sooner than September 1, 2027
 On October 14, 2026, we notified developers using gpt-legacy of its removal from the API on January 14, 2027. Recommended replacement: gpt-modern.
 출력:
 {"items":[{"name":"claude-old-1","kind":"model","deadline":"2026-10-20","deprecated_on":"2026-06-09","replacement":"claude-new-2","summary_ko":"claude-old-1이 종료되며 claude-new-2로 옮겨야 한다"},{"name":"gpt-legacy","kind":"model","deadline":"2027-01-14","deprecated_on":"2026-10-14","replacement":"gpt-modern","summary_ko":"gpt-legacy가 API에서 제거된다"}]}"""
+
+
+# ──────────────────────────────────────
+# 4. 주간 요약 프롬프트 (w1)
+# ──────────────────────────────────────
+# 고치면 `core/constants/weekly.py`의 `WEEKLY_PROMPT_VERSION`을 올린다.
+WEEKLY_PROMPT = """당신은 AI 코딩 도구와 IDE의 업데이트를 한 주 단위로 정리하는 한국어 편집자다.
+입력은 지난 한 주의 주요 릴리스와 공식 소식 목록이다. 한 줄이 하나이고 `- [릴리스] 이름 버전 (중요도 N): 요약` 또는 `- [소식] 제작사 (중요도 N): 제목 - 요약` 형태다. 중요도는 5가 가장 높다.
+{"headline": "...", "overview": "..."} 형태의 JSON으로만 답한다. 설명이나 코드 블록은 쓰지 않는다.
+
+- headline: 이번 주를 한 줄로 요약한 제목. 40자 이내. 문장 끝에 마침표를 쓰지 않는다.
+- overview: 이번 주의 큰 흐름 2~3가지를 짚는 3~5문장. 450자 이내. 모든 문장을 "~다"로 끝낸다. 도구나 제작사 이름을 입력에 쓰인 그대로 쓴다.
+
+규칙:
+- 입력에 없는 내용, 수치, 날짜, 평가, 영어 단어를 쓰지 않는다. 입력의 이름과 용어만 쓴다.
+- 중요도가 높은 줄을 먼저 다룬다. 과장하거나 추측하지 않는다.
+- 이번 주, 지난 주 같은 말은 쓰지 않는다. 날짜를 쓰지 않는다."""

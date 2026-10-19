@@ -16,6 +16,7 @@ from services.web.home_service import build_home
 from services.web.news_service import build_news
 from services.web.page_service import build_tools, build_topics
 from services.web.status_service import build_status
+from services.web.weekly_service import build_weekly, parse_week
 from services.web import sitemap_service
 from services.web.release_service import build_release, build_release_index
 
@@ -125,6 +126,39 @@ def status_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse
         렌더링한 수집 현황 페이지
     """
     return templates.TemplateResponse(request, "status.html", build_status(db))
+
+
+@page("/weekly", response_class=HTMLResponse)
+def weekly_latest(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """가장 최근 주의 주간 요약 화면을 그린다. 아직 요약이 없으면 빈 화면이다.
+
+    Args:
+        request: 현재 요청
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 주간 요약 페이지
+    """
+    return templates.TemplateResponse(request, "weekly.html", build_weekly(db, None))
+
+
+@page("/weekly/{week}", response_class=HTMLResponse)
+def weekly_page(request: Request, week: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    """한 주의 주간 요약 화면을 그린다. 주소의 날짜는 그 주 월요일이다.
+
+    Args:
+        request: 현재 요청
+        week: `YYYY-MM-DD` (월요일)
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 주간 요약 페이지
+    Raises:
+        HTTPException: 날짜가 아니거나, 월요일이 아니거나, 그 주의 요약이 없을 때 (404)
+    """
+    monday = parse_week(week)
+    values = build_weekly(db, monday) if monday and monday.isoformat() == week else None
+    if values is None:
+        raise HTTPException(status_code=404, detail="주간 요약을 찾을 수 없습니다")
+    return templates.TemplateResponse(request, "weekly.html", values)
 
 
 @page("/subscribe", response_class=HTMLResponse)
