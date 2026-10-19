@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
-from crud import entry_crud, item_crud
+from crud import entry_crud, item_crud, news_crud
 from services.web.release_service import release_path
 
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
@@ -135,6 +135,7 @@ def build_home(
     week_counts = entry_crud.count_entries_by_category_since(db, since, now)
     week = {
         "label": f"{since:%m-%d} ~ {now:%m-%d}",
+        "news": news_crud.count_since(db, since),
         "pending": item_crud.count_pending_items(db),
         "cats": [
             {

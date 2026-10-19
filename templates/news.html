@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "소식 · Deltalog" %}
+  {% set seo_desc = "OpenAI, Google, Microsoft, JetBrains가 직접 낸 공식 발표 중 개발자에게 영향이 있는 소식을 한국어로 요약해 보여줍니다." %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">소식 <span>제작사 공식 발표 중 개발자에게 영향이 있는 것만 · AI가 한국어로 요약</span></h1>
+
+      {% if headline %}
+      <a class="nw-top" href="{{ headline.url }}" target="_blank" rel="noopener">
+        <span class="nw-k">{{ headline.company }} · {{ headline.ago }}{% if headline.type_label %} · {{ headline.type_label }}{% endif %}{% if headline.topic %} · {{ headline.topic }}{% endif %}</span>
+        <span class="nw-tt">{{ headline.title }}</span>
+        <span class="nw-ss">{{ headline.summary }}</span>
+        <span class="nw-go">원문 보기 ↗</span>
+      </a>
+      {% endif %}
+
+      <div class="chs nw-co">
+        <a class="ch{{ ' on' if not (companies | selectattr('active') | list) }}" href="{{ all_href }}">전체<em>{{ total }}</em></a>
+        {% for c in companies %}
+        <a class="ch{{ ' on' if c.active }}" href="{{ c.href }}">{{ c.name }}<em>{{ c.count }}</em></a>
+        {% endfor %}
+      </div>
+
+      <div class="bar">
+        <nav class="tabs">
+          {% for t in tabs %}
+          <a class="tb{{ ' on' if t.active }}" href="{{ t.href }}">{{ t.label }} ({{ t.count }})</a>
+          {% endfor %}
+        </nav>
+        <form class="sel" method="get" action="/news">
+          {% for k, v in hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+          <select name="topic" aria-label="주제" onchange="this.form.submit()">
+            <option value="">주제: 전체</option>
+            {% for t in topics %}<option value="{{ t.name }}"{{ ' selected' if t.active }}>주제: {{ t.name }}</option>{% endfor %}
+          </select>
+        </form>
+      </div>
+
+      <div class="list">
+        {% for r in rows %}
+        {% if r.show_day %}
+        <div class="dd"><b>{{ r.day_label }}</b></div>
+        {% endif %}
+        <details class="tr" data-cat="other">
+          <summary>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="main">
+              <span class="nm"><b>{{ r.company }}</b>{% if r.type_label %}<span class="vr">{{ r.type_label }}</span>{% endif %}<span class="ag">{{ r.ago }}</span></span>
+              <span class="nw-t">{{ r.title }}</span>
+              <span class="sm">{{ r.summary }}</span>
+            </span>
+            <span class="meta">
+              {% if r.importance %}<span class="im" title="중요도 {{ r.importance }}">{% for n in range(1, 6) %}<i class="{{ 'f' if n <= r.importance }}">●</i>{% endfor %}</span>{% endif %}
+            </span>
+          </summary>
+          <div class="xp">
+            <p class="nw-sum">{{ r.summary }}</p>
+            {% if r.topic %}<span class="xg"># {{ r.topic }}</span>{% endif %}
+            <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.company ~ ' ' ~ r.title) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+            <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
+          </div>
+        </details>
+        {% else %}
+        <div class="empty">{% if filtered %}조건에 맞는 소식이 없습니다.{% else %}아직 요약된 소식이 없습니다. 공식 발표를 모으는 중입니다.{% endif %}</div>
+        {% endfor %}
+      </div>
+
+      {% if more %}
+      <a class="more" href="{{ more }}" rel="next">더 보기</a>
+      {% endif %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

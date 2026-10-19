@@ -5,12 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from core.constants.news import NEWS_FEEDS
 from core.logger import get_logger
-from crud import entry_crud
+from crud import entry_crud, news_crud
 from db.session import SessionLocal
 from models.entry_model import Entry
+from models.news_model import News
 from models.source_model import Source
-from services.collector import feed_service, github_release_service, jetbrains_service
+from services.collector import feed_service, github_release_service, jetbrains_service, news_service
 from services.collector.github_release_service import FetchResult
 from services.collector.splitter_service import split_items
 
@@ -99,4 +101,52 @@ def poll_all() -> int:
             except Exception:
                 db.rollback()
                 logger.exception("poll %s: 저장 실패", source.slug)
+    return total
+
+
+def poll_news_feed(db: Session, feed: dict) -> int:
+    """공식 발표 피드 하나를 한 번 가져와 새 글을 요약 대기로 저장한다. 이미 있는 주소는 건너뛰고, 저장이 실패하면 호출한 쪽이 되돌린다.
+
+    Args:
+        db: DB 세션
+        feed: `NEWS_FEEDS`의 한 줄 (`slug`, `company`, `url`)
+    Returns:
+        새로 저장한 글 개수
+    """
+    articles = news_service.fetch_feed(feed["url"])
+    if articles is None:
+        logger.info("news %s: 변경 없음 (304)", feed["slug"])
+        return 0
+    known = news_crud.existing_urls(db, [a.url for a in articles])
+    now = datetime.now(timezone.utc)
+    fresh = list({a.url: a for a in articles if a.url not in known}.values())
+    news_crud.add_news(
+        db,
+        [
+            News(company=feed["company"], feed=feed["slug"], url=a.url, title=a.title, published_at=a.published_at or now, body_raw=a.body)
+            for a in fresh
+        ],
+    )
+    db.commit()
+    logger.info("news %s: 받은 %d건, 새 글 %d건", feed["slug"], len(articles), len(fresh))
+    return len(fresh)
+
+
+def poll_news() -> int:
+    """공식 발표 피드를 모두 한 번씩 가져온다. 피드 하나가 실패해도 나머지는 계속한다.
+
+    Returns:
+        새로 저장한 글의 전체 개수
+    """
+    total = 0
+    with SessionLocal() as db:
+        for feed in NEWS_FEEDS:
+            try:
+                total += poll_news_feed(db, feed)
+            except httpx.HTTPError as exc:
+                db.rollback()
+                logger.warning("news %s: 요청 실패 (%s)", feed["slug"], exc.__class__.__name__)
+            except Exception:
+                db.rollback()
+                logger.exception("news %s: 저장 실패", feed["slug"])
     return total
