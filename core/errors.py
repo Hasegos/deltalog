@@ -13,8 +13,8 @@ PLAIN_SUFFIXES = (".txt", ".xml", ".ico")
 
 
 def is_api(request: Request) -> bool:
-    """`/api` 아래 요청인지 본다. 이 경로의 오류는 JSON으로 답한다."""
-    return request.url.path.lower().startswith("/api")
+    """`/api` 아래나 `/mcp` 요청인지 본다. 이 경로의 오류는 JSON으로 답한다."""
+    return request.url.path.lower().startswith(("/api", "/mcp"))
 
 
 def error_response(request: Request, status: int) -> Response:

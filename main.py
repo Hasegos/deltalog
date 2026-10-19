@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import REGISTRY
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from api.endpoints.mcp_endpoint import router as mcp_router
 from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
@@ -110,3 +111,4 @@ REGISTRY.register(ItemStatusCollector())
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(page_router)
 app.include_router(api_router)
+app.include_router(mcp_router)
