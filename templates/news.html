@@ -3,6 +3,7 @@
 <head>
   {% set seo_title = "소식 · Deltalog" %}
   {% set seo_desc = "Anthropic, OpenAI, Google, Microsoft, JetBrains, Cursor, xAI가 직접 낸 공식 발표 중 개발자에게 영향이 있는 소식을 한국어로 요약해 보여줍니다." %}
+  {% set jsonld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": "소식", "url": site_url(request) ~ "/news", "inLanguage": "ko", "description": seo_desc, "isPartOf": {"@type": "WebSite", "name": "Deltalog", "url": site_url(request)}} | tojson %}
   {% include "partials/head_meta.html" %}
   <link rel="stylesheet" href="{{ asset('css/home.css') }}">
   <link rel="stylesheet" href="{{ asset('css/news.css') }}">

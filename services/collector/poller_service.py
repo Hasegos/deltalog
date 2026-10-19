@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import settings
-from core.constants.news import NEWS_FEEDS, NEWS_MAX_AGE_DAYS
+from core.constants.news import NEWS_EXPIRED_REASON, NEWS_FEEDS, NEWS_MAX_AGE_DAYS, NEWS_PROMPT_VERSION
 from core.logger import get_logger
 from crud import entry_crud, news_crud
 from db.session import SessionLocal
@@ -133,12 +133,18 @@ def poll_news_feed(db: Session, feed: dict) -> int:
     for a in fresh:
         if a.published_at is None and not feed.get("kind"):
             a.published_at = news_service.page_date(a.url)
-    fresh = [a for a in fresh if a.published_at is None or a.published_at >= oldest]
+    expired = [a for a in fresh if a.published_at is not None and a.published_at < oldest]
+    fresh = [a for a in fresh if a not in expired]
     news_crud.add_news(
         db,
         [
             News(company=feed["company"], feed=feed["slug"], url=a.url, title=a.title, published_at=a.published_at or now, body_raw=a.body)
             for a in fresh
+        ]
+        # 오래된 글은 걸러둔 글로 남겨 다음 폴링에서 글 페이지를 또 읽지 않게 한다
+        + [
+            News(company=feed["company"], feed=feed["slug"], url=a.url, title=a.title, published_at=a.published_at, body_raw="", status="skipped", reason=NEWS_EXPIRED_REASON, prompt_version=NEWS_PROMPT_VERSION)
+            for a in expired
         ],
     )
     db.commit()

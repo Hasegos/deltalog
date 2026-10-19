@@ -8,6 +8,7 @@ from core.config import settings
 from core.templates import site_url, templates
 from db.session import get_db
 from services.web.changes_service import build_changes
+from services.web.feed_service import build_feed
 from services.web.home_service import build_home
 from services.web.news_service import build_news
 from services.web.page_service import build_tools, build_topics
@@ -188,6 +189,19 @@ def robots(request: Request) -> PlainTextResponse:
         `robots.txt` 본문
     """
     return PlainTextResponse(f"User-agent: *\nDisallow: /api/\n\nSitemap: {site_url(request)}/sitemap.xml\n")
+
+
+@page("/feed.xml")
+def feed(request: Request, db: Session = Depends(get_db)) -> Response:
+    """릴리스와 공식 소식을 섞은 최신 30건 RSS를 돌려준다. 10분 동안 캐시해도 된다.
+
+    Args:
+        request: 현재 요청
+        db: 요청에 쓸 DB 세션
+    Returns:
+        RSS 2.0 XML
+    """
+    return Response(build_feed(db, site_url(request)), media_type="application/rss+xml", headers={"Cache-Control": "public, max-age=600"})
 
 
 @page("/sitemap.xml")

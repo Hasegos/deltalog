@@ -37,6 +37,7 @@ NEWS_TABS = [("all", "전체"), ("imp", "중요 4+"), ("model", "모델"), ("pri
 # ──────────────────────────────────────
 NEWS_MAX_ENTRIES = 20
 NEWS_MAX_AGE_DAYS = 30
+NEWS_EXPIRED_REASON = "게시한 지 30일이 지난 글"
 NEWS_BODY_CHARS = 3000
 NEWS_PROMPT_CHARS = 1500
 NEWS_BATCH_SIZE = 5
