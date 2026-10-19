@@ -163,30 +163,30 @@ summary::-webkit-details-marker {
   color: var(--fg);
 }
 
-.more {
+.nav-more {
   position: relative;
 }
 
-.more summary {
+.nav-more summary {
   list-style: none;
   cursor: pointer;
 }
 
-.more summary::-webkit-details-marker {
+.nav-more summary::-webkit-details-marker {
   display: none;
 }
 
-.more summary::after {
+.nav-more summary::after {
   content: " ▾";
   font-size: 11px;
 }
 
-.more summary:hover,
-.more[open] summary {
+.nav-more summary:hover,
+.nav-more[open] summary {
   color: var(--fg);
 }
 
-.more div {
+.nav-more div {
   position: absolute;
   right: 0;
   top: 32px;
@@ -199,7 +199,7 @@ summary::-webkit-details-marker {
   box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
 }
 
-.more div a {
+.nav-more div a {
   display: block;
   padding: 9px 12px;
   text-align: left;
