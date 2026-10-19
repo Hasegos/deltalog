@@ -11,6 +11,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from api.pages import page_router
 from api.routers import api_router
 from core.config import settings
+from core.errors import register_exception_handlers
 from core.logger import purge_old_logs, setup_logging
 from core.middleware import access_log, api_headers, metrics_guard, security_headers
 from db.init_db import init_db
@@ -64,6 +65,7 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+register_exception_handlers(app)
 app.middleware("http")(access_log)
 app.middleware("http")(security_headers)
 app.middleware("http")(api_headers)
