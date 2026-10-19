@@ -4,6 +4,7 @@ from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session
 
+from core.constants.news import NEWS_HOME_COUNT
 from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
 from crud import entry_crud, item_crud, news_crud
@@ -151,7 +152,12 @@ def build_home(
     }
 
     highlights = []
+    latest_news = []
     if not (tool or tab != "all" or category or topic or q):
+        latest_news = [
+            {"company": n.company, "title": n.title_ko or n.title, "ago": _ago(n.published_at, now), "url": n.url if n.url.startswith(("https://", "http://")) else "#"}
+            for n in news_crud.list_news(db, "", "all", "", NEWS_HOME_COUNT)
+        ]
         for item, entry, source in item_crud.list_highlights(db, HIGHLIGHTS):
             symbol, label = CATEGORIES.get(item.category, ("", ""))
             highlights.append(
@@ -263,6 +269,7 @@ def build_home(
         "all_href": _url(params, tool=None),
         "week": week,
         "highlights": highlights,
+        "latest_news": latest_news,
         "tabs": tabs,
         "topics": topics,
         "topic": topic,
