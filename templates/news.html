@@ -48,9 +48,9 @@
       <div class="list">
         {% for r in rows %}
         {% if r.show_day %}
-        <div class="dd"><b>{{ r.day_label }}</b></div>
+        <div class="dd" data-day="{{ r.day }}"><b>{{ r.day_label }}</b></div>
         {% endif %}
-        <details class="tr" data-cat="other">
+        <details class="tr" data-cat="other" data-day="{{ r.day }}">
           <summary>
             <span class="dot" aria-hidden="true"></span>
             <span class="main">
@@ -75,11 +75,12 @@
       </div>
 
       {% if more %}
-      <a class="more" href="{{ more }}" rel="next">더 보기</a>
+      <a class="more" id="more" href="{{ more }}" rel="next">더 보기</a>
       {% endif %}
     </section>
   </main>
 
   {% include "partials/footer.html" %}
+  <script src="{{ asset('js/home.js') }}"></script>
 </body>
 </html>
