@@ -91,6 +91,16 @@
     return params.toString();
   }
 
+  function showSearchError() {
+    if (document.getElementById("sr-note")) return;
+    const note = document.createElement("p");
+    note.id = "sr-note";
+    note.className = "sr-note";
+    note.setAttribute("role", "status");
+    note.textContent = "지금은 검색 결과를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요";
+    form.insertAdjacentElement("afterend", note);
+  }
+
   async function search() {
     const qs = queryString();
     const url = qs ? "/?" + qs : "/";
@@ -112,7 +122,9 @@
       input.focus();
       input.setSelectionRange(input.value.length, input.value.length);
     } catch (err) {
-      if (err.name !== "AbortError" && list) list.classList.remove("busy");
+      if (err.name === "AbortError") return;
+      if (list) list.classList.remove("busy");
+      showSearchError();
     }
   }
 
