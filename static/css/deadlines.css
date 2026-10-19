@@ -3,23 +3,9 @@
   ============================= */
 
 .dl-sub {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
   margin: 0 0 16px;
   color: var(--muted);
   font-size: 15px;
-}
-
-.dl-sub p {
-  margin: 0;
-}
-
-.dl-cal {
-  display: flex;
-  gap: 8px;
 }
 
 .dl-h {

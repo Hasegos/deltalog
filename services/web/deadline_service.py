@@ -1,9 +1,8 @@
-from datetime import date, datetime, timedelta, timezone
-from urllib.parse import urlsplit
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from core.constants.deadline import DEADLINE_KINDS, DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS, DEADLINE_SOON_DAYS
+from core.constants.deadline import DEADLINE_HOME_COUNT, DEADLINE_KINDS, DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS, DEADLINE_SOON_DAYS
 from core.constants.page import KST
 from crud import deadline_crud
 from models.deadline_model import Deadline
@@ -75,63 +74,14 @@ def build_deadlines(db: Session, provider: str, today: date | None = None) -> di
     }
 
 
-def _escape(text: str) -> str:
-    """iCalendar 글 값에서 `\\`, `;`, `,`, 줄바꿈을 이스케이프한다."""
-    return text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\r", "").replace("\n", "\\n")
-
-
-def _fold(line: str) -> str:
-    """iCalendar 줄을 75바이트 안으로 접는다. 한글 글자는 중간에서 자르지 않는다."""
-    out, current, size = [], "", 0
-    for char in line:
-        width = len(char.encode("utf-8"))
-        if size + width > 74:
-            out.append(current)
-            current, size = " ", 1
-        current += char
-        size += width
-    out.append(current)
-    return "\r\n".join(out)
-
-
-def render_ics(db: Session, base: str, now: datetime | None = None) -> str:
-    """종료 일정을 iCalendar(`.ics`) 문서로 만든다. 종료일에 하루 종일 일정이 하나씩 생긴다 (구독하면 캘린더에 자동으로 들어간다).
+def build_soon(db: Session, today: date | None = None) -> list[dict]:
+    """홈에 보여줄 곧 종료되는 일정(`DEADLINE_SOON_DAYS`일 이내) 중 가장 빠른 `DEADLINE_HOME_COUNT`건을 돌려준다.
 
     Args:
         db: DB 세션
-        base: 사이트 주소 (끝 `/` 없음)
-        now: 기준 시각. 비우면 현재
+        today: 기준 날짜(한국 시간). 비우면 오늘
     Returns:
-        `\\r\\n`으로 이은 iCalendar 문서
+        `_row`와 같은 값의 목록. 없으면 빈 목록
     """
-    now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    host = urlsplit(base).netloc or "deltalog"
-    today = now.astimezone(KST).date()
-    lines = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//Deltalog//Deadlines//KO",
-        "CALSCALE:GREGORIAN",
-        "X-WR-CALNAME:Deltalog 종료 일정",
-        "REFRESH-INTERVAL;VALUE=DURATION:PT12H",
-        "X-PUBLISHED-TTL:PT12H",
-    ]
-    for item in deadline_crud.list_since(db, today - timedelta(days=DEADLINE_PAST_DAYS)):
-        parts = [item.summary_ko]
-        if item.replacement:
-            parts.append(f"대체: {item.replacement}")
-        parts.append(f"원문: {item.source_url}")
-        lines += [
-            "BEGIN:VEVENT",
-            f"UID:deadline-{item.id}@{host}",
-            f"DTSTAMP:{now:%Y%m%dT%H%M%SZ}",
-            f"DTSTART;VALUE=DATE:{item.deadline:%Y%m%d}",
-            f"DTEND;VALUE=DATE:{item.deadline + timedelta(days=1):%Y%m%d}",
-            f"SUMMARY:{_escape(f'[{item.provider}] {item.name} 종료')}",
-            f"DESCRIPTION:{_escape(chr(10).join(parts))}",
-            f"URL:{item.source_url}",
-            "TRANSP:TRANSPARENT",
-            "END:VEVENT",
-        ]
-    lines.append("END:VCALENDAR")
-    return "\r\n".join(_fold(line) for line in lines) + "\r\n"
+    today = today or datetime.now(KST).date()
+    return [_row(item, today) for item in deadline_crud.list_range(db, today, today + timedelta(days=DEADLINE_SOON_DAYS), DEADLINE_HOME_COUNT)]
