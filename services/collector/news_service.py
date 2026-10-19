@@ -71,6 +71,31 @@ def _articles(xml: str) -> list[Article]:
     return found
 
 
+def page_date(url: str) -> datetime | None:
+    """글 페이지의 `datePublished`(JSON-LD)나 `article:published_time` 메타에서 게시일을 읽는다. 읽지 못하면 `None`이다.
+
+    피드에 날짜가 없는 소스(Google Developers Blog)에서 첫 수집 시각 대신 실제 게시일을 쓰려고 쓴다.
+
+    Args:
+        url: 글 주소
+    Returns:
+        게시일(UTC). 요청이 실패하거나 날짜를 못 찾으면 `None`
+    """
+    try:
+        response = httpx.get(url, headers={"User-Agent": settings.COLLECTOR_USER_AGENT}, timeout=settings.FEED_TIMEOUT_SEC, follow_redirects=True)
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return None
+    found = re.search(r'"datePublished"\s*:\s*"([^"]+)"', response.text) or re.search(r'property="article:published_time"\s+content="([^"]+)"', response.text)
+    if not found:
+        return None
+    try:
+        moment = datetime.fromisoformat(found.group(1).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
 def fetch_feed(url: str) -> list[Article] | None:
     """피드에서 최근 글을 받는다. 지난번 ETag를 보내 변경이 없으면 `None`을 돌려준다.
 
