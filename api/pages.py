@@ -5,7 +5,9 @@ from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Red
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from core.constants.news import NEWS_COMPANIES
 from core.templates import site_url, templates
+from crud import item_crud
 from db.session import get_db
 from services.web.changes_service import build_changes
 from services.web.deadline_service import build_deadlines, render_ics
@@ -125,6 +127,20 @@ def status_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse
     return templates.TemplateResponse(request, "status.html", build_status(db))
 
 
+@page("/subscribe", response_class=HTMLResponse)
+def subscribe_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """도구 · 제작사 · 최소 중요도를 골라 `/feed.xml` 주소를 만드는 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 RSS 구독 만들기 페이지
+    """
+    tools = [(src.slug, src.name) for src in item_crud.list_sources(db)]
+    return templates.TemplateResponse(request, "subscribe.html", {"tools": tools, "companies": NEWS_COMPANIES, "base": site_url(request)})
+
+
 @page("/tools", response_class=HTMLResponse)
 def tools_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
     """도구 목록 화면을 그린다.
@@ -234,16 +250,30 @@ def robots(request: Request) -> PlainTextResponse:
 
 
 @page("/feed.xml")
-def feed(request: Request, db: Session = Depends(get_db)) -> Response:
+def feed(
+    request: Request,
+    tool: str = Query("", max_length=300),
+    company: str = Query("", max_length=300),
+    min_importance: int = Query(1, alias="min", ge=1, le=5),
+    db: Session = Depends(get_db),
+) -> Response:
     """릴리스와 공식 소식을 섞은 최신 30건 RSS를 돌려준다. 10분 동안 캐시해도 된다.
+
+    쉼표로 이은 `tool`(소스 slug), `company`(제작사 이름)와 `min`(최소 중요도)으로 거를 수 있다. 목록에 없는 값은 무시한다.
 
     Args:
         request: 현재 요청
+        tool: 릴리스 소스 slug 목록. 예: `claude-code,codex`
+        company: 소식 제작사 이름 목록. 예: `Anthropic,OpenAI`
+        min_importance: 최소 중요도 (`min` 쿼리 값, 1~5)
         db: 요청에 쓸 DB 세션
     Returns:
         RSS 2.0 XML
     """
-    return Response(build_feed(db, site_url(request)), media_type="application/rss+xml", headers={"Cache-Control": "public, max-age=600"})
+    known = {src.slug for src in item_crud.list_sources(db)}
+    tools = [t for t in dict.fromkeys(tool.split(",")) if t in known]
+    companies = [c for c in dict.fromkeys(company.split(",")) if c in NEWS_COMPANIES]
+    return Response(build_feed(db, site_url(request), tools, companies, min_importance), media_type="application/rss+xml", headers={"Cache-Control": "public, max-age=600"})
 
 
 @page("/sitemap.xml")

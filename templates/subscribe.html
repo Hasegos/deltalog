@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "RSS 구독 만들기 · Deltalog" %}
+  {% set seo_desc = "보고 싶은 도구와 제작사, 최소 중요도를 골라 나만의 RSS 주소를 만듭니다." %}
+  {% set noindex = true %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/deadlines.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/subscribe.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">RSS 구독 만들기 <span>고른 것만 받는 나만의 피드</span></h1>
+      <p class="st-sum">아무것도 고르지 않으면 모든 릴리스와 소식이 들어갑니다. 도구만 고르면 릴리스만, 제작사만 고르면 소식만 받습니다.</p>
+
+      <form id="sub" data-base="{{ base }}">
+        <h2 class="dl-h">릴리스 도구</h2>
+        <div class="sb-g">
+          {% for slug, name in tools %}
+          <label><input type="checkbox" name="tool" value="{{ slug }}"> {{ name }}</label>
+          {% endfor %}
+        </div>
+
+        <h2 class="dl-h">소식 제작사</h2>
+        <div class="sb-g">
+          {% for name in companies %}
+          <label><input type="checkbox" name="company" value="{{ name }}"> {{ name }}</label>
+          {% endfor %}
+        </div>
+
+        <h2 class="dl-h">최소 중요도</h2>
+        <select name="min" aria-label="최소 중요도">
+          <option value="1">전부 (1 이상)</option>
+          <option value="2">2 이상</option>
+          <option value="3">3 이상 (보통 이상)</option>
+          <option value="4">4 이상 (중요한 것만)</option>
+          <option value="5">5 (가장 중요한 것만)</option>
+        </select>
+
+        <h2 class="dl-h">내 피드 주소</h2>
+        <div class="sb-o">
+          <input id="url" type="text" readonly aria-label="RSS 주소" value="{{ base }}/feed.xml">
+          <button type="button" id="copy" class="ch">복사</button>
+          <a id="open" class="ch" href="{{ base }}/feed.xml">열기</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+  <script src="{{ asset('js/subscribe.js') }}"></script>
+</body>
+</html>
