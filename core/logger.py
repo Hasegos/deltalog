@@ -43,7 +43,7 @@ def setup_logging() -> None:
 
     - 터미널과 `app.log`: 루트 로거(INFO). 앱, 수집, 요약 진행, 스케줄러, uvicorn 시작 · 오류
     - `api.log`: `deltalog.api` 로거 전용. HTTP 요청 1건당 JSON 한 줄
-    - `llm.log`: `deltalog.llm` 로거 전용. LM Studio 호출 JSON 한 줄
+    - `llm.log`: `deltalog.llm` 로거 전용. Gemini 호출 JSON 한 줄
     """
     formatter = logging.Formatter(LOG_FORMAT)
     stream = logging.StreamHandler()
