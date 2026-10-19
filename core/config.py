@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str = ""
     POLL_INTERVAL_MIN: int = 30
     NEWS_POLL_INTERVAL_MIN: int = 60
+    DEADLINE_POLL_INTERVAL_MIN: int = 360
     GITHUB_API_URL: str = "https://api.github.com/repos/{repo}/releases"
     GITHUB_PER_PAGE: int = 30
     GITHUB_TIMEOUT_SEC: int = 20

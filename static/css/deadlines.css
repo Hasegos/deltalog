@@ -1,0 +1,148 @@
+/* =============================
+  deadlines.css — 종료 일정 화면 (/deadlines). 칩과 제목은 home.css, news.css를 그대로 쓴다.
+  ============================= */
+
+.dl-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.dl-sub p {
+  margin: 0;
+}
+
+.dl-cal {
+  display: flex;
+  gap: 8px;
+}
+
+.dl-h {
+  margin: 28px 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.dl-h-soon {
+  color: var(--c-breaking);
+}
+
+.dl-h-past {
+  color: var(--dim);
+}
+
+.dl-l {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.dl-r {
+  display: flex;
+  gap: 18px;
+  padding: 14px 18px;
+}
+
+.dl-r + .dl-r {
+  border-top: 1px solid var(--line);
+}
+
+.dl-r.past {
+  opacity: .6;
+}
+
+.dl-d {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 124px;
+  font-family: var(--mono);
+}
+
+.dl-d b {
+  font-size: 18px;
+}
+
+.dl-r.soon .dl-d b {
+  color: var(--c-breaking);
+}
+
+.dl-d span {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.dl-b {
+  min-width: 0;
+}
+
+.dl-b p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.dl-t {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.dl-t b {
+  font-family: var(--mono);
+  font-size: 15.5px;
+  overflow-wrap: anywhere;
+}
+
+.dl-t i,
+.dl-t em {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-style: normal;
+  color: var(--dim);
+}
+
+.dl-m {
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.dl-m code {
+  font-family: var(--mono);
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.dl-m a {
+  color: var(--accent);
+}
+
+.dl-note {
+  margin: 24px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+@media (max-width: 640px) {
+  .dl-r {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dl-d {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+    width: auto;
+  }
+}

@@ -8,6 +8,7 @@ from core.config import settings
 from core.templates import site_url, templates
 from db.session import get_db
 from services.web.changes_service import build_changes
+from services.web.deadline_service import build_deadlines, render_ics
 from services.web.feed_service import build_feed
 from services.web.home_service import build_home
 from services.web.news_service import build_news
@@ -81,6 +82,33 @@ def news_page(
         렌더링한 소식 페이지
     """
     return templates.TemplateResponse(request, "news.html", build_news(db, company, tab, topic, page))
+
+
+@page("/deadlines", response_class=HTMLResponse)
+def deadlines_page(request: Request, provider: str = "", db: Session = Depends(get_db)) -> HTMLResponse:
+    """모델 · API 종료 일정 화면을 그린다. `provider` 쿼리 값으로 제공사를 거른다.
+
+    Args:
+        request: 현재 요청
+        provider: 제공사 이름 (`Anthropic`, `OpenAI`, `Google`)
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 종료 일정 페이지
+    """
+    return templates.TemplateResponse(request, "deadlines.html", build_deadlines(db, provider))
+
+
+@page("/deadlines.ics")
+def deadlines_ics(request: Request, db: Session = Depends(get_db)) -> Response:
+    """종료 일정을 캘린더 앱이 구독할 수 있는 iCalendar 문서로 돌려준다. 1시간 동안 캐시해도 된다.
+
+    Args:
+        request: 현재 요청
+        db: 요청에 쓸 DB 세션
+    Returns:
+        `text/calendar` 문서
+    """
+    return Response(render_ics(db, site_url(request)), media_type="text/calendar", headers={"Cache-Control": "public, max-age=3600"})
 
 
 @page("/tools", response_class=HTMLResponse)
