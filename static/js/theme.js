@@ -28,3 +28,8 @@
   });
   paint();
 })();
+
+document.addEventListener("click", function (e) {
+  const more = document.querySelector("details.more[open]");
+  if (more && !more.contains(e.target)) more.removeAttribute("open");
+});
