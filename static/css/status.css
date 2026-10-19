@@ -1,0 +1,64 @@
+/* =============================
+  status.css — 수집 현황 화면 (/status). 목록 틀은 deadlines.css의 `.dl-h`, `.dl-l`을 쓴다.
+  ============================= */
+
+.st-sum {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.st-sum.bad {
+  color: var(--c-breaking);
+}
+
+.st-int {
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--dim);
+}
+
+.st-r {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 12px 18px;
+}
+
+.st-r + .st-r {
+  border-top: 1px solid var(--line);
+}
+
+.st-r b {
+  min-width: 220px;
+  font-family: var(--mono);
+  font-size: 14.5px;
+}
+
+.st-t {
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.st-s {
+  flex: none;
+  min-width: 44px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.st-s.ok {
+  color: var(--c-feature);
+}
+
+.st-s.stale {
+  color: var(--c-security);
+}
+
+.st-s.error {
+  color: var(--c-breaking);
+}

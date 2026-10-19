@@ -45,7 +45,7 @@
             </a>
           {% endif %}
         </div>
-        {% if week.pending %}<div class="wk-n">릴리스 수 기준 · 요약 대기 {{ week.pending }}건</div>{% endif %}
+        {% if week.pending or week.checked %}<div class="wk-n">릴리스 수 기준{% if week.pending %} · 요약 대기 {{ week.pending }}건{% endif %}{% if week.checked %} · 마지막 확인 <a href="/status">{{ week.checked }}</a>{% endif %}</div>{% endif %}
       </div>
     </section>
 

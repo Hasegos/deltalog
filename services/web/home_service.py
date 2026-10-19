@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from core.constants.news import NEWS_HOME_COUNT
 from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
-from crud import entry_crud, item_crud, news_crud
+from crud import entry_crud, feed_status_crud, item_crud, news_crud
 from services.web.release_service import release_path
 
 TABS = [("all", "전체", "전체"), ("imp", "중요 4+", "중요"), ("risk", "breaking · 보안", "주의")]
@@ -85,6 +85,12 @@ def _ago(moment: datetime, now: datetime) -> str:
     return f"{days // 30}개월 전"
 
 
+def _checked(db: Session, now: datetime) -> str:
+    """릴리스 소스를 마지막으로 확인한 시각을 `N분 전` 글로 돌려준다. 기록이 없으면 빈 문자열이다."""
+    moment = feed_status_crud.latest_ok(db, "release")
+    return _ago(moment, now) if moment else ""
+
+
 def build_home(
     db: Session, tool: str, tab: str, category: str, topic: str, q: str, page: int = 1, now: datetime | None = None
 ) -> dict:
@@ -138,6 +144,7 @@ def build_home(
         "label": f"{since:%m-%d} ~ {now:%m-%d}",
         "news": news_crud.count_since(db, since),
         "pending": item_crud.count_pending_items(db),
+        "checked": _checked(db, now),
         "cats": [
             {
                 "key": key,

@@ -154,3 +154,8 @@ def latest_published(db: Session) -> datetime | None:
         게시 시각. 글이 없으면 `None`
     """
     return db.scalar(select(func.max(News.published_at)).where(News.status == "done"))
+
+
+def count_pending(db: Session) -> int:
+    """요약을 기다리는(`pending`) 글 개수를 돌려준다."""
+    return db.scalar(select(func.count(News.id)).where(News.status == "pending")) or 0
