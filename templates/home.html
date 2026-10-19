@@ -69,7 +69,7 @@
       <h2 class="sec">곧 종료 <span>30일 안에 멈추는 모델 · API</span><a class="sec-go" href="/deadlines">전체 보기 →</a></h2>
       <div class="nl">
         {% for d in deadline_soon %}
-        <a class="nl-r" href="{{ d.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ d.badge }} · {{ d.provider }}</span><span class="nl-t">{{ d.name }} · {{ d.summary }}</span></a>
+        <a class="nl-r" href="{{ d.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ d.badge }} · {{ d.provider }}</span><span class="nl-t">{{ d.summary if d.name in d.summary else d.name ~ " · " ~ d.summary }}</span></a>
         {% endfor %}
       </div>
     </section>
