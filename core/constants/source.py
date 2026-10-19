@@ -7,6 +7,10 @@ SOURCES = [
     {"slug": "claude-code", "name": "Claude Code", "kind": "github_release", "repo": "anthropics/claude-code"},
     {"slug": "codex", "name": "Codex", "kind": "github_release", "repo": "openai/codex"},
     {"slug": "gemini-cli", "name": "Gemini CLI", "kind": "github_release", "repo": "google-gemini/gemini-cli"},
+    {"slug": "copilot-cli", "name": "GitHub Copilot CLI", "kind": "github_release", "repo": "github/copilot-cli"},
+    {"slug": "opencode", "name": "OpenCode", "kind": "github_release", "repo": "anomalyco/opencode"},
+    {"slug": "cline", "name": "Cline", "kind": "github_release", "repo": "cline/cline"},
+    {"slug": "zed", "name": "Zed", "kind": "github_release", "repo": "zed-industries/zed"},
     {"slug": "vscode", "name": "VS Code", "kind": "rss", "feed_url": "https://code.visualstudio.com/feed.xml"},
     {"slug": "cursor", "name": "Cursor", "kind": "rss", "feed_url": "https://cursor.com/changelog/rss.xml"},
     {
@@ -20,3 +24,5 @@ SOURCES = [
     {"slug": "pycharm", "name": "PyCharm", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=PCP&latest=false&type=release"},
     {"slug": "webstorm", "name": "WebStorm", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=WS&latest=false&type=release"},
 ]
+# 한 저장소에 여러 제품의 릴리스가 섞여 있을 때 소스에 넣을 태그만 거른다 (slug별 정규식, 태그 앞에서부터 맞춘다)
+GITHUB_TAG_PATTERNS = {"cline": r"v\d"}
