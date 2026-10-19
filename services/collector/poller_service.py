@@ -1,11 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core.config import settings
-from core.constants.news import NEWS_FEEDS
+from core.constants.news import NEWS_FEEDS, NEWS_MAX_AGE_DAYS
 from core.logger import get_logger
 from crud import entry_crud, news_crud
 from db.session import SessionLocal
@@ -120,6 +120,11 @@ def poll_news_feed(db: Session, feed: dict) -> int:
     known = news_crud.existing_urls(db, [a.url for a in articles])
     now = datetime.now(timezone.utc)
     fresh = list({a.url: a for a in articles if a.url not in known}.values())
+    oldest = now - timedelta(days=NEWS_MAX_AGE_DAYS)
+    for a in fresh:
+        if a.published_at is None:
+            a.published_at = news_service.page_date(a.url)
+    fresh = [a for a in fresh if a.published_at is None or a.published_at >= oldest]
     news_crud.add_news(
         db,
         [
