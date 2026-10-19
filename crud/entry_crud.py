@@ -347,16 +347,17 @@ def neighbor_entries(db: Session, entry: Entry) -> tuple[Entry | None, Entry | N
     return older, newer
 
 
-def list_summarized_entries(db: Session) -> list[tuple[Entry, Source]]:
-    """요약이 끝난 항목이 하나라도 있는 글을 최신순으로 돌려준다 (사이트맵용).
+def list_summarized_entries(db: Session, limit: int | None = None) -> list[tuple[Entry, Source]]:
+    """요약이 끝난 항목이 하나라도 있는 글을 최신순으로 돌려준다 (사이트맵, RSS용).
 
     Args:
         db: DB 세션
+        limit: 최대 개수. 비우면 모두
     Returns:
         `(글, 소스)` 목록
     """
     has_done = exists().where(Item.entry_id == Entry.id, Item.status == "done")
-    stmt = select(Entry, Source).join(Source, Source.id == Entry.source_id).where(has_done).order_by(Entry.published_at.desc())
+    stmt = select(Entry, Source).join(Source, Source.id == Entry.source_id).where(has_done).order_by(Entry.published_at.desc()).limit(limit)
     return [(entry, source) for entry, source in db.execute(stmt).all()]
 
 
