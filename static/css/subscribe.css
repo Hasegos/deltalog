@@ -1,0 +1,50 @@
+/* =============================
+  subscribe.css — RSS 구독 만들기 (/subscribe). 제목과 칩은 home.css, deadlines.css를 그대로 쓴다.
+  ============================= */
+
+.st-sum {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.sb-g {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.sb-g label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+#sub select {
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.sb-o {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sb-o input {
+  flex: 1 1 320px;
+  min-width: 0;
+  padding: 9px 12px;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}

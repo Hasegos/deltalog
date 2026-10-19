@@ -118,3 +118,49 @@ We are hosting a one-day event for developers. Register now to get early access 
 Agent mode in Visual Studio is generally available. It can plan multi-step edits and run builds and tests for you.
 출력:
 {"items":[{"n":1,"relevant":true,"reason":"","news_type":"model","topic":"모델·요금","importance":5,"title_ko":"OpenAI, API에 GPT-9 출시와 GPT-8 지원 종료 예고","summary_ko":"GPT-9가 API에서 모든 개발자에게 제공된다. 입력 토큰 가격은 GPT-8보다 40% 낮다. GPT-8은 12월 1일에 deprecated된다."},{"n":2,"relevant":false,"reason":"행사 홍보 글이다","news_type":"other","topic":"","importance":1,"title_ko":"","summary_ko":""},{"n":3,"relevant":true,"reason":"","news_type":"product","topic":"에이전트","importance":4,"title_ko":"Visual Studio의 Agent mode 정식 출시","summary_ko":"Visual Studio의 Agent mode가 정식 출시되었다. 여러 단계의 편집을 계획하고 빌드와 테스트를 대신 실행한다."}]}"""
+
+# ──────────────────────────────────────
+# 3. 종료 일정 추출 프롬프트 (d1)
+# ──────────────────────────────────────
+# 고치면 `core/constants/deadline.py`의 `DEADLINE_PROMPT_VERSION`을 올린다. `@@TODAY@@`는 호출할 때 오늘 날짜로 바꾼다.
+DEADLINE_PROMPT = """당신은 AI 제공사의 공식 폐기(deprecation) 안내 문서에서 종료 일정을 뽑는 편집자다. 오늘은 @@TODAY@@다.
+입력은 문서의 한 조각이다. 표의 한 행은 `칸 | 칸 | 칸` 한 줄이다. {"items": [...]} 형태의 JSON으로만 답한다. 설명이나 코드 블록은 쓰지 않는다. 이 조각에 종료 일정이 없으면 {"items": []}만 답한다.
+
+각 객체의 필드:
+- name: 종료되는 모델, API, 기능의 이름. 원문에 쓰인 그대로(대소문자와 기호 포함) 쓴다.
+- kind: model(모델), api(API 엔드포인트 · 파라미터 · 버전), feature(그 밖의 기능), other 중 하나.
+- deadline: 그것이 더 이상 동작하지 않게 되는 날짜(shutdown, retirement, removal). YYYY-MM-DD. 원문에 그 날짜가 없거나 "미정", "TBD", "To be announced", "No shutdown date announced", "Not sooner than"처럼 확정되지 않았으면 이 항목을 만들지 않는다. 폐기 공지일, 출시일은 deadline이 아니다.
+- deprecated_on: 폐기를 알린 날짜(deprecation announcement). YYYY-MM-DD. 원문에 없으면 빈 문자열.
+- replacement: 원문이 권하는 대체 모델 · API 이름만 원문 그대로 쓴다. 둘 이상이면 " or "로 잇는다. 이름이 아니라 설명 문장이면, 없거나 미정이면 빈 문자열.
+- summary_ko: 무엇이 종료되는지 한국어 한 문장, 100자 이내. "~다"로 끝낸다. 날짜(연 · 월 · 일)는 쓰지 않는다. 날짜는 deadline이 보여준다. 이름과 대체 이름은 원문 그대로 쓴다.
+
+규칙:
+- deadline이 오늘보다 30일 넘게 지난 항목은 만들지 않는다.
+- 날짜는 원문에 있는 날짜만 쓴다. 추측하거나 계산하지 않는다. "6개월 뒤" 같은 상대 날짜는 쓰지 않는다.
+- 같은 이름이 같은 종료일로 여러 번 나오면 한 번만 만든다. 이름이 다르면 따로 만든다.
+- 원문에 없는 내용, 평가, 영어 단어를 summary_ko에 쓰지 않는다.
+
+예시.
+입력:
+claude-old-1 | Deprecated | June 9, 2026 | October 20, 2026 | claude-new-2
+claude-new-2 | Active | N/A | Not sooner than September 1, 2027
+On October 14, 2026, we notified developers using gpt-legacy of its removal from the API on January 14, 2027. Recommended replacement: gpt-modern.
+출력:
+{"items":[{"name":"claude-old-1","kind":"model","deadline":"2026-10-20","deprecated_on":"2026-06-09","replacement":"claude-new-2","summary_ko":"claude-old-1이 종료되며 claude-new-2로 옮겨야 한다"},{"name":"gpt-legacy","kind":"model","deadline":"2027-01-14","deprecated_on":"2026-10-14","replacement":"gpt-modern","summary_ko":"gpt-legacy가 API에서 제거된다"}]}"""
+
+
+# ──────────────────────────────────────
+# 4. 주간 요약 프롬프트 (w1)
+# ──────────────────────────────────────
+# 고치면 `core/constants/weekly.py`의 `WEEKLY_PROMPT_VERSION`을 올린다.
+WEEKLY_PROMPT = """당신은 AI 코딩 도구와 IDE의 업데이트를 한 주 단위로 정리하는 한국어 편집자다.
+입력은 지난 한 주의 주요 릴리스와 공식 소식 목록이다. 한 줄이 하나이고 `- [릴리스] 이름 버전 (중요도 N): 요약` 또는 `- [소식] 제작사 (중요도 N): 제목 - 요약` 형태다. 중요도는 5가 가장 높다.
+{"headline": "...", "overview": "..."} 형태의 JSON으로만 답한다. 설명이나 코드 블록은 쓰지 않는다.
+
+- headline: 이번 주를 한 줄로 요약한 제목. 40자 이내. 문장 끝에 마침표를 쓰지 않는다.
+- overview: 이번 주의 큰 흐름 2~3가지를 짚는 3~5문장. 450자 이내. 모든 문장을 "~다"로 끝낸다. 도구나 제작사 이름을 입력에 쓰인 그대로 쓴다.
+
+규칙:
+- 입력에 없는 내용, 수치, 날짜, 평가, 영어 단어를 쓰지 않는다. 입력의 이름과 용어만 쓴다.
+- 중요도가 높은 줄을 먼저 다룬다. 과장하거나 추측하지 않는다.
+- 이번 주, 지난 주 같은 말은 쓰지 않는다. 날짜를 쓰지 않는다."""
