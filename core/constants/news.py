@@ -14,8 +14,9 @@ NEWS_FEEDS = [
     {"slug": "microsoft-vs", "company": "Microsoft", "url": "https://devblogs.microsoft.com/visualstudio/feed/"},
     {"slug": "jetbrains", "company": "JetBrains", "url": "https://blog.jetbrains.com/feed/"},
     {"slug": "jetbrains-ai", "company": "JetBrains", "url": "https://blog.jetbrains.com/ai/feed/"},
+    {"slug": "github-copilot", "company": "GitHub", "url": "https://github.blog/changelog/label/copilot/feed/"},
 ]
-NEWS_COMPANIES = ["Anthropic", "OpenAI", "Google", "Microsoft", "JetBrains", "Cursor", "xAI"]
+NEWS_COMPANIES = ["Anthropic", "OpenAI", "Google", "Microsoft", "JetBrains", "Cursor", "xAI", "GitHub"]
 
 
 # ──────────────────────────────────────
