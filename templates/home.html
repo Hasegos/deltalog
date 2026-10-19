@@ -75,6 +75,15 @@
     </section>
     {% endif %}
 
+    {% if weekly %}
+    <section class="blk">
+      <h2 class="sec">주간 요약 <span>한 주를 한 줄로</span><a class="sec-go" href="/weekly">전체 보기 →</a></h2>
+      <div class="nl">
+        <a class="nl-r" href="/weekly/{{ weekly.key }}"><span class="nl-m">{{ weekly.label }}</span><span class="nl-t">{{ weekly.headline }}</span></a>
+      </div>
+    </section>
+    {% endif %}
+
     {% if latest_news %}
     <section class="blk">
       <h2 class="sec">최신 소식 <span>제작사 공식 발표</span><a class="sec-go" href="/news">전체 보기 →</a></h2>
@@ -83,6 +92,12 @@
         <a class="nl-r" href="{{ n.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ n.company }} · {{ n.ago }}</span><span class="nl-t">{{ n.title }}</span></a>
         {% endfor %}
       </div>
+    </section>
+    {% endif %}
+
+    {% if show_extras %}
+    <section class="blk">
+      <p class="disc">받아보기 · <a href="/weekly">주간 요약</a> · <a href="/agents">AI 에이전트에 연결</a> · <a href="/subscribe">RSS 구독</a></p>
     </section>
     {% endif %}
 

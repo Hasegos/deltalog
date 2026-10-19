@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from core.constants.news import NEWS_HOME_COUNT
 from core.constants.page import IMPORTANT_MIN, KST, PAGE_SIZE, SHOWN_ITEMS, WEEK_BOX_DAYS
 from core.constants.taxonomy import CATEGORIES, SEVERITY, TOPICS
-from crud import entry_crud, feed_status_crud, item_crud, news_crud
+from crud import entry_crud, feed_status_crud, item_crud, news_crud, weekly_crud
 from services.web.deadline_service import build_soon
 from services.web.release_service import release_path
 
@@ -162,8 +162,12 @@ def build_home(
     highlights = []
     latest_news = []
     deadline_soon = []
+    weekly = None
     if not (tool or tab != "all" or category or topic or q):
         deadline_soon = build_soon(db)
+        digest = weekly_crud.latest(db)
+        if digest:
+            weekly = {"key": digest.week_start.isoformat(), "label": f"{digest.week_start.month}월 {digest.week_start.day}일 주", "headline": digest.headline}
         latest_news = [
             {"company": n.company, "title": n.title_ko or n.title, "ago": _ago(n.published_at, now), "url": n.url if n.url.startswith(("https://", "http://")) else "#"}
             for n in news_crud.list_news(db, "", "all", "", NEWS_HOME_COUNT)
@@ -281,6 +285,8 @@ def build_home(
         "highlights": highlights,
         "latest_news": latest_news,
         "deadline_soon": deadline_soon,
+        "weekly": weekly,
+        "show_extras": not (tool or tab != "all" or category or topic or q),
         "tabs": tabs,
         "topics": topics,
         "topic": topic,

@@ -163,6 +163,49 @@ summary::-webkit-details-marker {
   color: var(--fg);
 }
 
+.more {
+  position: relative;
+}
+
+.more summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.more summary::-webkit-details-marker {
+  display: none;
+}
+
+.more summary::after {
+  content: " ▾";
+  font-size: 11px;
+}
+
+.more summary:hover,
+.more[open] summary {
+  color: var(--fg);
+}
+
+.more div {
+  position: absolute;
+  right: 0;
+  top: 32px;
+  z-index: 5;
+  min-width: 160px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+.more div a {
+  display: block;
+  padding: 9px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
 .theme {
   display: inline-flex;
   align-items: center;
