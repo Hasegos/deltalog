@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   {% set seo_title = "종료 일정 · Deltalog" %}
-  {% set seo_desc = "Anthropic, OpenAI, Google이 공식 문서에 예고한 모델 · API 종료 일정을 한곳에 모아 날짜순으로 보여줍니다. 캘린더에 구독할 수 있습니다." %}
+  {% set seo_desc = "Anthropic, OpenAI, Google이 공식 문서에 예고한 모델 · API 종료 일정을 한곳에 모아 날짜순으로 보여줍니다." %}
   {% set jsonld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": "종료 일정", "url": site_url(request) ~ "/deadlines", "inLanguage": "ko", "description": seo_desc, "isPartOf": {"@type": "WebSite", "name": "Deltalog", "url": site_url(request)}} | tojson %}
   {% include "partials/head_meta.html" %}
   <link rel="stylesheet" href="{{ asset('css/home.css') }}">
@@ -16,13 +16,7 @@
     <section class="blk nw">
       <h1 class="nw-h">종료 일정 <span>모델 · API가 언제 멈추는지, 제공사가 공식 문서에 예고한 날짜만</span></h1>
 
-      <div class="dl-sub">
-        <p>예고된 종료일이 {{ upcoming }}건 남았습니다. 캘린더에 구독하면 새 일정이 자동으로 들어옵니다.</p>
-        <p class="dl-cal">
-          <a class="ch" href="webcal://{{ request.url.netloc }}/deadlines.ics">캘린더에 구독</a>
-          <a class="ch" href="/deadlines.ics">.ics 파일</a>
-        </p>
-      </div>
+      <p class="dl-sub">예고된 종료일이 {{ upcoming }}건 남았습니다.</p>
 
       <div class="chs nw-co">
         <a class="ch{{ ' on' if all_active }}" href="/deadlines">전체<em>{{ total }}</em></a>

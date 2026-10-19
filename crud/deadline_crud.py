@@ -72,6 +72,21 @@ def list_since(db: Session, since: date, provider: str = "") -> list[Deadline]:
     return list(db.scalars(stmt.order_by(Deadline.deadline, Deadline.provider, Deadline.name)))
 
 
+def list_range(db: Session, start: date, end: date, limit: int) -> list[Deadline]:
+    """종료일이 `start`부터 `end`까지(양끝 포함)인 일정을 종료일 빠른 순으로 돌려준다.
+
+    Args:
+        db: DB 세션
+        start: 시작 날짜
+        end: 끝 날짜
+        limit: 최대 개수
+    Returns:
+        일정 목록
+    """
+    stmt = select(Deadline).where(Deadline.deadline >= start, Deadline.deadline <= end).order_by(Deadline.deadline, Deadline.provider, Deadline.name).limit(limit)
+    return list(db.scalars(stmt))
+
+
 def count_by_provider(db: Session, since: date) -> dict[str, int]:
     """종료일이 `since` 이후인 일정의 제공사별 개수를 돌려준다."""
     stmt = select(Deadline.provider, func.count(Deadline.id)).where(Deadline.deadline >= since).group_by(Deadline.provider)
