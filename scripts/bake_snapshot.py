@@ -25,6 +25,7 @@ OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "dist")
 WAIT_SECONDS = int(os.environ.get("SNAPSHOT_WAIT", "180"))
 SKIP_IF_DOWN = os.environ.get("SKIP_IF_DOWN") == "1"
 SNAPSHOT_URL = os.environ.get("SNAPSHOT_URL", "").rstrip("/")
+OPTIONAL_ASSETS = {"/ads.txt"}
 WORKERS = 6
 MIN_PAGES = 100
 UA = "deltalog-snapshot/1.0"
@@ -104,6 +105,8 @@ def bake_asset(path: str) -> bytes:
     status, body = fetch(path)
     if status == 0:
         return b""
+    if status == 404 and path in OPTIONAL_ASSETS:
+        return b""
     if status != 200:
         errors.append(f"{status} asset {path}")
         return b""
@@ -162,7 +165,7 @@ def main() -> None:
         for ref in ASSET_RE.findall(body.decode("utf-8", "ignore")):
             if not ref.startswith("/cdn-cgi/") and ref.split("?")[0].lower().endswith(ASSET_EXT):
                 assets.add(ref)
-    assets |= {"/robots.txt", "/favicon.ico"}
+    assets |= {"/robots.txt", "/favicon.ico"} | OPTIONAL_ASSETS
 
     with ThreadPoolExecutor(WORKERS) as pool:
         bodies = dict(zip(sorted(assets), pool.map(bake_asset, sorted(assets))))
