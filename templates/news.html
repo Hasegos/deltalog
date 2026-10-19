@@ -16,7 +16,7 @@
 
       {% if headline %}
       <a class="nw-top" href="{{ headline.url }}" target="_blank" rel="noopener">
-        <span class="nw-k">{{ headline.company }} · {{ headline.ago }}{% if headline.type_label %} · {{ headline.type_label }}{% endif %}{% if headline.topic %} · {{ headline.topic }}{% endif %}</span>
+        <span class="nw-k">{{ headline.company }} · {{ headline.ago }}{% if headline.type_label %} · {{ headline.type_label }}{% endif %}{% if headline.topic and (not headline.type_label or not headline.topic.startswith(headline.type_label)) %} · {{ headline.topic }}{% endif %}</span>
         <span class="nw-tt">{{ headline.title }}</span>
         <span class="nw-ss">{{ headline.summary }}</span>
         <span class="nw-go">원문 보기 ↗</span>
