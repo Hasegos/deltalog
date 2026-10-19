@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     LOG_RETENTION_DAYS: int = 30
     TRUST_PROXY: bool = False
     SITE_URL: str = ""
+    ALERT_WEBHOOK_URL: str = ""
     API_KEY: str = ""
     ADSENSE_CLIENT: str = ""
 

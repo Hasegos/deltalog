@@ -13,6 +13,7 @@ from services.web.feed_service import build_feed
 from services.web.home_service import build_home
 from services.web.news_service import build_news
 from services.web.page_service import build_tools, build_topics
+from services.web.status_service import build_status
 from services.web import sitemap_service
 from services.web.release_service import build_release, build_release_index
 
@@ -109,6 +110,19 @@ def deadlines_ics(request: Request, db: Session = Depends(get_db)) -> Response:
         `text/calendar` 문서
     """
     return Response(render_ics(db, site_url(request)), media_type="text/calendar", headers={"Cache-Control": "public, max-age=3600"})
+
+
+@page("/status", response_class=HTMLResponse)
+def status_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """수집 대상마다 마지막 확인 시각과 상태를 보여주는 수집 현황 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 수집 현황 페이지
+    """
+    return templates.TemplateResponse(request, "status.html", build_status(db))
 
 
 @page("/tools", response_class=HTMLResponse)

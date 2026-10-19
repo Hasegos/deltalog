@@ -12,7 +12,7 @@ from db.session import SessionLocal
 from models.entry_model import Entry
 from models.news_model import News
 from models.source_model import Source
-from services.collector import feed_service, github_release_service, jetbrains_service, news_service
+from services.collector import feed_service, github_release_service, jetbrains_service, news_service, status_service
 from services.collector.github_release_service import FetchResult
 from services.collector.splitter_service import split_items
 
@@ -95,12 +95,15 @@ def poll_all() -> int:
         for source in sources:
             try:
                 total += poll_source(db, source)
+                status_service.record(source.slug, source.name, "release", True)
             except httpx.HTTPError as exc:
                 db.rollback()
                 logger.warning("poll %s: 요청 실패 (%s)", source.slug, exc.__class__.__name__)
-            except Exception:
+                status_service.record(source.slug, source.name, "release", False, exc.__class__.__name__)
+            except Exception as exc:
                 db.rollback()
                 logger.exception("poll %s: 저장 실패", source.slug)
+                status_service.record(source.slug, source.name, "release", False, exc.__class__.__name__)
     return total
 
 
@@ -161,12 +164,16 @@ def poll_news() -> int:
     total = 0
     with SessionLocal() as db:
         for feed in NEWS_FEEDS:
+            label = f"{feed['company']} ({feed['slug']})"
             try:
                 total += poll_news_feed(db, feed)
+                status_service.record(feed["slug"], label, "news", True)
             except httpx.HTTPError as exc:
                 db.rollback()
                 logger.warning("news %s: 요청 실패 (%s)", feed["slug"], exc.__class__.__name__)
-            except Exception:
+                status_service.record(feed["slug"], label, "news", False, exc.__class__.__name__)
+            except Exception as exc:
                 db.rollback()
                 logger.exception("news %s: 저장 실패", feed["slug"])
+                status_service.record(feed["slug"], label, "news", False, exc.__class__.__name__)
     return total

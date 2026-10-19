@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% set seo_title = "수집 현황 · Deltalog" %}
+  {% set seo_desc = "Deltalog가 릴리스 소스, 공식 소식 피드, 종료 일정 문서를 언제 마지막으로 확인했는지 보여줍니다." %}
+  {% set noindex = true %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/deadlines.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/status.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">수집 현황 <span>마지막으로 확인한 시각과 상태</span></h1>
+
+      <p class="st-sum{{ ' bad' if bad }}">{% if bad %}확인이 늦거나 실패하고 있는 곳이 {{ bad }}곳 있습니다.{% else %}모든 수집이 정상입니다.{% endif %} 요약 대기: 릴리스 항목 {{ pending_items }}건, 소식 {{ pending_news }}건.</p>
+
+      {% for g in groups %}
+      <h2 class="dl-h">{{ g.title }} <span class="st-int">{{ g.interval }}분마다</span></h2>
+      <div class="dl-l">
+        {% for r in g.rows %}
+        <div class="st-r">
+          <span class="st-s {{ r.state }}">{{ r.state_label }}</span>
+          <b>{{ r.label }}</b>
+          <span class="st-t">마지막 확인 {{ r.checked }}{% if r.failures %} · 연속 실패 {{ r.failures }}번{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">아직 수집 기록이 없습니다. 서버가 막 시작됐을 수 있습니다.</div>
+      {% endfor %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

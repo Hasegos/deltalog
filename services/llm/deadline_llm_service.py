@@ -21,7 +21,7 @@ from core.logger import get_logger, log_event
 from crud import deadline_crud, llm_usage_crud
 from db.session import SessionLocal
 from models.deadline_model import Deadline
-from services.collector import deadline_service
+from services.collector import deadline_service, status_service
 from services.llm import lm_client
 from services.llm.lm_client import LlmBudgetExhausted, LlmRateLimited, LlmUnavailable
 from services.llm.llm_service import LLM_LOCK, block_gemini, gemini_ready, unseen_words
@@ -227,11 +227,14 @@ def refresh_deadlines_job() -> None:
     """
     with LLM_LOCK, SessionLocal() as db:
         for source in DEADLINE_SOURCES:
+            label = f"{source['provider']} 종료 일정 문서"
             try:
                 refresh_source(db, source)
+                status_service.record(source["slug"], label, "deadline", True)
             except httpx.HTTPError as exc:
                 db.rollback()
                 logger.warning("deadline %s: 문서를 받지 못함 (%s)", source["slug"], exc.__class__.__name__)
+                status_service.record(source["slug"], label, "deadline", False, exc.__class__.__name__)
             except (LlmRateLimited, LlmBudgetExhausted) as exc:
                 db.rollback()
                 logger.warning("deadline: 쉼 (%s)", exc)
@@ -241,6 +244,7 @@ def refresh_deadlines_job() -> None:
                 db.rollback()
                 logger.warning("deadline %s: 중단 (%s)", source["slug"], exc)
                 break
-            except Exception:
+            except Exception as exc:
                 db.rollback()
                 logger.exception("deadline %s: 실패", source["slug"])
+                status_service.record(source["slug"], label, "deadline", False, exc.__class__.__name__)
