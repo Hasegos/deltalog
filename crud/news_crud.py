@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm import Session
 
-from core.constants.news import NEWS_PROMPT_VERSION, NEWS_TYPES
+from core.constants.news import NEWS_EXPIRED_REASON, NEWS_PROMPT_VERSION, NEWS_TYPES
 from core.constants.page import IMPORTANT_MIN
 from models.news_model import News
 
@@ -31,7 +31,7 @@ def add_news(db: Session, rows: list[News]) -> None:
 
 
 def list_pending(db: Session, limit: int) -> list[News]:
-    """요약을 기다리는 글(`pending`, 이전 프롬프트 버전으로 처리된 `done`과 `skipped`)을 돌려준다. 실패한 적이 있는 글은 뒤로 미루고 나머지는 최신순이다.
+    """요약을 기다리는 글(`pending`, 이전 프롬프트 버전으로 처리된 `done`과 `skipped`. 오래된 글이라 걸러둔 `skipped`는 다시 요약하지 않는다)을 돌려준다. 실패한 적이 있는 글은 뒤로 미루고 나머지는 최신순이다.
 
     Args:
         db: DB 세션
@@ -39,7 +39,7 @@ def list_pending(db: Session, limit: int) -> list[News]:
     Returns:
         글 목록
     """
-    old = and_(News.status.in_(("done", "skipped")), News.prompt_version != NEWS_PROMPT_VERSION)
+    old = and_(News.status.in_(("done", "skipped")), News.prompt_version != NEWS_PROMPT_VERSION, or_(News.reason.is_(None), News.reason != NEWS_EXPIRED_REASON))
     stmt = select(News).where(or_(News.status == "pending", old)).order_by(News.attempts, News.published_at.desc()).limit(limit)
     return list(db.scalars(stmt))
 
