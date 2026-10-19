@@ -6,9 +6,11 @@
 - SNAPSHOT_WAIT: 원본이 응답하기를 기다리는 초 (기본 180)
 - SKIP_IF_DOWN: 1이면 원본이 꺼져 있을 때 오류 없이 끝낸다. 출력 폴더는 만들지 않는다
 - SNAPSHOT_URL: 지금 배포된 스냅샷 주소. 굽은 sitemap.xml과 홈이 같으면 출력 폴더를 지워 배포를 생략한다
+홈의 필터(도구, 탭, 유형, 주제) 화면은 한 개와 두 개 조합마다 _f/<키>-<값>~<키>-<값>.html로 따로 굽는다.
 원본이 아니라 Worker 폴백(X-Served-By 헤더)이 응답한 페이지는 실패로 보고, 하나라도 실패하면 종료 코드 1로 끝난다.
 Cloudflare가 요청마다 끼워 넣는 봇 판별 스크립트(__CF$cv$params)는 굽는 값이 매번 달라져서 지운다.
 """
+import html
 import os
 import re
 import shutil
@@ -26,6 +28,8 @@ WAIT_SECONDS = int(os.environ.get("SNAPSHOT_WAIT", "180"))
 SKIP_IF_DOWN = os.environ.get("SKIP_IF_DOWN") == "1"
 SNAPSHOT_URL = os.environ.get("SNAPSHOT_URL", "").rstrip("/")
 OPTIONAL_ASSETS = {"/ads.txt"}
+FILTER_KEYS = ("tool", "tab", "type", "topic")
+MAX_FILTERS = 2
 WORKERS = 6
 MIN_PAGES = 100
 UA = "deltalog-snapshot/1.0"
@@ -121,6 +125,39 @@ def comparable(body: bytes) -> bytes:
     return EMAIL_RE.sub(b"", body)
 
 
+def filter_links(body: bytes) -> set[tuple[tuple[str, str], ...]]:
+    """홈 HTML의 필터 링크와 주제 선택 항목에서 (키, 값) 조합을 모은다. 필터가 아닌 쿼리(검색어, 쪽)가 섞인 링크는 뺀다."""
+    text = body.decode("utf-8", "ignore")
+    found = set()
+    for href in re.findall(r'href="(/\?[^"]*)"', text):
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(html.unescape(href)).query)
+        if query and set(query) <= set(FILTER_KEYS):
+            found.add(tuple((k, query[k][0]) for k in FILTER_KEYS if k in query))
+    for value in re.findall(r'<option value="([^"]+)"', text):
+        found.add((("topic", html.unescape(value)),))
+    return found
+
+
+def bake_filter(combo: tuple[tuple[str, str], ...]) -> tuple[str, bytes]:
+    """필터 조합 하나를 _f/<키>-<값>~<키>-<값>.html로 굽는다."""
+    name = "~".join(f"{k}-{v}" for k, v in combo)
+    query = "/?" + urllib.parse.urlencode(combo)
+    if "/" in name:
+        errors.append(f"filter name has slash: {name}")
+        return query, b""
+    status, body = fetch(query)
+    if status == 0:
+        return query, b""
+    if status != 200:
+        errors.append(f"{status} {query}")
+        return query, b""
+    body = CF_INJECT_RE.sub("", body.decode("utf-8")).encode("utf-8")
+    save = OUT / "_f" / (name + ".html")
+    save.parent.mkdir(parents=True, exist_ok=True)
+    save.write_bytes(body)
+    return query, body
+
+
 def unchanged() -> bool:
     """굽은 sitemap.xml과 홈이 지금 배포된 스냅샷과 같은지 본다. 하나라도 읽지 못하면 다르다고 본다."""
     if not SNAPSHOT_URL:
@@ -152,6 +189,17 @@ def main() -> None:
         results = list(pool.map(bake_page, paths))
     saved = sum(1 for _, body in results if body)
     print(f"pages saved: {saved}")
+
+    home = dict(results).get("/", b"")
+    baked: dict[tuple[tuple[str, str], ...], bytes] = {}
+    pending = {c for c in filter_links(home) if len(c) <= MAX_FILTERS}
+    while pending:
+        with ThreadPoolExecutor(WORKERS) as pool:
+            done = list(pool.map(bake_filter, sorted(pending)))
+        baked.update({c: b for c, (_, b) in zip(sorted(pending), done)})
+        results += done
+        pending = {c for body in baked.values() for c in filter_links(body) if len(c) <= MAX_FILTERS} - set(baked)
+    print(f"filter pages saved: {len(baked)}")
 
     status, body = fetch("/__snapshot_404_probe__")
     if status == 404:
