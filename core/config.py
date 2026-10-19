@@ -36,10 +36,10 @@ class Settings(BaseSettings):
     LLM_TOP_P: float = 0.9
     LLM_MAX_RETRIES: int = 2
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.8-flash"
+    GEMINI_MODEL: str
     GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    GEMINI_DAILY_LIMIT: int = 20
-    GEMINI_RPM: int = 5
+    GEMINI_DAILY_LIMIT: int
+    GEMINI_RPM: int
     GEMINI_BATCH_SIZE: int = 25
     GEMINI_MAX_TOKENS: int = 8192
     GEMINI_TIMEOUT: int = 180
