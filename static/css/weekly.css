@@ -1,0 +1,76 @@
+/* =============================
+  weekly.css — 주간 요약 (/weekly). 제목과 칩은 home.css, news.css, deadlines.css를 그대로 쓴다.
+  ============================= */
+
+.wk-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  color: var(--muted);
+}
+
+.wk-top {
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.wk-top h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.wk-top p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.wk-g {
+  padding: 12px 18px;
+}
+
+.wk-g + .wk-g {
+  border-top: 1px solid var(--line);
+}
+
+.wk-g b {
+  font-family: var(--mono);
+  font-size: 14.5px;
+}
+
+.wk-g p {
+  margin: 4px 0 0;
+  line-height: 1.6;
+}
+
+.wk-g i {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-style: normal;
+  color: var(--dim);
+}
+
+.wk-w {
+  display: block;
+  padding: 10px 18px;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.wk-w + .wk-w {
+  border-top: 1px solid var(--line);
+}
+
+.wk-w b {
+  margin-right: 10px;
+  font-family: var(--mono);
+  font-size: 13.5px;
+}
+
+.wk-w.on {
+  background: var(--bg);
+}

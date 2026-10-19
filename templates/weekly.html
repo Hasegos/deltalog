@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% if digest %}
+  {% set seo_title = digest.headline ~ " · 주간 요약 · Deltalog" %}
+  {% set seo_desc = digest.overview[:150] %}
+  {% else %}
+  {% set seo_title = "주간 요약 · Deltalog" %}
+  {% set seo_desc = "한 주 동안 나온 AI 코딩 도구와 IDE의 주요 릴리스와 공식 소식을 한국어로 정리합니다." %}
+  {% set noindex = true %}
+  {% endif %}
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/deadlines.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/weekly.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">주간 요약 <span>한 주 동안 나온 주요 릴리스와 소식</span></h1>
+
+      {% if digest %}
+      <div class="wk-nav">
+        {% if older %}<a class="ch" href="/weekly/{{ older }}">← 이전 주</a>{% else %}<span></span>{% endif %}
+        <b>{{ range }}</b>
+        {% if newer %}<a class="ch" href="/weekly/{{ newer }}">다음 주 →</a>{% else %}<span></span>{% endif %}
+      </div>
+
+      <article class="wk-top">
+        <h2>{{ digest.headline }}</h2>
+        <p>{{ digest.overview }}</p>
+      </article>
+
+      {% if releases %}
+      <h2 class="dl-h">주요 릴리스</h2>
+      <div class="dl-l">
+        {% for g in releases %}
+        <div class="wk-g">
+          <b>{{ g.name }}</b>
+          {% for r in g.rows %}
+          <p><a href="{{ r.url }}">{{ r.label }}</a> {{ r.summary }} <i>중요 {{ r.importance }}</i></p>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if news %}
+      <h2 class="dl-h">공식 소식</h2>
+      <div class="dl-l">
+        {% for n in news %}
+        <div class="wk-g">
+          <b>{{ n.company }}</b>
+          <p><a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title }} ↗</a> {{ n.summary }} <i>중요 {{ n.importance }}</i></p>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <h2 class="dl-h">지난 주간 요약</h2>
+      <div class="dl-l">
+        {% for w in weeks %}
+        <a class="wk-w{{ ' on' if w.active }}" href="/weekly/{{ w.key }}"><b>{{ w.range }}</b> {{ w.headline }}</a>
+        {% endfor %}
+      </div>
+
+      <p class="dl-note">제목과 개요는 AI(Google Gemini)가 그 주의 요약 목록을 보고 썼고, 입력에 없는 영어 단어가 들어가면 버립니다. 목록의 요약도 AI가 만들었으니 중요한 결정 전에는 원문을 확인해 주세요.</p>
+      {% else %}
+      <div class="empty">아직 주간 요약이 없습니다. 한 주가 끝나면 만들어집니다.</div>
+      {% endif %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

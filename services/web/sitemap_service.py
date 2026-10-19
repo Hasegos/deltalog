@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 
 from sqlalchemy.orm import Session
 
-from crud import deadline_crud, entry_crud, item_crud, news_crud
+from crud import deadline_crud, entry_crud, item_crud, news_crud, weekly_crud
 from services.web.release_service import release_path
 
 SITEMAP_LIMIT = 45000
@@ -43,6 +43,8 @@ def collect_urls(db: Session) -> list[tuple[str, str]]:
     latest_deadline = deadline_crud.latest_seen(db)
     if latest_deadline:
         urls.append(("/deadlines", _day(latest_deadline)))
+    for week in weekly_crud.list_weeks(db, 200):
+        urls.append((f"/weekly/{week.week_start.isoformat()}", _day(week.created_at)))
     for source in item_crud.list_sources(db):
         moment = newest.get(source.id)
         urls.append((f"/releases/{quote(source.slug, safe='')}", _day(moment) if moment else ""))
