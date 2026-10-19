@@ -30,13 +30,19 @@
       </div>
       <div class="wk">
         <div class="wk-t">Last 7 days · {{ week.label }}</div>
-        <div class="wk-g">
+        <div class="wk-g{{ ' wk-g5' if week.news }}">
           {% for c in week.cats %}
             <a class="wk-c{{ ' on' if c.active }}" href="{{ c.href }}" title="{{ c.label }} 항목이 있는 릴리스 {{ c.count }}개">
               <b class="cat-{{ c.key }}">{{ c.symbol }}{{ c.count }}</b>
               <span>{{ c.label }}</span>
             </a>
           {% endfor %}
+          {% if week.news %}
+            <a class="wk-c wk-news" href="/news" title="최근 7일 공식 발표 {{ week.news }}건">
+              <b>{{ week.news }}</b>
+              <span>소식 →</span>
+            </a>
+          {% endif %}
         </div>
         {% if week.pending %}<div class="wk-n">릴리스 수 기준 · 요약 대기 {{ week.pending }}건</div>{% endif %}
       </div>

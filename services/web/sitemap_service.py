@@ -5,7 +5,7 @@ from xml.sax.saxutils import escape
 
 from sqlalchemy.orm import Session
 
-from crud import entry_crud, item_crud
+from crud import entry_crud, item_crud, news_crud
 from services.web.release_service import release_path
 
 SITEMAP_LIMIT = 45000
@@ -37,6 +37,9 @@ def collect_urls(db: Session) -> list[tuple[str, str]]:
     urls: list[tuple[str, str]] = []
     for path in DATA_PAGES:
         urls.append((path, _day(overall)) if overall else (path, ""))
+    latest_news = news_crud.latest_published(db)
+    if latest_news:
+        urls.append(("/news", _day(latest_news)))
     for source in item_crud.list_sources(db):
         moment = newest.get(source.id)
         urls.append((f"/releases/{quote(source.slug, safe='')}", _day(moment) if moment else ""))

@@ -78,6 +78,20 @@
   color: var(--dim);
 }
 
+.wk-g5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.wk-news {
+  color: var(--accent);
+  border-left: 1px solid var(--line);
+  border-radius: 0 8px 8px 0;
+}
+
+.wk-news span {
+  color: var(--accent);
+}
+
 .wk-c.on {
   background: var(--accent-bg);
   border-color: var(--accent);
