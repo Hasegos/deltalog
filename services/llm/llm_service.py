@@ -74,8 +74,11 @@ def clean_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+FOREIGN_CHARS = re.compile(r"[\u3040-\u30ff\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uff66-\uff9f]")
+
+
 def unseen_words(summary: str, original: str) -> list[str]:
-    """요약에 나온 영어 단어 중 원문에 없는 것을 돌려준다. 모델이 지어낸 용어를 걸러내는 데 쓴다.
+    """요약에 나온 영어 단어 중 원문에 없는 것과, 원문에 없는 일본어 가나 · 한자를 돌려준다. 모델이 지어낸 용어와 다른 언어 글자가 섞이는 것(`워크スペース`)을 걸러내는 데 쓴다.
 
     원문 단어 2~5개의 머리글자를 이은 약어(`byte-order mark` → `BOM`)는 지어낸 말이 아니므로 통과시킨다.
 
@@ -83,12 +86,13 @@ def unseen_words(summary: str, original: str) -> list[str]:
         summary: 한국어 요약
         original: 항목 원문
     Returns:
-        원문에 없는 영어 단어 (대소문자 무시). 모두 있으면 빈 목록
+        원문에 없는 영어 단어 (대소문자 무시)와 원문에 없는 가나 · 한자 글자. 모두 있으면 빈 목록
     """
     lowered = original.lower()
     words = re.findall(r"[a-z0-9]+", lowered)
     acronyms = {"".join(w[0] for w in words[i : i + n]) for n in range(2, 6) for i in range(len(words) - n + 1)}
-    return [w for w in re.findall(r"[A-Za-z][A-Za-z0-9_]{2,}", summary) if w.lower() not in lowered and w.lower() not in acronyms]
+    unseen = [w for w in re.findall(r"[A-Za-z][A-Za-z0-9_]{2,}", summary) if w.lower() not in lowered and w.lower() not in acronyms]
+    return unseen + [c for c in dict.fromkeys(FOREIGN_CHARS.findall(summary)) if c not in original]
 
 
 def _messages(source: Source, entry: Entry, texts: dict[int, str]) -> list[dict]:
@@ -138,7 +142,7 @@ def _parse(content: str, texts: dict[int, str]) -> tuple[dict[int, Summary], dic
             continue
         bad = unseen_words(summary.summary_ko, texts[summary.n])
         if bad:
-            reasons[summary.n] = "원문에 없는 영어: " + ", ".join(dict.fromkeys(bad))
+            reasons[summary.n] = "원문에 없는 영어 · 외국 글자: " + ", ".join(dict.fromkeys(bad))
             continue
         if summary.topic not in TOPICS:
             summary.topic = ""
