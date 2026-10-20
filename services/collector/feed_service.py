@@ -155,6 +155,8 @@ def _entries(xml: str, slug: str) -> list[Release]:
     releases: list[Release] = []
     for node in root.iter(f"{ATOM}entry") if root.tag.startswith(ATOM) else root.iter("item"):
         title = _text(node, f"{ATOM}title", "title")
+        if slug == "kiro":
+            title = ": ".join(title.split(": ")[:2])  # `영역: 제목: 부제` 중 부제는 길어서 뗀다
         link_node = next((n for n in node.findall(f"{ATOM}link") if n.get("rel", "alternate") == "alternate"), None)
         link = link_node.get("href", "") if link_node is not None else _text(node, "link")
         moment = _date(_text(node, f"{ATOM}published", f"{ATOM}updated", "pubDate"))
