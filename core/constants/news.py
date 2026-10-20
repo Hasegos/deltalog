@@ -24,7 +24,7 @@ NEWS_COMPANIES = ["Anthropic", "OpenAI", "Google", "Microsoft", "JetBrains", "Cu
 COMPANY_TOOLS = {
     "Anthropic": ["claude-code"],
     "OpenAI": ["codex"],
-    "Google": ["gemini-cli", "android-studio"],
+    "Google": ["gemini-cli", "android-studio", "antigravity", "antigravity-ide"],
     "Microsoft": ["vscode"],
     "GitHub": ["copilot-cli"],
     "Cursor": ["cursor"],
