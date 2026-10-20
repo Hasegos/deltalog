@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm import Session
@@ -111,6 +111,32 @@ def count_news(db: Session, company: str, tab: str, topic: str, q: str = "") -> 
         글 개수
     """
     return db.scalar(_filter(select(func.count(News.id)), company, tab, topic, q)) or 0
+
+
+def list_near(db: Session, company: str, moment: datetime, days: int, min_importance: int, limit: int) -> list[News]:
+    """제작사가 `moment` 앞뒤 `days`일 안에 낸 요약 완료 소식을 중요도 높은 순, 같으면 `moment`에 가까운 순으로 돌려준다.
+
+    Args:
+        db: DB 세션
+        company: 제작사 이름
+        moment: 기준 시각
+        days: 앞뒤로 볼 날수
+        min_importance: 이 중요도 이상만
+        limit: 최대 개수
+    Returns:
+        글 목록
+    """
+    span = timedelta(days=days)
+    stmt = select(News).where(
+        News.status == "done",
+        News.company == company,
+        News.importance >= min_importance,
+        News.published_at >= moment - span,
+        News.published_at <= moment + span,
+    )
+    found = list(db.scalars(stmt))
+    found.sort(key=lambda n: (-(n.importance or 0), abs(n.published_at - moment)))
+    return found[:limit]
 
 
 def count_by_company(db: Session) -> dict[str, int]:

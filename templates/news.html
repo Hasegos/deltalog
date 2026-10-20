@@ -74,6 +74,7 @@
           <div class="xp">
             <p class="nw-sum">{{ r.summary | mark(q) }}</p>
             {% if r.topic %}<span class="xg"># {{ r.topic }}</span>{% endif %}
+            {% if r.related %}<p class="xm">같은 시기 릴리스: {% for x in r.related %}<a href="{{ x.path }}">{{ x.label }}</a>{{ " · " if not loop.last }}{% endfor %}</p>{% endif %}
             <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.company ~ ' ' ~ r.title) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
             <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
           </div>
