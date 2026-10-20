@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   {% set seo_title = "Deltalog · AI 코딩 도구 릴리스 노트 한국어 요약" %}
-  {% set seo_desc = "Claude Code, Codex, Gemini CLI, VS Code, Cursor, Android Studio, JetBrains IDE의 릴리스 노트를 한국어로 요약하고 중요한 변경부터 모아 보여줍니다." %}
+  {% set seo_desc = "Claude Code, Codex, Gemini CLI, Cursor, VS Code, JetBrains IDE부터 OpenAI · Anthropic · Gemini API까지, AI 코딩 도구의 릴리스 노트를 한국어로 요약하고 중요한 변경부터 모아 보여줍니다." %}
   {% set jsonld = {"@context": "https://schema.org", "@type": "WebSite", "name": "Deltalog", "url": site_url(request), "inLanguage": "ko", "description": seo_desc, "publisher": {"@type": "Organization", "name": "Deltalog", "url": site_url(request)}} | tojson %}
   {% include "partials/head_meta.html" %}
   <link rel="stylesheet" href="{{ asset('css/home.css') }}">

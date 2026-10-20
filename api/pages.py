@@ -377,7 +377,7 @@ def release_index_page(request: Request, slug: str = "", db: Session = Depends(g
     Raises:
         HTTPException: 그런 도구가 없을 때 (404)
     """
-    context = build_release_index(db, slug)
+    context = build_release_index(db, slug, site_url(request))
     if context is None:
         raise HTTPException(status_code=404, detail="도구를 찾을 수 없습니다")
     return templates.TemplateResponse(request, "releases.html", context)
