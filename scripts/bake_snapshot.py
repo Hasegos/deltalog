@@ -6,7 +6,8 @@
 - SNAPSHOT_WAIT: 원본이 응답하기를 기다리는 초 (기본 180)
 - SKIP_IF_DOWN: 1이면 원본이 꺼져 있을 때 오류 없이 끝낸다. 출력 폴더는 만들지 않는다
 - SNAPSHOT_URL: 지금 배포된 스냅샷 주소. 굽은 sitemap.xml과 홈이 같으면 출력 폴더를 지워 배포를 생략한다
-홈의 필터(도구, 탭, 유형, 주제) 화면은 한 개와 두 개 조합마다 _f/<키>-<값>~<키>-<값>.html로, 소식(/news)의 필터(회사, 탭, 주제)는 _f/news~<키>-<값>~<키>-<값>.html로 따로 굽는다.
+홈의 필터(도구, 탭, 유형, 주제) 화면은 한 개와 두 개 조합마다 _f/<키>-<값>~<키>-<값>.html로, 소식(/news)의 필터(회사, 탭, 주제)는 _f/news~<키>-<값>~<키>-<값>.html로, 종료 일정(/deadlines)의 제공사 필터는 _f/deadlines~provider-<값>.html로 따로 굽는다.
+sitemap에 없는 /weekly(가장 최근 주)와 /subscribe도 굽는다.
 원본이 아니라 Worker 폴백(X-Served-By 헤더)이 응답한 페이지는 실패로 보고, 하나라도 실패하면 종료 코드 1로 끝난다.
 Cloudflare가 요청마다 끼워 넣는 봇 판별 스크립트(__CF$cv$params)는 굽는 값이 매번 달라져서 지운다.
 """
@@ -30,6 +31,8 @@ SNAPSHOT_URL = os.environ.get("SNAPSHOT_URL", "").rstrip("/")
 OPTIONAL_ASSETS = {"/ads.txt"}
 FILTER_KEYS = ("tool", "tab", "type", "topic")
 NEWS_FILTER_KEYS = ("company", "tab", "topic")
+DEADLINE_FILTER_KEYS = ("provider",)
+EXTRA_PAGES = ("/weekly", "/subscribe")
 MAX_FILTERS = 2
 WORKERS = 6
 MIN_PAGES = 100
@@ -184,6 +187,7 @@ def main() -> None:
     _, sitemap = fetch("/sitemap.xml")
     (OUT / "sitemap.xml").write_bytes(sitemap)
     paths = [urllib.parse.urlparse(u).path for u in re.findall(r"<loc>([^<]+)</loc>", sitemap.decode("utf-8"))]
+    paths += [p for p in EXTRA_PAGES if p not in paths]
     print(f"sitemap urls: {len(paths)}")
 
     with ThreadPoolExecutor(WORKERS) as pool:
@@ -191,7 +195,7 @@ def main() -> None:
     saved = sum(1 for _, body in results if body)
     print(f"pages saved: {saved}")
 
-    for path, keys, prefix in (("/", FILTER_KEYS, ""), ("/news", NEWS_FILTER_KEYS, "news~")):
+    for path, keys, prefix in (("/", FILTER_KEYS, ""), ("/news", NEWS_FILTER_KEYS, "news~"), ("/deadlines", DEADLINE_FILTER_KEYS, "deadlines~")):
         seed = dict(results).get(path, b"")
         baked: dict[tuple[tuple[str, str], ...], bytes] = {}
         pending = {c for c in filter_links(seed, path, keys) if len(c) <= MAX_FILTERS}
