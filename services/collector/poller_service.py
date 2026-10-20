@@ -15,6 +15,7 @@ from models.news_model import News
 from models.source_model import Source
 from services.collector import (
     antigravity_service,
+    dated_changelog_service,
     feed_service,
     github_release_service,
     jetbrains_service,
@@ -30,7 +31,7 @@ logger = get_logger("poller")
 
 
 def poll_source(db: Session, source: Source) -> int:
-    """소스 하나(GitHub 릴리스, RSS 피드, JetBrains API, Windsurf · Antigravity · OpenAI API 변경 로그 페이지)를 한 번 가져와 새 글을 저장한다.
+    """소스 하나(GitHub 릴리스, RSS 피드, JetBrains API, Windsurf · Antigravity · OpenAI · Anthropic · Gemini API 변경 로그 페이지)를 한 번 가져와 새 글을 저장한다.
 
     ETag가 같으면 아무것도 저장하지 않는다. 이미 있는 `(소스, external_id)`와, 설정이 꺼져 있으면 프리릴리스는 건너뛴다.
     저장이 실패하면 되돌리고 ETag도 갱신하지 않아 다음 번에 다시 시도한다.
@@ -90,6 +91,8 @@ def _fetch(source: Source) -> FetchResult:
         return feed_service.fetch_feed(source.slug, source.feed_url, source.etag)
     if source.kind == "html":
         # kind는 DB 제약 때문에 html 하나를 같이 쓰고, 페이지 모양은 slug로 가른다
+        if source.slug in dated_changelog_service.PAGES:
+            return dated_changelog_service.fetch_releases(source.feed_url, source.slug)
         if source.slug == "openai-api":
             return openai_changelog_service.fetch_releases(source.feed_url, source.etag)
         if source.slug == "windsurf":
