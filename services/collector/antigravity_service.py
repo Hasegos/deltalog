@@ -9,7 +9,7 @@ from core.constants.source import SCRAPE_MAX_RELEASES, SCRAPE_TIMEOUT_SEC
 from services.collector.github_release_service import FetchResult, Release
 
 # 소스 slug별 변경 로그 탭. 같은 페이지에 탭마다 버전 번호가 따로 있다 (hub는 Antigravity App)
-PANELS = {"antigravity": "hub", "antigravity-ide": "ide"}
+PANELS = {"antigravity": "hub", "antigravity-ide": "ide", "antigravity-cli": "cli", "antigravity-sdk": "sdk"}
 ARTICLE = re.compile(r'<article\b[^>]*id="rel-{panel}-([^"]+)"[^>]*>(.*?)</article>', re.DOTALL)
 GROUP = re.compile(r'<details\b[^>]*data-item-title="([^"]+)"[^>]*>.*?<ul[^>]*>(.*?)</ul>', re.DOTALL)
 ITEM = re.compile(r"<li[^>]*>(.*?)</li>", re.DOTALL)
