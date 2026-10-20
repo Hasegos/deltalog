@@ -33,11 +33,11 @@ Claude Code는 거의 매일 새 버전이 나오고, Codex · Cursor · VS Code
 
 ## 추적하는 소스
 
-릴리스 소스 23곳을 30분마다 확인합니다.
+릴리스 소스 25곳을 30분마다 확인합니다.
 
 | 구분 | 도구 |
 |---|---|
-| AI 에이전트 CLI | Claude Code, Codex, Gemini CLI, GitHub Copilot CLI, OpenCode, Cline, Qwen Code, Goose, Kilo Code |
+| AI 에이전트 CLI | Claude Code, Codex, Gemini CLI, GitHub Copilot CLI, OpenCode, Cline, Qwen Code, Goose, Kilo Code, Antigravity CLI, Antigravity SDK |
 | AI 에디터 · IDE | VS Code, Cursor, Kiro, Zed, Windsurf (Devin Desktop), Antigravity, Antigravity IDE, Android Studio, IntelliJ IDEA, PyCharm, WebStorm |
 | 모델 · API 변경 로그 | Anthropic API, OpenAI API, Gemini API |
 
