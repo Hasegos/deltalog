@@ -23,7 +23,7 @@ NEWS_COMPANIES = ["Anthropic", "OpenAI", "Google", "Microsoft", "JetBrains", "Cu
 # 제작사가 없는 도구(Cline, OpenCode, Zed)는 짝이 없다.
 COMPANY_TOOLS = {
     "Anthropic": ["claude-code"],
-    "OpenAI": ["codex"],
+    "OpenAI": ["codex", "openai-api"],
     "Google": ["gemini-cli", "android-studio", "antigravity", "antigravity-ide"],
     "Microsoft": ["vscode"],
     "GitHub": ["copilot-cli"],
