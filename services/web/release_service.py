@@ -4,9 +4,10 @@ from urllib.parse import quote
 
 from sqlalchemy.orm import Session
 
+from core.constants.news import RELATED_DAYS, RELATED_LIMIT, RELATED_MIN_IMPORTANCE, TOOL_COMPANY
 from core.constants.page import KST
 from core.constants.taxonomy import CATEGORIES, SEVERITY
-from crud import entry_crud, item_crud
+from crud import entry_crud, item_crud, news_crud
 from models.entry_model import Entry
 
 DESCRIPTION_CHARS = 150
@@ -79,7 +80,15 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
     path = release_path(slug, entry)
     published = entry.published_at.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     older, newer = entry_crud.neighbor_entries(db, entry)
+    company = TOOL_COMPANY.get(slug, "")
+    related = news_crud.list_near(db, company, entry.published_at, RELATED_DAYS, RELATED_MIN_IMPORTANCE, RELATED_LIMIT) if company else []
     return {
+        "company": company,
+        "related_days": RELATED_DAYS,
+        "news": [
+            {"title": n.title_ko or n.title, "url": n.url if n.url.startswith(("https://", "http://")) else "#", "date": n.published_at.astimezone(KST).strftime("%Y-%m-%d")}
+            for n in related
+        ],
         "name": name,
         "slug": slug,
         "version": version,
