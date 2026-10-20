@@ -132,3 +132,78 @@
     width: auto;
   }
 }
+
+/* 주별 종료 건수 막대 그래프 (dc- 접두사) */
+.dc {
+  margin: 0 0 20px;
+  padding: 14px 16px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.dc figcaption {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dc-svg {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+}
+
+.dc-ax,
+.dc-gd {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.dc-gd {
+  stroke-dasharray: 3 3;
+}
+
+.dc-tx {
+  fill: var(--dim);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.dc-n {
+  fill: var(--fg);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+rect.dc-p0, i.dc-p0 { fill: var(--c-security); background: var(--c-security); }
+rect.dc-p1, i.dc-p1 { fill: var(--c-feature); background: var(--c-feature); }
+rect.dc-p2, i.dc-p2 { fill: var(--accent); background: var(--accent); }
+
+.dc-lg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dc-lg span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dc-lg i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.dc-lg em {
+  font-style: normal;
+  color: var(--dim);
+}

@@ -25,6 +25,27 @@
         {% endfor %}
       </div>
 
+      {% if chart %}
+      <figure class="dc">
+        <figcaption>앞으로 {{ chart.weeks }}주 · 주별 종료 건수</figcaption>
+        <svg class="dc-svg" viewBox="0 0 {{ chart.w }} {{ chart.h }}" role="img" aria-label="앞으로 {{ chart.weeks }}주 주별 종료 건수 막대 그래프. {% for b in chart.bars if b.total %}{{ b.title }}{{ '. ' }}{% endfor %}">
+          <line class="dc-ax" x1="{{ chart.left }}" y1="{{ chart.base }}" x2="{{ chart.right }}" y2="{{ chart.base }}"/>
+          <line class="dc-gd" x1="{{ chart.left }}" y1="{{ chart.top }}" x2="{{ chart.right }}" y2="{{ chart.top }}"/>
+          <text class="dc-tx" x="{{ chart.left - 4 }}" y="{{ chart.top + 4 }}" text-anchor="end">{{ chart.peak }}</text>
+          <text class="dc-tx" x="{{ chart.left - 4 }}" y="{{ chart.base + 4 }}" text-anchor="end">0</text>
+          {% for b in chart.bars %}
+          <g>
+            {% if b.title %}<title>{{ b.title }}</title>{% endif %}
+            {% for sg in b.segments %}<rect class="dc-p{{ sg.cls }}" x="{{ b.x }}" y="{{ sg.y }}" width="{{ b.w }}" height="{{ sg.h }}"/>{% endfor %}
+            {% if b.total %}<text class="dc-n" x="{{ b.cx }}" y="{{ b.top }}" text-anchor="middle">{{ b.total }}</text>{% endif %}
+            {% if b.show_label %}<text class="dc-tx" x="{{ b.cx }}" y="{{ chart.label_y }}" text-anchor="middle">{{ b.label }}</text>{% endif %}
+          </g>
+          {% endfor %}
+        </svg>
+        <p class="dc-lg">{% for pr in chart.providers %}<span><i class="dc-p{{ pr.cls }}"></i>{{ pr.name }}</span>{% endfor %}<em>월요일 기준 한 주 · 공식 문서에서 뽑은 종료일을 센 값{% if chart.later %} · 이후 {{ chart.later }}건{% endif %}</em></p>
+      </figure>
+      {% endif %}
+
       {% for s in sections %}
       <h2 class="dl-h dl-h-{{ s.key }}">{{ s.title }}</h2>
       <div class="dl-l">
