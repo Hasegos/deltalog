@@ -11,6 +11,7 @@ SOURCES = [
     {"slug": "opencode", "name": "OpenCode", "kind": "github_release", "repo": "anomalyco/opencode"},
     {"slug": "cline", "name": "Cline", "kind": "github_release", "repo": "cline/cline"},
     {"slug": "zed", "name": "Zed", "kind": "github_release", "repo": "zed-industries/zed"},
+    {"slug": "anthropic-api", "name": "Anthropic API", "kind": "html", "feed_url": "https://platform.claude.com/docs/en/release-notes/overview.md"},
     {"slug": "openai-api", "name": "OpenAI API", "kind": "html", "feed_url": "https://developers.openai.com/api/docs/changelog"},
     {"slug": "windsurf", "name": "Windsurf (Devin Desktop)", "kind": "html", "feed_url": "https://docs.devin.ai/desktop/changelog.md"},
     {"slug": "antigravity", "name": "Antigravity", "kind": "html", "feed_url": "https://antigravity.google/docs/changelog"},
