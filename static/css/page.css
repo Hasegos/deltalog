@@ -509,3 +509,45 @@
 .page a.cf-exl:hover {
   border-color: var(--accent);
 }
+
+/* 릴리스 상세: 변경 유형 구성 막대 */
+.rd-mix {
+  display: flex;
+  height: 10px;
+  margin: 16px 0 6px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--line);
+}
+
+.rd-mix span {
+  display: block;
+  min-width: 3px;
+}
+
+.rd-mxl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.rd-mxl span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rd-mxl i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.rd-m-feature { background: var(--c-feature); }
+.rd-m-bugfix { background: var(--c-bugfix); }
+.rd-m-breaking { background: var(--c-breaking); }
+.rd-m-security { background: var(--c-security); }
+.rd-m-other { background: var(--c-other); }
