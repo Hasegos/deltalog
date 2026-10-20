@@ -118,7 +118,7 @@ def _parse(content: str, articles: dict[int, News]) -> tuple[dict[int, NewsSumma
         if summary.relevant:
             bad = unseen_words(f"{summary.title_ko} {summary.summary_ko}", f"{article.company} {article.title} {article.body_raw}")
             if bad:
-                reasons[summary.n] = "원문에 없는 영어: " + ", ".join(dict.fromkeys(bad))
+                reasons[summary.n] = "원문에 없는 영어 · 외국 글자: " + ", ".join(dict.fromkeys(bad))
                 continue
         result[summary.n] = summary
     return result, {n: reasons.get(n, "모델이 이 번호를 빼먹음") for n in articles if n not in result}
