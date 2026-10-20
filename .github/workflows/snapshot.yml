@@ -34,6 +34,7 @@ jobs:
           SKIP_IF_DOWN: ${{ github.event_name == 'schedule' && '1' || '0' }}
           SNAPSHOT_WAIT: ${{ github.event_name == 'schedule' && '20' || '180' }}
           SNAPSHOT_URL: ${{ github.event_name == 'schedule' && 'https://deltalog-snapshot.pages.dev' || '' }}
+          SNAPSHOT_KEY: ${{ secrets.SNAPSHOT_KEY }}
 
       - name: Cloudflare Pages 배포
         if: hashFiles('dist/**') != ''
