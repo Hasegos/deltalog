@@ -1,8 +1,9 @@
 /* =============================
-  weekly.css — 주간 요약 (/weekly). 제목과 칩은 home.css, news.css, deadlines.css를 그대로 쓴다.
+  weekly.css — 주간 요약 (/weekly). 클래스는 `dg-`로 시작한다 (home.css의 `wk-`와 겹치지 않게).
+  제목과 칩은 home.css, news.css, deadlines.css를 그대로 쓴다.
   ============================= */
 
-.wk-nav {
+.dg-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -11,66 +12,144 @@
   color: var(--muted);
 }
 
-.wk-top {
-  padding: 18px 20px;
+.dg-top {
+  padding: 20px 22px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
 }
 
-.wk-top h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
+.dg-top h2 {
+  margin: 0 0 10px;
+  font-size: 21px;
+  line-height: 1.4;
 }
 
-.wk-top p {
+.dg-top p {
   margin: 0;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.75;
 }
 
-.wk-g {
-  padding: 12px 18px;
+.dg-n {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dim);
 }
 
-.wk-g + .wk-g {
+.dg-l {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.dg-g {
+  padding: 14px 20px;
+}
+
+.dg-g + .dg-g {
   border-top: 1px solid var(--line);
 }
 
-.wk-g b {
+.dg-g h3 {
+  margin: 0 0 8px;
   font-family: var(--mono);
   font-size: 14.5px;
 }
 
-.wk-g p {
-  margin: 4px 0 0;
-  line-height: 1.6;
+.dg-g ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.wk-g i {
-  margin-left: 4px;
+.dg-g li {
+  display: grid;
+  grid-template-columns: 76px auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 7px 0;
+}
+
+.dg-g li + li {
+  border-top: 1px dashed var(--line);
+}
+
+.dg-v {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.dg-i {
   font-family: var(--mono);
   font-size: 12px;
   font-style: normal;
+  white-space: nowrap;
   color: var(--dim);
 }
 
-.wk-w {
-  display: block;
-  padding: 10px 18px;
+.dg-s {
+  grid-column: 1 / -1;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.dg-news {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.dg-news .dg-s {
+  color: var(--muted);
+}
+
+.dg-t {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.dg-w {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  padding: 11px 20px;
   color: var(--fg);
   text-decoration: none;
 }
 
-.wk-w + .wk-w {
+.dg-w + .dg-w {
   border-top: 1px solid var(--line);
 }
 
-.wk-w b {
-  margin-right: 10px;
+.dg-w b {
+  flex: none;
+  min-width: 150px;
   font-family: var(--mono);
   font-size: 13.5px;
 }
 
-.wk-w.on {
+.dg-w span {
+  min-width: 0;
+  flex: 1 1 240px;
+  font-size: 15px;
+}
+
+.dg-w.on {
   background: var(--bg);
+}
+
+@media (max-width: 640px) {
+  .dg-g {
+    padding: 12px 14px;
+  }
+
+  .dg-top {
+    padding: 16px;
+  }
+
+  .dg-w {
+    padding: 10px 14px;
+  }
 }

@@ -23,47 +23,59 @@
       <h1 class="nw-h">주간 요약 <span>한 주 동안 나온 주요 릴리스와 소식</span></h1>
 
       {% if digest %}
-      <div class="wk-nav">
+      <div class="dg-nav">
         {% if older %}<a class="ch" href="/weekly/{{ older }}">← 이전 주</a>{% else %}<span></span>{% endif %}
         <b>{{ range }}</b>
         {% if newer %}<a class="ch" href="/weekly/{{ newer }}">다음 주 →</a>{% else %}<span></span>{% endif %}
       </div>
 
-      <article class="wk-top">
+      <article class="dg-top">
         <h2>{{ digest.headline }}</h2>
         <p>{{ digest.overview }}</p>
       </article>
 
       {% if releases %}
-      <h2 class="dl-h">주요 릴리스</h2>
-      <div class="dl-l">
+      <h2 class="dl-h">주요 릴리스 <span class="dg-n">중요도 4 이상</span></h2>
+      <div class="dg-l">
         {% for g in releases %}
-        <div class="wk-g">
-          <b>{{ g.name }}</b>
-          {% for r in g.rows %}
-          <p><a href="{{ r.url }}">{{ r.label }}</a> {{ r.summary }} <i>중요 {{ r.importance }}</i></p>
-          {% endfor %}
-        </div>
+        <section class="dg-g">
+          <h3>{{ g.name }}</h3>
+          <ul>
+            {% for r in g.rows %}
+            <li>
+              <a class="dg-v" href="{{ r.url }}">{{ r.label }}</a>
+              <i class="dg-i">중요 {{ r.importance }}</i>
+              <span class="dg-s">{{ r.summary }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </section>
         {% endfor %}
       </div>
       {% endif %}
 
       {% if news %}
-      <h2 class="dl-h">공식 소식</h2>
-      <div class="dl-l">
+      <h2 class="dl-h">공식 소식 <span class="dg-n">중요도 3 이상</span></h2>
+      <div class="dg-l">
         {% for n in news %}
-        <div class="wk-g">
-          <b>{{ n.company }}</b>
-          <p><a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title }} ↗</a> {{ n.summary }} <i>중요 {{ n.importance }}</i></p>
-        </div>
+        <section class="dg-g">
+          <h3>{{ n.company }}</h3>
+          <ul>
+            <li class="dg-news">
+              <a class="dg-t" href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title }} ↗</a>
+              <i class="dg-i">중요 {{ n.importance }}</i>
+              <span class="dg-s">{{ n.summary }}</span>
+            </li>
+          </ul>
+        </section>
         {% endfor %}
       </div>
       {% endif %}
 
       <h2 class="dl-h">지난 주간 요약</h2>
-      <div class="dl-l">
+      <div class="dg-l">
         {% for w in weeks %}
-        <a class="wk-w{{ ' on' if w.active }}" href="/weekly/{{ w.key }}"><b>{{ w.range }}</b> {{ w.headline }}</a>
+        <a class="dg-w{{ ' on' if w.active }}" href="/weekly/{{ w.key }}"><b>{{ w.range }}</b><span>{{ w.headline }}</span></a>
         {% endfor %}
       </div>
 
