@@ -21,14 +21,28 @@
 
       {% for g in groups %}
       <h2 class="dl-h">{{ g.title }} <span class="st-int">{{ g.interval }}분마다</span></h2>
+      {% set bad_rows = g.rows | rejectattr("state", "equalto", "ok") | list %}
+      {% set ok_rows = g.rows | selectattr("state", "equalto", "ok") | list %}
       <div class="dl-l">
-        {% for r in g.rows %}
+        {% for r in bad_rows %}
         <div class="st-r">
           <span class="st-s {{ r.state }}">{{ r.state_label }}</span>
           <b>{{ r.label }}</b>
           <span class="st-t">마지막 확인 {{ r.checked }}{% if r.failures %} · 연속 실패 {{ r.failures }}번{% endif %}</span>
         </div>
         {% endfor %}
+        {% if ok_rows %}
+        <details class="st-ok">
+          <summary><span class="st-s ok">정상</span> {{ ok_rows | length }}곳 <span class="st-t">· 눌러서 하나씩 보기</span></summary>
+          {% for r in ok_rows %}
+        <div class="st-r">
+          <span class="st-s {{ r.state }}">{{ r.state_label }}</span>
+          <b>{{ r.label }}</b>
+          <span class="st-t">마지막 확인 {{ r.checked }}{% if r.failures %} · 연속 실패 {{ r.failures }}번{% endif %}</span>
+        </div>
+          {% endfor %}
+        </details>
+        {% endif %}
       </div>
       {% else %}
       <div class="empty">아직 수집 기록이 없습니다. 서버가 막 시작됐을 수 있습니다.</div>

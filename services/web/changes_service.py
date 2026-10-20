@@ -9,6 +9,15 @@ from crud import entry_crud, item_crud
 LEVELS = (("key", "중요한 것만 (중요도 4 이상, breaking, 보안)"), ("all", "요약된 전부"))
 MUST_CHECK = ("breaking", "security")
 MUST_LIMIT = 5
+EXAMPLES = 3         # 입력 전에 보여줄 예시 도구 수
+EXAMPLE_BACK = 4     # 예시 버전은 최신에서 이만큼 전 릴리스
+VERSION_HINTS = {
+    "claude-code": "터미널에서 claude --version",
+    "codex": "터미널에서 codex --version",
+    "gemini-cli": "터미널에서 gemini --version",
+    "vscode": "메뉴 도움말 → 정보",
+    "zed": "메뉴 Zed → About Zed",
+}
 
 
 def _row(item, entry) -> dict:
@@ -61,9 +70,15 @@ def build_changes(db: Session, tool: str, version: str, level: str) -> dict:
         "levels": LEVELS,
         "result": None,
         "error": "",
+        "examples": [],
+        "hints": [{"name": s.name, "how": VERSION_HINTS[s.slug]} for s in versioned if s.slug in VERSION_HINTS],
     }
     source = next((s for s in versioned if s.slug == tool), None)
     if not tool and not version:
+        for s in versioned[:EXAMPLES]:
+            recent = [e for e in entry_crud.list_source_entries(db, s.id, EXAMPLE_BACK + 1) if e.version]
+            if recent:
+                context["examples"].append({"slug": s.slug, "name": s.name, "version": recent[-1].version})
         return context
     if source is None:
         context["error"] = "도구를 골라 주세요."

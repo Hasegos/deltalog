@@ -177,8 +177,19 @@ summary::-webkit-details-marker {
 }
 
 .nav-more summary::after {
-  content: " ▾";
-  font-size: 11px;
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 0 3px 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.nav-more[open] summary::after {
+  margin-bottom: 0;
+  transform: rotate(225deg);
 }
 
 .nav-more summary:hover,

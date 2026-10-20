@@ -49,78 +49,6 @@
       </div>
     </section>
 
-    {% if highlights %}
-    <section class="blk">
-      <h2 class="sec">주요 변경 <span>중요도 {{ important_min }} 이상</span></h2>
-      <div class="hl-g">
-        {% for h in highlights %}
-        <a class="hl-c" href="{{ h.url }}" target="_blank" rel="noopener">
-          <span class="hl-m"><span class="cat-{{ h.category }}">{{ h.symbol }} {{ h.type_label }}</span><span>{{ h.name }} {{ h.version }} · {{ h.ago }}</span></span>
-          <span class="hl-t">{{ h.summary }}</span>
-          {% if h.topic %}<span class="hl-p"># {{ h.topic }}</span>{% endif %}
-        </a>
-        {% endfor %}
-      </div>
-    </section>
-    {% endif %}
-
-    {% if deadline_soon %}
-    <section class="blk">
-      <h2 class="sec">곧 종료 <span>30일 안에 멈추는 모델 · API</span><a class="sec-go" href="/deadlines">전체 보기 →</a></h2>
-      <div class="nl">
-        {% for d in deadline_soon %}
-        <a class="nl-r" href="{{ d.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ d.badge }} · {{ d.provider }}</span><span class="nl-t">{{ d.summary if d.name in d.summary else d.name ~ " · " ~ d.summary }}</span></a>
-        {% endfor %}
-      </div>
-    </section>
-    {% endif %}
-
-    {% if weekly %}
-    <section class="blk">
-      <h2 class="sec">주간 요약 <span>한 주를 한 줄로</span><a class="sec-go" href="/weekly">전체 보기 →</a></h2>
-      <div class="nl">
-        <a class="nl-r" href="/weekly/{{ weekly.key }}"><span class="nl-m">{{ weekly.label }}</span><span class="nl-t">{{ weekly.headline }}</span></a>
-      </div>
-    </section>
-    {% endif %}
-
-    {% if latest_news %}
-    <section class="blk">
-      <h2 class="sec">최신 소식 <span>제작사 공식 발표</span><a class="sec-go" href="/news">전체 보기 →</a></h2>
-      <div class="nl">
-        {% for n in latest_news %}
-        <a class="nl-r" href="{{ n.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ n.company }} · {{ n.ago }}</span><span class="nl-t">{{ n.title }}</span></a>
-        {% endfor %}
-      </div>
-    </section>
-    {% endif %}
-
-    {% if show_extras %}
-    <section class="blk">
-      <p class="disc">받아보기 · <a href="/weekly">주간 요약</a> · <a href="/agents">AI 에이전트에 연결</a> · <a href="/subscribe">RSS 구독</a></p>
-    </section>
-    {% endif %}
-
-    <section class="blk tools-d" id="tools">
-      <h2 class="sec">도구 <span>최신 버전</span></h2>
-      <div class="st-g">
-        {% for t in status_tools %}
-          {% if t.ready %}
-          <a class="st{{ ' on' if t.active }}" href="{{ t.href }}">
-            <b>{{ t.name }}</b>
-            <span class="st-v">{{ t.version }}</span>
-            <span class="st-a">{{ t.ago }}{% if t.recent %} · 7일 {{ t.recent }}건{% endif %}</span>
-          </a>
-          {% else %}
-          <div class="st off">
-            <b>{{ t.name }}</b>
-            <span class="st-v">수집 준비 중</span>
-          </div>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </section>
-
     <section class="blk">
       <form class="sr" method="get" action="/">
         {% for k, v in hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
@@ -145,6 +73,84 @@
       </div>
       {% endif %}
 
+    </section>
+
+    {% if highlights %}
+    <section class="blk">
+      <h2 class="sec">주요 변경 <span>중요도 {{ important_min }} 이상</span></h2>
+      <div class="hl-g">
+        {% for h in highlights %}
+        <a class="hl-c" href="{{ h.url }}" target="_blank" rel="noopener">
+          <span class="hl-m"><span class="cat-{{ h.category }}">{{ h.symbol }} {{ h.type_label }}</span><span>{{ h.name }} {{ h.version }} · {{ h.ago }}</span></span>
+          <span class="hl-t">{{ h.summary }}</span>
+          {% if h.topic %}<span class="hl-p"># {{ h.topic }}</span>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if deadline_soon or weekly or latest_news %}
+    <section class="blk">
+      <div class="hx-g">
+        {% if deadline_soon %}
+        <details class="hx" open>
+          <summary class="sec">곧 종료 <span>30일 안에 멈추는 모델 · API</span><a class="sec-go" href="/deadlines">전체 →</a></summary>
+          <div class="nl">
+            {% for d in deadline_soon %}
+            <a class="nl-r" href="{{ d.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ d.badge }} · {{ d.provider }}</span><span class="nl-t">{{ d.summary if d.name in d.summary else d.name ~ " · " ~ d.summary }}</span></a>
+            {% endfor %}
+          </div>
+        </details>
+        {% endif %}
+        {% if latest_news %}
+        <details class="hx" open>
+          <summary class="sec">최신 소식 <span>제작사 공식 발표</span><a class="sec-go" href="/news">전체 →</a></summary>
+          <div class="nl">
+            {% for n in latest_news %}
+            <a class="nl-r" href="{{ n.url }}" target="_blank" rel="noopener"><span class="nl-m">{{ n.company }} · {{ n.ago }}</span><span class="nl-t">{{ n.title }}</span></a>
+            {% endfor %}
+          </div>
+        </details>
+        {% endif %}
+        {% if weekly %}
+        <details class="hx" open>
+          <summary class="sec">주간 요약 <span>한 주를 한 줄로</span><a class="sec-go" href="/weekly">전체 →</a></summary>
+          <div class="nl">
+            <a class="nl-r" href="/weekly/{{ weekly.key }}"><span class="nl-m">{{ weekly.label }}</span><span class="nl-t">{{ weekly.headline }}</span></a>
+          </div>
+        </details>
+        {% endif %}
+      </div>
+      {% if show_extras %}
+      <p class="hx-sub">새 소식을 받아보려면 <a class="ch" href="/subscribe">RSS 구독</a> <a class="ch" href="/agents">AI 에이전트에 연결</a></p>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="blk tools-d" id="tools">
+      <details class="hx-tools">
+      <summary class="sec">도구별 최신 버전 <span>{{ status_tools | length }}개 · 눌러서 펼치기</span></summary>
+      <div class="st-g">
+        {% for t in status_tools %}
+          {% if t.ready %}
+          <a class="st{{ ' on' if t.active }}" href="{{ t.href }}">
+            <b>{{ t.name }}</b>
+            <span class="st-v">{{ t.version }}</span>
+            <span class="st-a">{{ t.ago }}{% if t.recent %} · 최근 7일 {{ t.recent }}건{% endif %}</span>
+          </a>
+          {% else %}
+          <div class="st off">
+            <b>{{ t.name }}</b>
+            <span class="st-v">수집 준비 중</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      </details>
+    </section>
+
+    <section class="blk">
       <div class="bar" id="topics">
         <nav class="tabs">
           {% for t in tabs %}
@@ -160,6 +166,8 @@
           </select>
         </form>
       </div>
+
+      <p class="hm-lg">{% for c in week.cats %}<span class="cat-{{ c.key }}">{{ c.symbol }} {{ c.label }}</span>{% endfor %}<span>●●●○○ 중요도</span><span>숫자는 변경 항목 수</span></p>
 
       <div class="list">
         {% for r in rows %}

@@ -14,6 +14,9 @@ def _ymd(day: date) -> str:
     return f"{day.year}년 {day.month}월 {day.day}일 ({WEEKDAYS[day.weekday()]})"
 
 
+ECHO_CHARS = 8    # 이름을 빼고 남은 요약이 이 글자 수 이하면 이름만 되풀이한 것으로 보고 숨긴다 (예: "X가 종료된다")
+
+
 def _row(item: Deadline, today: date) -> dict:
     """일정 하나를 화면에 쓸 값으로 바꾼다. `badge`는 종료까지 남은 날(`D-12`), 오늘이면 `오늘`, 지났으면 `3일 전`이다."""
     delta = (item.deadline - today).days
@@ -28,6 +31,7 @@ def _row(item: Deadline, today: date) -> dict:
         "soon": 0 <= delta <= DEADLINE_SOON_DAYS,
         "past": delta < 0,
         "summary": item.summary_ko,
+        "echo": len(item.summary_ko.replace(item.name, "").strip(" .")) <= ECHO_CHARS,
         "replacement": item.replacement or "",
         "announced": item.deprecated_on.isoformat() if item.deprecated_on else "",
         "url": item.source_url,
