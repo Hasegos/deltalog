@@ -179,3 +179,76 @@
     padding: 10px 14px;
   }
 }
+
+/* 도구별 변경 항목 수 막대 그래프 (dgc- 접두사) */
+.dgc {
+  margin: 16px 0 0;
+  padding: 14px 16px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.dgc figcaption {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dgc-r {
+  display: grid;
+  grid-template-columns: minmax(80px, 140px) 1fr 32px;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.dgc-k {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgc-b {
+  display: flex;
+  height: 12px;
+}
+
+.dgc-b i {
+  display: block;
+  min-width: 3px;
+}
+
+.dgc-n {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-align: right;
+}
+
+.dgc-feature { background: var(--c-feature); }
+.dgc-bugfix { background: var(--c-bugfix); }
+.dgc-breaking { background: var(--c-breaking); }
+.dgc-security { background: var(--c-security); }
+.dgc-other { background: var(--c-other); }
+
+.dgc-lg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dgc-lg span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dgc-lg i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
