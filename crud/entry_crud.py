@@ -65,6 +65,28 @@ def list_source_entries(db: Session, source_id: int, limit: int = 300) -> list[E
     return list(db.scalars(stmt))
 
 
+def list_between(db: Session, slugs: list[str], start: datetime, end: datetime) -> list[tuple[Entry, Source]]:
+    """소스들의 글 중 게시일이 `start` 이상 `end` 이하인 것을 돌려준다.
+
+    Args:
+        db: DB 세션
+        slugs: 소스 slug 목록
+        start: 기간 시작(포함)
+        end: 기간 끝(포함)
+    Returns:
+        `(글, 소스)` 목록
+    """
+    if not slugs:
+        return []
+    stmt = (
+        select(Entry, Source)
+        .join(Source, Entry.source_id == Source.id)
+        .where(Source.slug.in_(slugs), Entry.published_at >= start, Entry.published_at <= end)
+        .order_by(Entry.published_at.desc())
+    )
+    return [tuple(row) for row in db.execute(stmt).all()]
+
+
 def latest_per_source(db: Session, since: datetime) -> dict[int, tuple[Entry, int]]:
     """소스마다 가장 최근 글과, `since` 이후에 나온 글 개수를 돌려준다.
 

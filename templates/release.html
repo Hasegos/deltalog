@@ -31,6 +31,17 @@
       <p class="cf-note">이 릴리스의 변경 항목이 아직 없습니다.</p>
       {% endfor %}
 
+      {% if news %}
+      <div class="cg">
+        <h2>같은 시기 {{ company }} 소식 <span class="cf-note">앞뒤 {{ related_days }}일 이내</span></h2>
+        <ul class="cl">
+          {% for n in news %}
+          <li><a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title }} ↗</a> <span class="ct">{{ n.date }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
       <p class="cf-note">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ name ~ ' ' ~ version) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
 
       <nav class="pn" aria-label="이전 · 다음 릴리스">
