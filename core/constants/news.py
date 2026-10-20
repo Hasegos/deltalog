@@ -22,7 +22,7 @@ NEWS_COMPANIES = ["Anthropic", "OpenAI", "Google", "Microsoft", "JetBrains", "Cu
 # 소식을 낸 제작사와 그 제작사의 릴리스 소스(slug)의 짝. 릴리스 상세에 "같은 시기 소식", 소식에 "같은 시기 릴리스"를 붙일 때 쓴다.
 # 제작사가 없는 도구(Cline, OpenCode, Zed)는 짝이 없다.
 COMPANY_TOOLS = {
-    "Anthropic": ["claude-code"],
+    "Anthropic": ["claude-code", "anthropic-api"],
     "OpenAI": ["codex", "openai-api"],
     "Google": ["gemini-cli", "android-studio", "antigravity", "antigravity-ide"],
     "Microsoft": ["vscode"],
