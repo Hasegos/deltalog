@@ -1,11 +1,13 @@
 import httpx
 
 from core.config import settings
+from core.constants.source import SOURCES
 from core.logger import get_logger
 from crud import feed_status_crud
 from db.session import SessionLocal
 
 logger = get_logger("status")
+RELEASE_SLUGS = {source["slug"] for source in SOURCES}
 
 
 def notify(text: str) -> None:
@@ -32,9 +34,11 @@ def record(slug: str, label: str, group: str, ok: bool, error: str | None = None
         ok: 성공했는지
         error: 실패했을 때 오류 종류 이름
     """
+    # 현황 행은 slug 하나가 키라서, 릴리스 소스와 같은 slug를 쓰는 소식 · 종료 일정 문서(`openai-api`)는 키를 나눈다
+    key = f"{group}-{slug}" if group != "release" and slug in RELEASE_SLUGS else slug
     try:
         with SessionLocal() as db:
-            event = feed_status_crud.record(db, slug, label, group, ok, error)
+            event = feed_status_crud.record(db, key, label, group, ok, error)
             db.commit()
     except Exception:
         logger.exception("수집 현황 기록 실패: %s", slug)
