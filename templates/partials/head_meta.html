@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ seo_title }}</title>
 <meta name="description" content="{{ seo_desc }}">
-<link rel="canonical" href="{{ canonical_url(request) }}">
+{% if not no_canonical %}<link rel="canonical" href="{{ canonical_url(request) }}">{% endif %}
 {% if noindex or request.url.query %}<meta name="robots" content="noindex,follow">{% endif %}
 <meta property="og:site_name" content="Deltalog">
 <meta property="og:locale" content="ko_KR">
@@ -19,6 +19,7 @@
 <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
+{% if not jsonld and not noindex %}{% set jsonld = {"@context": "https://schema.org", "@type": "WebPage", "name": seo_title, "url": canonical_url(request), "inLanguage": "ko", "description": seo_desc, "isPartOf": {"@type": "WebSite", "name": "Deltalog", "url": site_url(request)}} | tojson %}{% endif %}
 {% if jsonld %}<script type="application/ld+json">{{ jsonld | safe }}</script>{% endif %}
 {% if adsense_client %}<meta name="google-adsense-account" content="{{ adsense_client }}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ adsense_client }}" crossorigin="anonymous"></script>{% endif %}
