@@ -22,6 +22,7 @@ SOURCES = [
     {"slug": "antigravity-ide", "name": "Antigravity IDE", "kind": "html", "feed_url": "https://antigravity.google/docs/changelog"},
     {"slug": "vscode", "name": "VS Code", "kind": "rss", "feed_url": "https://code.visualstudio.com/feed.xml"},
     {"slug": "cursor", "name": "Cursor", "kind": "rss", "feed_url": "https://cursor.com/changelog/rss.xml"},
+    {"slug": "kiro", "name": "Kiro", "kind": "rss", "feed_url": "https://kiro.dev/changelog/feed.rss"},
     {
         "slug": "android-studio",
         "name": "Android Studio",
