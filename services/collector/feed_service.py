@@ -10,6 +10,7 @@ import httpx
 
 from core.config import settings
 from core.logger import get_logger
+from services.collector import kiro_service
 from services.collector.github_release_service import FetchResult, Release
 
 logger = get_logger("feed")
@@ -145,7 +146,7 @@ def _entries(xml: str, slug: str) -> list[Release]:
 
     Args:
         xml: 피드 XML
-        slug: 소스 slug (`vscode`, `cursor`, `android-studio`). 소스마다 제목, 항목 규칙이 다르다
+        slug: 소스 slug (`vscode`, `cursor`, `android-studio`, `kiro`). 소스마다 제목, 항목 규칙이 다르다
     Returns:
         최신순 글 목록. 미리보기(Insiders)와 미래 날짜 글은 뺀다
     """
@@ -162,6 +163,8 @@ def _entries(xml: str, slug: str) -> list[Release]:
         match = re.search(r"/updates/v(\d+)_(\d+)", link) if slug == "vscode" else None
         if slug == "vscode" and not match:
             continue
+        if slug == "kiro" and "#" in link:
+            continue  # 같은 페이지의 패치 항목(`#patch-...`)이라 본문이 겹친다
         body = ""
         if slug == "cursor":
             body = html_to_markdown(_text(node, f"{CONTENT}encoded", "description"), "h2", title)
@@ -204,13 +207,13 @@ def fetch_feed(slug: str, url: str, etag: str | None) -> FetchResult:
 
 
 def fill_bodies(slug: str, releases: list[Release]) -> None:
-    """본문이 피드에 없는 소스(VS Code)의 글 페이지를 받아 `body`를 채운다. 실패한 글은 `body`를 비워 둔다.
+    """본문이 피드에 없는 소스(VS Code, Kiro)의 글 페이지를 받아 `body`를 채운다. 실패한 글은 `body`를 비워 둔다.
 
     Args:
         slug: 소스 slug
         releases: 새 글 목록. 제자리에서 고친다
     """
-    if slug != "vscode":
+    if slug not in ("vscode", "kiro"):
         return
     for release in releases:
         if release.body:
@@ -218,7 +221,7 @@ def fill_bodies(slug: str, releases: list[Release]) -> None:
         try:
             page = httpx.get(release.url, headers={"User-Agent": settings.COLLECTOR_USER_AGENT}, timeout=settings.FEED_TIMEOUT_SEC, follow_redirects=True)
             page.raise_for_status()
-            release.body = html_to_markdown(page.text, "h3")
+            release.body = kiro_service.page_body(page.text) if slug == "kiro" else html_to_markdown(page.text, "h3")
         except httpx.HTTPError as exc:
             logger.warning("feed %s %s: 본문 요청 실패 (%s)", slug, release.version, exc.__class__.__name__)
         time.sleep(settings.FEED_PAGE_DELAY_SEC)
