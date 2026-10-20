@@ -944,3 +944,12 @@ mark {
     gap: 10px;
   }
 }
+
+/* 글 속 작은 링크의 터치 영역을 24px 이상으로 넓힌다 (레이아웃은 그대로) */
+.xm a,
+.wk-n a,
+.sec-go {
+  display: inline-block;
+  padding: 4px 3px;
+  margin: -4px -3px;
+}

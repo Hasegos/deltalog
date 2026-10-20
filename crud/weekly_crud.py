@@ -66,6 +66,26 @@ def release_items(db: Session, start: datetime, end: datetime, min_importance: i
     return [tuple(row) for row in db.execute(stmt).all()]
 
 
+def category_counts(db: Session, start: datetime, end: datetime) -> list[tuple[str, str | None, int]]:
+    """기간 안에 올라온 글의 요약 완료 항목 수를 도구와 유형별로 돌려준다.
+
+    Args:
+        db: DB 세션
+        start: 기간 시작(포함)
+        end: 기간 끝(미포함)
+    Returns:
+        `(도구 이름, 유형, 개수)` 목록
+    """
+    stmt = (
+        select(Source.name, Item.category, func.count(Item.id))
+        .join(Entry, Item.entry_id == Entry.id)
+        .join(Source, Entry.source_id == Source.id)
+        .where(Item.status == "done", Entry.published_at >= start, Entry.published_at < end)
+        .group_by(Source.name, Item.category)
+    )
+    return [tuple(row) for row in db.execute(stmt).all()]
+
+
 def news_items(db: Session, start: datetime, end: datetime, min_importance: int, limit: int) -> list[News]:
     """기간 안에 올라온 요약 완료 소식 중 중요도가 높은 것을 중요도 순으로 돌려준다."""
     stmt = (
