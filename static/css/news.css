@@ -58,6 +58,10 @@
   color: var(--accent);
 }
 
+.nw .sr {
+  margin-bottom: 14px;
+}
+
 .nw-co {
   margin-bottom: 4px;
 }
