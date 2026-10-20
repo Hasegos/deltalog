@@ -77,6 +77,12 @@
     }
   }
 
+  /* ── 좁은 화면에서는 한눈에 보기 묶음을 접는다 (HTML은 펼친 채로 와서 JS가 없어도 내용이 보인다) ── */
+  function foldOnPhone() {
+    if (!window.matchMedia("(max-width: 640px)").matches) return;
+    document.querySelectorAll("details.hx").forEach(function (d) { d.open = false; });
+  }
+
   /* ── 즉시 검색 ── */
   const form = document.querySelector("form.sr");
   const input = form && form.querySelector('input[name="q"]');
@@ -118,6 +124,7 @@
       fresh.querySelector("form.sr").replaceWith(form);
       document.querySelector("main").replaceWith(fresh);
       history.replaceState(null, "", url);
+      foldOnPhone();
       loading = false;
       initScroll();
       input.focus();
@@ -153,5 +160,6 @@
     });
   }
 
+  foldOnPhone();
   initScroll();
 })();

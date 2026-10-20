@@ -33,7 +33,7 @@
           <div class="dl-d"><b>{{ r.badge }}</b><span>{{ r.date_label }}</span></div>
           <div class="dl-b">
             <div class="dl-t"><b>{{ r.name }}</b><i>{{ r.kind }}</i><em>{{ r.provider }}</em></div>
-            <p>{{ r.summary }}</p>
+            {% if not r.echo %}<p>{{ r.summary }}</p>{% endif %}
             <p class="dl-m">{% if r.replacement %}대체: <code>{{ r.replacement }}</code>{% endif %}{% if r.announced %}{{ ' · ' if r.replacement }}폐기 공지 {{ r.announced }}{% endif %}{{ ' · ' if r.replacement or r.announced }}<a href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a></p>
           </div>
         </article>

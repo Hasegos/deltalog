@@ -32,6 +32,16 @@
         <button type="submit">모아 보기</button>
       </form>
 
+      {% if examples %}
+      <div class="cf-ex">
+        <p class="cf-note">처음이라면 예시로 먼저 보세요</p>
+        <div class="cf-exs">
+          {% for e in examples %}<a class="cf-exl" href="/changes?tool={{ e.slug }}&version={{ e.version | urlencode }}">{{ e.name }} {{ e.version }}을 쓰고 있다면</a>{% endfor %}
+        </div>
+        <p class="cf-note">지금 쓰는 버전 확인 방법: {% for h in hints %}{{ h.name }}은 {{ h.how }}{{ ", " if not loop.last }}{% endfor %}. 그 밖의 명령줄 도구는 대개 <code>--version</code>으로 확인합니다.</p>
+      </div>
+      {% endif %}
+
       {% if error %}<p class="cf-err">{{ error }}</p>{% endif %}
 
       {% if result %}

@@ -62,3 +62,18 @@
 .st-s.error {
   color: var(--c-breaking);
 }
+
+.st-ok > summary {
+  padding: 12px 18px;
+  font-family: var(--mono);
+  font-size: 14.5px;
+  cursor: pointer;
+}
+
+.st-ok > summary:hover {
+  background: var(--bg);
+}
+
+.st-ok .st-r {
+  border-top: 1px solid var(--line);
+}
