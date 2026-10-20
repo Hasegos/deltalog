@@ -65,8 +65,8 @@
 }
 
 .dg-g li {
-  display: grid;
-  grid-template-columns: 76px auto minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px 12px;
   align-items: baseline;
   padding: 7px 0;
@@ -77,9 +77,11 @@
 }
 
 .dg-v {
+  min-width: 0;
   font-family: var(--mono);
   font-size: 13.5px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .dg-i {
@@ -91,13 +93,9 @@
 }
 
 .dg-s {
-  grid-column: 1 / -1;
+  flex: 1 0 100%;
   font-size: 15px;
   line-height: 1.65;
-}
-
-.dg-news {
-  grid-template-columns: minmax(0, 1fr) auto !important;
 }
 
 .dg-news .dg-s {
@@ -105,6 +103,8 @@
 }
 
 .dg-t {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.5;
