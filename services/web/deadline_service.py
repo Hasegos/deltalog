@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from core.constants.deadline import DEADLINE_HOME_COUNT, DEADLINE_KINDS, DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS, DEADLINE_SOON_DAYS
+from core.constants.deadline import DEADLINE_CHART_WEEKS, DEADLINE_HOME_COUNT, DEADLINE_KINDS, DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS, DEADLINE_SOON_DAYS
 from core.constants.page import KST
 from crud import deadline_crud
 from models.deadline_model import Deadline
@@ -35,6 +35,79 @@ def _row(item: Deadline, today: date) -> dict:
         "replacement": item.replacement or "",
         "announced": item.deprecated_on.isoformat() if item.deprecated_on else "",
         "url": item.source_url,
+    }
+
+
+CHART_W, CHART_H = 420, 170
+CHART_LEFT, CHART_TOP, CHART_BOTTOM = 26, 18, 26
+
+
+def _chart(rows: list[dict], today: date) -> dict | None:
+    """앞으로 `DEADLINE_CHART_WEEKS`주의 주별 종료 건수를 제공사별로 쌓은 막대 그래프 값을 만든다. 이미 지난 일정은 뺀다.
+
+    Args:
+        rows: `_row` 결과 목록
+        today: 기준 날짜
+    Returns:
+        SVG 좌표까지 계산한 값. 그 기간에 일정이 없으면 `None`
+    """
+    monday = today - timedelta(days=today.weekday())
+    end = monday + timedelta(weeks=DEADLINE_CHART_WEEKS)
+    weeks = [{"start": monday + timedelta(weeks=i), "by": {}} for i in range(DEADLINE_CHART_WEEKS)]
+    later = 0
+    for r in rows:
+        day = date.fromisoformat(r["date"])
+        if day < today:
+            continue
+        if day >= end:
+            later += 1
+            continue
+        by = weeks[(day - monday).days // 7]["by"]
+        by[r["provider"]] = by.get(r["provider"], 0) + 1
+    peak = max((sum(w["by"].values()) for w in weeks), default=0)
+    if peak == 0:
+        return None
+    plot_w, plot_h = CHART_W - CHART_LEFT - 4, CHART_H - CHART_TOP - CHART_BOTTOM
+    step = plot_w / DEADLINE_CHART_WEEKS
+    bars = []
+    for i, w in enumerate(weeks):
+        total = sum(w["by"].values())
+        y = CHART_TOP + plot_h
+        segments = []
+        for name in DEADLINE_PROVIDERS:
+            n = w["by"].get(name, 0)
+            if not n:
+                continue
+            h = plot_h * n / peak
+            y -= h
+            segments.append({"provider": name, "n": n, "y": round(y, 1), "h": round(h, 1), "cls": DEADLINE_PROVIDERS.index(name)})
+        label = f"{w['start'].month}/{w['start'].day}"
+        bars.append(
+            {
+                "x": round(CHART_LEFT + i * step + step * 0.15, 1),
+                "w": round(step * 0.7, 1),
+                "cx": round(CHART_LEFT + i * step + step / 2, 1),
+                "total": total,
+                "top": round(y - 4, 1),
+                "label": label,
+                "show_label": i % 2 == 0,
+                "segments": segments,
+                "title": f"{label}부터 한 주: " + ", ".join(f"{k} {v}건" for k, v in w["by"].items()) if total else "",
+            }
+        )
+    return {
+        "w": CHART_W,
+        "h": CHART_H,
+        "base": CHART_TOP + plot_h,
+        "peak": peak,
+        "bars": bars,
+        "providers": [{"name": n, "cls": i} for i, n in enumerate(DEADLINE_PROVIDERS)],
+        "later": later,
+        "weeks": DEADLINE_CHART_WEEKS,
+        "left": CHART_LEFT,
+        "top": CHART_TOP,
+        "right": CHART_W - 4,
+        "label_y": CHART_H - 8,
     }
 
 
@@ -75,6 +148,7 @@ def build_deadlines(db: Session, provider: str, today: date | None = None) -> di
         "sections": sections,
         "filtered": bool(provider),
         "upcoming": sum(1 for r in rows if not r["past"]),
+        "chart": _chart(rows, today),
     }
 
 

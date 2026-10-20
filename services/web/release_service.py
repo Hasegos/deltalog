@@ -85,6 +85,9 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
                 }
             )
 
+    total_rows = sum(len(g["rows"]) for g in groups)
+    mix = [{"key": g["key"], "label": g["label"], "n": len(g["rows"]), "pct": round(100 * len(g["rows"]) / total_rows, 1)} for g in groups] if total_rows >= 2 else []
+
     done = [i for i in items if i.status == "done" and i.summary_ko]
     top = sorted(done, key=lambda i: (-(i.importance or 0), i.seq))[:DESCRIPTION_LINES]
     version = entry.version or entry.title
@@ -114,6 +117,7 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "url": entry.url if entry.url.startswith(("https://", "http://")) else "",
         "prerelease": entry.is_prerelease,
         "groups": groups,
+        "mix": mix,
         "breaking": len(by_category.get("breaking", [])),
         "security": len(by_category.get("security", [])),
         "total": len(items),
