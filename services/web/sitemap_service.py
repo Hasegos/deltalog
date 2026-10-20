@@ -24,6 +24,7 @@ def collect_urls(db: Session) -> list[tuple[str, str]]:
 
     - 데이터를 보여주는 목록 페이지는 그 데이터의 가장 최근 글 게시일을 쓴다.
     - 소개, 문의, 처리방침, 약관은 템플릿 파일의 수정일을 쓴다.
+    - 소식 상세 페이지(`/news/<ID>`)는 요약이 끝난 소식만 넣는다.
     - 글 상세 페이지는 요약된 항목이 있는 글만 넣고, 주소는 글의 `kind`에 맞는 함수(`ENTRY_PATHS`)로 만든다.
       새 종류(뉴스)는 `ENTRY_PATHS`에 함수를 더하면 자동으로 들어간다.
 
@@ -45,6 +46,8 @@ def collect_urls(db: Session) -> list[tuple[str, str]]:
         urls.append(("/deadlines", _day(latest_deadline)))
     for week in weekly_crud.list_weeks(db, 200):
         urls.append((f"/weekly/{week.week_start.isoformat()}", _day(week.created_at)))
+    for news_id, moment in news_crud.list_done_dates(db):
+        urls.append((f"/news/{news_id}", _day(moment)))
     for source in item_crud.list_sources(db):
         moment = newest.get(source.id)
         urls.append((f"/releases/{quote(source.slug, safe='')}", _day(moment) if moment else ""))

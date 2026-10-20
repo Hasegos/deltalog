@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › <a href="/news">소식</a> › {{ company }}</nav>
+      <h1>{{ title }}</h1>
+      <p class="lead">{{ company }} 공식 발표 · {{ day }}{% if type_label %} · {{ type_label }}{% endif %}{% if topic %} · # {{ topic }}{% endif %}</p>
+      <p><a href="{{ url }}" target="_blank" rel="noopener">원문 보기 ↗</a></p>
+
+      <div class="cg">
+        <h2>한국어 요약</h2>
+        <p>{{ summary }}</p>
+        {% if importance %}<p class="cf-note">중요도 {{ importance }} / 5</p>{% endif %}
+      </div>
+
+      {% if related %}
+      <div class="cg">
+        <h2>같은 시기 릴리스 <span class="cf-note">앞뒤 3일 이내</span></h2>
+        <ul class="cl">
+          {% for x in related %}<li><a href="{{ x.path }}">{{ x.label }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if others %}
+      <div class="cg">
+        <h2>같은 시기 {{ company }} 다른 소식</h2>
+        <ul class="cl">
+          {% for n in others %}<li><a href="/news/{{ n.id }}">{{ n.title }}</a> <span class="ct">{{ n.day }}</span></li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <p class="cf-note">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ company ~ ' ' ~ title) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+
+      <nav class="pn" aria-label="소식 목록"><a href="/news">← 소식 전체 보기</a></nav>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

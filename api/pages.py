@@ -13,7 +13,7 @@ from services.web.changes_service import build_changes
 from services.web.deadline_service import build_deadlines
 from services.web.feed_service import build_feed
 from services.web.home_service import build_home
-from services.web.news_service import build_news
+from services.web.news_service import build_news, build_news_detail
 from services.web.page_service import build_tools, build_topics
 from services.web.status_service import build_status
 from services.web.weekly_service import build_weekly, parse_week
@@ -88,6 +88,25 @@ def news_page(
         렌더링한 소식 페이지
     """
     return templates.TemplateResponse(request, "news.html", build_news(db, company, tab, topic, q, page))
+
+
+@page("/news/{news_id}", response_class=HTMLResponse)
+def news_detail_page(request: Request, news_id: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    """소식 하나의 한국어 요약과 같은 시기 릴리스를 보여주는 상세 페이지를 그린다.
+
+    Args:
+        request: 현재 요청
+        news_id: 소식 ID (숫자가 아니면 404)
+        db: 요청에 쓸 DB 세션
+    Returns:
+        소식 상세 페이지
+    Raises:
+        HTTPException: 그런 소식이 없거나 아직 요약되지 않았을 때 (404)
+    """
+    context = build_news_detail(db, int(news_id), site_url(request)) if news_id.isdigit() and len(news_id) < 10 else None
+    if context is None:
+        raise HTTPException(status_code=404, detail="소식을 찾을 수 없습니다")
+    return templates.TemplateResponse(request, "news_item.html", context)
 
 
 @page("/deadlines", response_class=HTMLResponse)
@@ -377,7 +396,7 @@ def release_index_page(request: Request, slug: str = "", db: Session = Depends(g
     Raises:
         HTTPException: 그런 도구가 없을 때 (404)
     """
-    context = build_release_index(db, slug)
+    context = build_release_index(db, slug, site_url(request))
     if context is None:
         raise HTTPException(status_code=404, detail="도구를 찾을 수 없습니다")
     return templates.TemplateResponse(request, "releases.html", context)

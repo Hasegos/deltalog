@@ -2,6 +2,7 @@ from collections.abc import Awaitable, Callable
 from time import perf_counter
 
 from fastapi import Request, Response
+from fastapi.responses import RedirectResponse
 
 from core.config import settings
 from core.logger import get_logger, log_event
@@ -22,6 +23,22 @@ def client_ip(request: Request) -> str:
         if real:
             return real
     return request.client.host if request.client else "-"
+
+
+async def trailing_slash(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """읽기 요청의 끝 `/`를 떼어 영구(301) 이동시킨다. 검색엔진이 `/news/`와 `/news`를 한 주소로 합치게 하는 용도다.
+
+    Args:
+        request: 요청
+        call_next: 다음 처리
+    Returns:
+        이동 응답 또는 다음 처리의 응답
+    """
+    path = request.url.path
+    if request.method in ("GET", "HEAD") and len(path) > 1 and path.endswith("/") and not path.startswith(("/api", "/static", "/mcp")):
+        target = path.rstrip("/") or "/"
+        return RedirectResponse(target + (f"?{request.url.query}" if request.url.query else ""), status_code=301)
+    return await call_next(request)
 
 
 async def metrics_guard(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:

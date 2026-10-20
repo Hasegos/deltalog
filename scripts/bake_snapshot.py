@@ -6,6 +6,7 @@
 - SNAPSHOT_WAIT: 원본이 응답하기를 기다리는 초 (기본 180)
 - SKIP_IF_DOWN: 1이면 원본이 꺼져 있을 때 오류 없이 끝낸다. 출력 폴더는 만들지 않는다
 - SNAPSHOT_URL: 지금 배포된 스냅샷 주소. 굽은 sitemap.xml과 홈이 같으면 출력 폴더를 지워 배포를 생략한다
+- SNAPSHOT_KEY: 스냅샷 주소가 직접 접속을 막을 때 쓰는 비밀 헤더(X-Snapshot-Key) 값. 틀리면 스냅샷이 deltalog.kr로 302를 돌려준다
 홈의 필터(도구, 탭, 유형, 주제) 화면은 한 개와 두 개 조합마다 _f/<키>-<값>~<키>-<값>.html로, 소식(/news)의 필터(회사, 탭, 주제)는 _f/news~<키>-<값>~<키>-<값>.html로, 종료 일정(/deadlines)의 제공사 필터는 _f/deadlines~provider-<값>.html로 따로 굽는다.
 sitemap에 없는 /weekly(가장 최근 주)와 /subscribe도 굽는다.
 원본이 아니라 Worker 폴백(X-Served-By 헤더)이 응답한 페이지는 실패로 보고, 하나라도 실패하면 종료 코드 1로 끝난다.
@@ -28,6 +29,7 @@ OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "dist")
 WAIT_SECONDS = int(os.environ.get("SNAPSHOT_WAIT", "180"))
 SKIP_IF_DOWN = os.environ.get("SKIP_IF_DOWN") == "1"
 SNAPSHOT_URL = os.environ.get("SNAPSHOT_URL", "").rstrip("/")
+SNAPSHOT_KEY = os.environ.get("SNAPSHOT_KEY", "")
 OPTIONAL_ASSETS = {"/ads.txt"}
 FILTER_KEYS = ("tool", "tab", "type", "topic")
 NEWS_FILTER_KEYS = ("company", "tab", "topic")
@@ -163,13 +165,18 @@ def bake_filter(combo: tuple[tuple[str, str], ...], path: str = "/", prefix: str
 
 
 def unchanged() -> bool:
-    """굽은 sitemap.xml과 홈이 지금 배포된 스냅샷과 같은지 본다. 하나라도 읽지 못하면 다르다고 본다."""
+    """굽은 sitemap.xml과 홈이 지금 배포된 스냅샷과 같은지 본다. 하나라도 읽지 못하거나 스냅샷이 아닌 곳(`deltalog.kr`로 302)으로 넘어가면 다르다고 본다."""
     if not SNAPSHOT_URL:
         return False
+    headers = {"User-Agent": UA}
+    if SNAPSHOT_KEY:
+        headers["X-Snapshot-Key"] = SNAPSHOT_KEY
     for name, path in (("sitemap.xml", "/sitemap.xml"), ("index.html", "/")):
         try:
-            req = urllib.request.Request(SNAPSHOT_URL + path, headers={"User-Agent": UA})
+            req = urllib.request.Request(SNAPSHOT_URL + path, headers=headers)
             with urllib.request.urlopen(req, timeout=30) as resp:
+                if not resp.geturl().startswith(SNAPSHOT_URL):
+                    return False
                 deployed = resp.read()
         except Exception:
             return False

@@ -31,6 +31,23 @@ def _json_ld(data: dict) -> str:
     return json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
 
 
+def _breadcrumb(base: str, crumbs: list[tuple[str, str]]) -> dict:
+    """홈에서 시작하는 `BreadcrumbList` JSON-LD를 만든다. 화면의 경로 표시와 같은 순서다.
+
+    Args:
+        base: 사이트 주소 (끝 `/` 없음)
+        crumbs: `(이름, 경로)` 목록. 홈은 넣지 않는다
+    Returns:
+        JSON-LD dict
+    """
+    names = [("홈", "/")] + crumbs
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [{"@type": "ListItem", "position": i, "name": n, "item": f"{base}{p}"} for i, (n, p) in enumerate(names, 1)],
+    }
+
+
 def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
     """릴리스 상세 페이지에 필요한 값을 만든다.
 
@@ -86,7 +103,7 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "company": company,
         "related_days": RELATED_DAYS,
         "news": [
-            {"title": n.title_ko or n.title, "url": n.url if n.url.startswith(("https://", "http://")) else "#", "date": n.published_at.astimezone(KST).strftime("%Y-%m-%d")}
+            {"id": n.id, "title": n.title_ko or n.title, "url": n.url if n.url.startswith(("https://", "http://")) else "#", "date": n.published_at.astimezone(KST).strftime("%Y-%m-%d")}
             for n in related
         ],
         "name": name,
@@ -108,7 +125,8 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "seo_type": "article",
         "noindex": not done,
         "jsonld": _json_ld(
-            {
+            [
+                {
                 "@context": "https://schema.org",
                 "@type": "TechArticle",
                 "headline": f"{name} {version} 변경 사항",
@@ -121,7 +139,9 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
                 "about": {"@type": "SoftwareApplication", "name": name, "softwareVersion": version},
                 "author": {"@type": "Organization", "name": "Deltalog"},
                 "publisher": {"@type": "Organization", "name": "Deltalog", "url": base},
-            }
+                },
+                _breadcrumb(base, [("릴리스", "/releases"), (name, f"/releases/{slug}"), (version, path)]),
+            ]
         ),
     }
 
@@ -148,12 +168,13 @@ def _rows(db: Session, slug: str, entries: list[Entry]) -> list[dict]:
     ]
 
 
-def build_release_index(db: Session, slug: str) -> dict | None:
+def build_release_index(db: Session, slug: str, base: str) -> dict | None:
     """릴리스 목록 화면의 값을 만든다. `slug`가 비면 도구마다 최근 몇 개를, 있으면 그 도구의 전체를 보여준다.
 
     Args:
         db: DB 세션
         slug: 소스 slug 또는 빈 문자열
+        base: 사이트 주소 (끝 `/` 없음). JSON-LD의 주소에 쓴다
     Returns:
         템플릿에 넘길 값. 그런 도구가 없으면 `None`
     """
@@ -173,9 +194,10 @@ def build_release_index(db: Session, slug: str) -> dict | None:
         desc = f"{name}의 릴리스 {len(rows)}개의 변경 사항을 한국어로 요약해 모았습니다. 최신 버전은 {rows[0]['version']}입니다."
     else:
         name = ""
-        title = "릴리스 목록 · Deltalog"
+        title = "릴리스 목록 · AI 코딩 도구별 최근 릴리스와 변경 사항 한국어 요약 · Deltalog"
         desc = "도구별 최근 릴리스와 변경 사항 한국어 요약으로 바로 가는 목록입니다."
-    return {"name": name, "slug": slug, "groups": groups, "seo_title": title, "seo_desc": desc}
+    crumbs = [("릴리스", "/releases")] + ([(name, f"/releases/{slug}")] if name else [])
+    return {"name": name, "slug": slug, "groups": groups, "seo_title": title, "seo_desc": desc, "jsonld": _json_ld(_breadcrumb(base, crumbs))}
 
 
 def list_releases_json(db: Session, slug: str, limit: int) -> list[dict] | None:

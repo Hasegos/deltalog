@@ -14,7 +14,7 @@ from api.routers import api_router
 from core.config import settings
 from core.errors import register_exception_handlers
 from core.logger import purge_old_logs, setup_logging
-from core.middleware import access_log, api_headers, metrics_guard, security_headers
+from core.middleware import access_log, api_headers, metrics_guard, security_headers, trailing_slash
 from db.init_db import init_db
 from services.collector.poller_service import poll_all, poll_news
 from services.llm.deadline_llm_service import refresh_deadlines_job
@@ -106,6 +106,7 @@ app.middleware("http")(access_log)
 app.middleware("http")(security_headers)
 app.middleware("http")(api_headers)
 app.middleware("http")(metrics_guard)
+app.middleware("http")(trailing_slash)
 Instrumentator(should_ignore_untemplated=True, excluded_handlers=["/metrics"]).instrument(app).expose(app, include_in_schema=False)
 REGISTRY.register(ItemStatusCollector())
 app.mount("/static", StaticFiles(directory="static"), name="static")

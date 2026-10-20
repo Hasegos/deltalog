@@ -49,7 +49,7 @@
         <h2>같은 시기 {{ company }} 소식 <span class="cf-note">앞뒤 {{ related_days }}일 이내</span></h2>
         <ul class="cl">
           {% for n in news %}
-          <li><a href="{{ n.url }}" target="_blank" rel="noopener">{{ n.title }} ↗</a> <span class="ct">{{ n.date }}</span></li>
+          <li><a href="/news/{{ n.id }}">{{ n.title }}</a> <span class="ct">{{ n.date }}</span> <a class="ct" href="{{ n.url }}" target="_blank" rel="noopener">원문 ↗</a></li>
           {% endfor %}
         </ul>
       </div>

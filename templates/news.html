@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  {% set seo_title = "소식 · Deltalog" %}
+  {% set seo_title = "AI 제작사 공식 소식 한국어 요약 · Anthropic · OpenAI · Google · Deltalog" %}
   {% set seo_desc = "Anthropic, OpenAI, Google, Microsoft, JetBrains, Cursor, xAI가 직접 낸 공식 발표 중 개발자에게 영향이 있는 소식을 한국어로 요약해 보여줍니다." %}
   {% set jsonld = {"@context": "https://schema.org", "@type": "CollectionPage", "name": "소식", "url": site_url(request) ~ "/news", "inLanguage": "ko", "description": seo_desc, "isPartOf": {"@type": "WebSite", "name": "Deltalog", "url": site_url(request)}} | tojson %}
   {% include "partials/head_meta.html" %}
@@ -76,7 +76,7 @@
             {% if r.topic %}<span class="xg"># {{ r.topic }}</span>{% endif %}
             {% if r.related %}<p class="xm">같은 시기 릴리스: {% for x in r.related %}<a href="{{ x.path }}">{{ x.label }}</a>{{ " · " if not loop.last }}{% endfor %}</p>{% endif %}
             <p class="xm">AI가 만든 요약입니다. 원문과 다르면 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('요약 오류: ' ~ r.company ~ ' ' ~ r.title) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
-            <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a>
+            <a class="orig" href="{{ r.url }}" target="_blank" rel="noopener">원문 보기 ↗</a> <a class="orig" href="/news/{{ r.id }}">소식 상세 페이지</a>
           </div>
         </details>
         {% else %}
