@@ -1,7 +1,7 @@
 /* =============================
   home.js — 홈 목록 무한 스크롤 + 입력하는 즉시 검색
   - 무한 스크롤: "더 보기" 링크가 화면에 들어오면 다음 쪽 HTML을 받아 목록 뒤에 붙인다.
-  - 즉시 검색: 검색창에 입력하면 잠깐 기다렸다가 같은 주소(?q=)의 HTML을 받아 본문을 바꾼다.
+  - 즉시 검색: 검색창에 입력하면 잠깐 기다렸다가 같은 주소(?q=)의 HTML을 받아 본문을 바꾼다. 홈과 소식이 같이 쓴다.
   JS가 없거나 실패해도 Enter와 "더 보기" 링크로 똑같이 쓸 수 있다.
   ============================= */
 
@@ -103,7 +103,8 @@
 
   async function search() {
     const qs = queryString();
-    const url = qs ? "/?" + qs : "/";
+    const path = new URL(form.action).pathname;
+    const url = qs ? path + "?" + qs : path;
     if (controller) controller.abort();
     controller = new AbortController();
     const list = document.querySelector(".list");
