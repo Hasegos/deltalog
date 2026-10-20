@@ -139,6 +139,23 @@ def list_near(db: Session, company: str, moment: datetime, days: int, min_import
     return found[:limit]
 
 
+def get_done(db: Session, news_id: int) -> News | None:
+    """요약이 끝난 소식 하나를 ID로 찾는다.
+
+    Args:
+        db: DB 세션
+        news_id: 소식 ID
+    Returns:
+        글. 없거나 아직 요약되지 않았으면 `None`
+    """
+    return db.scalar(select(News).where(News.id == news_id, News.status == "done"))
+
+
+def list_done_dates(db: Session) -> list[tuple[int, datetime]]:
+    """요약이 끝난 모든 소식의 `(ID, 게시 시각)`을 최신순으로 돌려준다. 사이트맵에 쓴다."""
+    return [(row[0], row[1]) for row in db.execute(select(News.id, News.published_at).where(News.status == "done").order_by(News.published_at.desc()))]
+
+
 def count_by_company(db: Session) -> dict[str, int]:
     """요약이 끝난 글의 제작사별 개수를 돌려준다.
 
