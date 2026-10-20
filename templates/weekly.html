@@ -45,10 +45,12 @@
             <li>
               <a class="dg-v" href="{{ r.url }}">{{ r.label }}</a>
               <i class="dg-i">중요 {{ r.importance }}</i>
-              <span class="dg-s">{{ r.summary }}</span>
+              {% for line in r.lines %}<span class="dg-s">{{ line }}</span>{% endfor %}
+              {% if r.more %}<a class="dg-m" href="{{ r.url }}">외 {{ r.more }}개 보기</a>{% endif %}
             </li>
             {% endfor %}
           </ul>
+          {% if g.more %}<p class="dg-m">외 릴리스 {{ g.more }}개</p>{% endif %}
         </section>
         {% endfor %}
       </div>

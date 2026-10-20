@@ -94,12 +94,38 @@
 
 .dg-s {
   flex: 1 0 100%;
+  position: relative;
+  padding-left: 14px;
   font-size: 15px;
   line-height: 1.65;
 }
 
+.dg-s::before {
+  content: "·";
+  position: absolute;
+  left: 3px;
+  color: var(--dim);
+}
+
+.dg-m {
+  flex: 1 0 100%;
+  margin: 0;
+  padding-left: 14px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.dg-g > .dg-m {
+  padding: 6px 0 0;
+}
+
 .dg-news .dg-s {
+  padding-left: 0;
   color: var(--muted);
+}
+
+.dg-news .dg-s::before {
+  content: none;
 }
 
 .dg-t {

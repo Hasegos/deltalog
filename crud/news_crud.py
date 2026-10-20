@@ -66,7 +66,7 @@ def _filter(stmt: Select, company: str, tab: str, topic: str, q: str = "") -> Se
         company: 제작사 이름. 빈 문자열이면 거르지 않는다
         tab: `all`, `imp`, 또는 뉴스 분류 값 (`model`, `pricing`, `security` 등)
         topic: 주제. 빈 문자열이면 거르지 않는다
-        q: 검색어. 제목, 요약, 주제, 제작사에서 부분 일치를 찾는다. 빈 문자열이면 거르지 않는다
+        q: 검색어. 화면에 보이는 한국어 제목, 요약, 주제, 제작사에서 부분 일치를 찾는다. 빈 문자열이면 거르지 않는다
     Returns:
         조건이 붙은 조회문
     """
@@ -80,7 +80,7 @@ def _filter(stmt: Select, company: str, tab: str, topic: str, q: str = "") -> Se
     if topic:
         stmt = stmt.where(News.topic == topic)
     if q:
-        columns = (News.title_ko, News.title, News.summary_ko, News.topic, News.company)
+        columns = (func.coalesce(News.title_ko, News.title), News.summary_ko, News.topic, News.company)
         stmt = stmt.where(or_(*(func.coalesce(col, "").icontains(q, autoescape=True) for col in columns)))
     return stmt
 
