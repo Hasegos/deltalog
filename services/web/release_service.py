@@ -97,6 +97,8 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "url": entry.url if entry.url.startswith(("https://", "http://")) else "",
         "prerelease": entry.is_prerelease,
         "groups": groups,
+        "breaking": len(by_category.get("breaking", [])),
+        "security": len(by_category.get("security", [])),
         "total": len(items),
         "done": len(done),
         "older": {"label": older.version or older.title, "path": release_path(slug, older)} if older else None,

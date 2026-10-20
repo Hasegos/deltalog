@@ -14,8 +14,21 @@
       <p class="lead">{{ date }} 릴리스{% if prerelease %} · 프리릴리스{% endif %} · 변경 항목 {{ total }}개{% if done < total %} · 요약된 항목 {{ done }}개{% endif %}</p>
       {% if url %}<p><a href="{{ url }}" target="_blank" rel="noopener">원문 릴리스 노트 보기 ↗</a></p>{% endif %}
 
+      <div class="rd-guide">
+        <b>이 페이지는 {{ name }} {{ version }}에서 바뀐 점을 유형별로 모은 것입니다.</b>
+        <ul>
+          {% if breaking or security %}
+          <li>업그레이드 전에 먼저 확인하세요:{% if breaking %} <a href="#g-breaking">breaking {{ breaking }}개</a>{% endif %}{% if security %} <a href="#g-security">보안 {{ security }}개</a>{% endif %}</li>
+          {% elif done == total and total %}
+          <li>breaking · 보안 변경은 없습니다.</li>
+          {% endif %}
+          <li>항목 아래 <span class="rd-og">▸ 원문</span>을 누르면 영어 원문이 펼쳐집니다.</li>
+        </ul>
+        {% if has_version %}<a class="rd-btn" href="/changes?tool={{ slug }}&version={{ version | urlencode }}">이 버전을 쓰고 있다면: 최신 버전까지 바뀐 점 한 번에 보기 →</a>{% endif %}
+      </div>
+
       {% for g in groups %}
-      <div class="cg">
+      <div class="cg" id="g-{{ g.key }}">
         <h2><span class="cat-{{ g.key }}">{{ g.symbol }} {{ g.label }}</span> <span class="cf-note">{{ g.rows | length }}개</span></h2>
         <ul class="cl">
           {% for i in g.rows %}
@@ -48,7 +61,6 @@
         {% if older %}<a href="{{ older.path }}" rel="prev">← {{ older.label }}</a>{% else %}<span></span>{% endif %}
         {% if newer %}<a href="{{ newer.path }}" rel="next">{{ newer.label }} →</a>{% endif %}
       </nav>
-      {% if has_version %}<p class="cf-note"><a href="/changes?tool={{ slug }}&version={{ version | urlencode }}">이 버전부터 최신까지 바뀐 점 모아 보기</a></p>{% endif %}
     </section>
   </main>
 
