@@ -103,7 +103,7 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "company": company,
         "related_days": RELATED_DAYS,
         "news": [
-            {"title": n.title_ko or n.title, "url": n.url if n.url.startswith(("https://", "http://")) else "#", "date": n.published_at.astimezone(KST).strftime("%Y-%m-%d")}
+            {"id": n.id, "title": n.title_ko or n.title, "url": n.url if n.url.startswith(("https://", "http://")) else "#", "date": n.published_at.astimezone(KST).strftime("%Y-%m-%d")}
             for n in related
         ],
         "name": name,

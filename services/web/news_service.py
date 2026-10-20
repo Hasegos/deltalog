@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from math import ceil
 from urllib.parse import urlencode
 
@@ -10,7 +10,7 @@ from core.constants.taxonomy import TOPICS
 from crud import entry_crud, news_crud
 from models.news_model import News
 from services.web.home_service import _ago, _day_label
-from services.web.release_service import release_path
+from services.web.release_service import _breadcrumb, _json_ld, release_path
 
 
 def _url(params: dict[str, str], **override: str | None) -> str:
@@ -41,6 +41,7 @@ def _row(article: News, now: datetime) -> dict:
         템플릿에 넘길 값
     """
     return {
+        "id": article.id,
         "company": article.company,
         "title": article.title_ko or article.title,
         "summary": article.summary_ko or "",
@@ -78,6 +79,62 @@ def _related(db: Session, articles: list[News]) -> dict[int, list[dict]]:
         if near:
             result[article.id] = [{"label": f"{source.name} {entry.version or entry.title}", "path": release_path(source.slug, entry)} for entry, source in near]
     return result
+
+
+SAME_COMPANY_DAYS = 7
+SAME_COMPANY_LIMIT = 4
+
+
+def build_news_detail(db: Session, news_id: int, base: str, now: datetime | None = None) -> dict | None:
+    """소식 상세 페이지에 필요한 값을 만든다. 요약이 끝난 소식만 보여준다.
+
+    Args:
+        db: DB 세션
+        news_id: 소식 ID
+        base: 사이트 주소 (끝 `/` 없음). JSON-LD의 주소에 쓴다
+        now: 기준 시각. 비우면 현재 시각
+    Returns:
+        템플릿에 넘길 값. 없거나 요약 전이면 `None`
+    """
+    article = news_crud.get_done(db, news_id)
+    if article is None:
+        return None
+    now = now or datetime.now(KST)
+    row = _row(article, now)
+    title = row["title"]
+    description = row["summary"]
+    if len(description) > 150:
+        description = description[:149].rstrip() + "…"
+    path = f"/news/{article.id}"
+    published = article.published_at.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    others = [n for n in news_crud.list_near(db, article.company, article.published_at, SAME_COMPANY_DAYS, 1, SAME_COMPANY_LIMIT + 1) if n.id != article.id][:SAME_COMPANY_LIMIT]
+    return {
+        **row,
+        "related": _related(db, [article]).get(article.id, []),
+        "others": [{"id": n.id, "title": n.title_ko or n.title, "day": n.published_at.astimezone(KST).strftime("%Y-%m-%d")} for n in others],
+        "seo_title": f"{title} · {article.company} 소식 한국어 요약 · Deltalog",
+        "seo_desc": f"{article.company} 공식 발표 한국어 요약. {description}".strip(),
+        "seo_type": "article",
+        "jsonld": _json_ld(
+            [
+                {
+                    "@context": "https://schema.org",
+                    "@type": "NewsArticle",
+                    "headline": title,
+                    "description": description,
+                    "inLanguage": "ko",
+                    "datePublished": published,
+                    "dateModified": published,
+                    "mainEntityOfPage": f"{base}{path}",
+                    "isBasedOn": row["url"],
+                    "about": {"@type": "Organization", "name": article.company},
+                    "author": {"@type": "Organization", "name": "Deltalog"},
+                    "publisher": {"@type": "Organization", "name": "Deltalog", "url": base},
+                },
+                _breadcrumb(base, [("소식", "/news"), (title, path)]),
+            ]
+        ),
+    }
 
 
 def build_news(db: Session, company: str, tab: str, topic: str, q: str = "", page: int = 1, now: datetime | None = None) -> dict:
