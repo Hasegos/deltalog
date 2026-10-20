@@ -30,17 +30,23 @@ from services.collector.splitter_service import split_items
 logger = get_logger("poller")
 
 
+class EmptyPageError(Exception):
+    """페이지는 받았는데 릴리스를 하나도 읽지 못했다. 페이지 모양이 바뀐 것으로 본다."""
+
+
 def poll_source(db: Session, source: Source) -> int:
     """소스 하나(GitHub 릴리스, RSS 피드, JetBrains API, Windsurf · Antigravity · OpenAI · Anthropic · Gemini API 변경 로그 페이지)를 한 번 가져와 새 글을 저장한다.
 
     ETag가 같으면 아무것도 저장하지 않는다. 이미 있는 `(소스, external_id)`와, 설정이 꺼져 있으면 프리릴리스는 건너뛴다.
-    저장이 실패하면 되돌리고 ETag도 갱신하지 않아 다음 번에 다시 시도한다.
+    저장이 실패하면 되돌리고 ETag도 갱신하지 않아 다음 번에 다시 시도한다. 페이지를 읽는 소스(`html`)가 릴리스를 하나도 못 읽으면 `EmptyPageError`를 내서 수집 현황에 실패로 남긴다.
 
     Args:
         db: DB 세션
         source: `kind`가 `github_release`, `rss`, `html`인 소스
     Returns:
         새로 저장한 글 개수
+    Raises:
+        EmptyPageError: `html` 소스에서 읽은 릴리스가 0건일 때
     """
     result = _fetch(source)
     now = datetime.now(timezone.utc)
@@ -51,6 +57,8 @@ def poll_source(db: Session, source: Source) -> int:
         logger.info("poll %s: 변경 없음 (304)", source.slug)
         return 0
 
+    if source.kind == "html" and not result.releases:
+        raise EmptyPageError(source.slug)
     candidates = [r for r in result.releases if source.include_prerelease or not r.prerelease]
     known = entry_crud.existing_external_ids(db, source.id, [r.external_id for r in candidates])
     added = 0
@@ -120,6 +128,10 @@ def poll_all() -> int:
                 db.rollback()
                 logger.warning("poll %s: 요청 실패 (%s)", source.slug, exc.__class__.__name__)
                 status_service.record(source.slug, source.name, "release", False, exc.__class__.__name__)
+            except EmptyPageError:
+                db.rollback()
+                logger.warning("poll %s: 릴리스를 하나도 읽지 못함 (페이지 모양이 바뀌었을 수 있음)", source.slug)
+                status_service.record(source.slug, source.name, "release", False, "EmptyPageError")
             except Exception as exc:
                 db.rollback()
                 logger.exception("poll %s: 저장 실패", source.slug)
