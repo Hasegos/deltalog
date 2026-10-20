@@ -16,7 +16,7 @@
   --fg:        #1c1b18;
   --muted:     #55514a;
   --dim:       #6f6a60;
-  --faint:     #8d877b;
+  --faint:     #757065;
   --line:      #e3ded2;
   --line-soft: #ebe7dc;
   --hover:     #efece3;
@@ -28,7 +28,7 @@
   --c-feature:  #167a48;
   --c-bugfix:   #566273;
   --c-breaking: #c3352b;
-  --c-security: #a96a0a;
+  --c-security: #946008;
   --c-other:    #6f6a60;
 
   --sans: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
@@ -44,7 +44,7 @@
     --fg:        #f0ede5;
     --muted:     #b5b0a4;
     --dim:       #9a9488;
-    --faint:     #7d786d;
+    --faint:     #8d887c;
     --line:      #2d2b26;
     --line-soft: #23211d;
     --hover:     #1f1e1a;
@@ -69,7 +69,7 @@
   --fg:        #f0ede5;
   --muted:     #b5b0a4;
   --dim:       #9a9488;
-  --faint:     #7d786d;
+  --faint:     #8d887c;
   --line:      #2d2b26;
   --line-soft: #23211d;
   --hover:     #1f1e1a;
@@ -96,6 +96,8 @@ body {
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 a {
