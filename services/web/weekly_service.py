@@ -2,7 +2,9 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
+from core.constants.taxonomy import CATEGORIES
 from core.constants.weekly import (
+    WEEKLY_CHART_TOOLS,
     WEEKLY_NEWS_LIMIT,
     WEEKLY_NEWS_MIN,
     WEEKLY_RELEASE_LIMIT,
@@ -37,6 +39,30 @@ def _tool(name: str, releases: list[dict]) -> dict:
     return {"name": name, "rows": rows, "more": max(0, len(releases) - WEEKLY_TOOL_RELEASES)}
 
 
+def _chart(rows: list[tuple[str, str | None, int]]) -> dict | None:
+    """도구별 변경 항목 수를 유형별로 쌓은 가로 막대 값을 만든다. 항목이 많은 `WEEKLY_CHART_TOOLS`개 도구만 담는다.
+
+    Args:
+        rows: `weekly_crud.category_counts` 결과
+    Returns:
+        막대 값. 항목이 없으면 `None`
+    """
+    tools: dict[str, dict[str, int]] = {}
+    for name, category, n in rows:
+        key = category if category in CATEGORIES else "other"
+        by = tools.setdefault(name, {})
+        by[key] = by.get(key, 0) + n
+    ranked = sorted(tools.items(), key=lambda kv: (-sum(kv[1].values()), kv[0]))[:WEEKLY_CHART_TOOLS]
+    if not ranked:
+        return None
+    peak = sum(ranked[0][1].values())
+    bars = []
+    for name, by in ranked:
+        segments = [{"key": k, "label": CATEGORIES[k][1], "n": by[k], "pct": round(100 * by[k] / peak, 1)} for k in CATEGORIES if k in by]
+        bars.append({"name": name, "total": sum(by.values()), "segments": segments, "title": ", ".join(f"{sg['label']} {sg['n']}" for sg in segments)})
+    return {"bars": bars, "legend": [{"key": k, "label": v[1]} for k, v in CATEGORIES.items() if any(k in by for _, by in ranked)]}
+
+
 def build_weekly(db: Session, monday: date | None) -> dict | None:
     """주간 요약 화면에 필요한 값을 만든다.
 
@@ -66,6 +92,7 @@ def build_weekly(db: Session, monday: date | None) -> dict | None:
     return {
         "digest": digest,
         "range": _range_label(digest.week_start),
+        "chart": _chart(weekly_crud.category_counts(db, start, end)),
         "releases": [_tool(name, list(found.values())) for name, found in groups.items()],
         "news": news,
         "newer": keys[pos - 1].isoformat() if pos > 0 else "",

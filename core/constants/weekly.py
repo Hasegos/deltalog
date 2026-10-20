@@ -8,6 +8,7 @@ WEEKLY_RELEASE_LIMIT = 20
 WEEKLY_TOOL_RELEASES = 3    # 화면에서 도구 하나에 보여줄 릴리스 수. 나머지는 개수만 적는다
 WEEKLY_RELEASE_LINES = 2    # 화면에서 릴리스 하나에 보여줄 요약 수. 나머지는 개수만 적는다
 WEEKLY_NEWS_MIN = 3
+WEEKLY_CHART_TOOLS = 10    # 주간 막대 그래프에 보여줄 도구 수. 항목이 많은 순
 WEEKLY_NEWS_LIMIT = 10
 WEEKLY_MIN_LINES = 3
 WEEKLY_BACKFILL_WEEKS = 4

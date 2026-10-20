@@ -34,6 +34,20 @@
         <p>{{ digest.overview }}</p>
       </article>
 
+      {% if chart %}
+      <figure class="dgc">
+        <figcaption>도구별 변경 항목 수 <span class="dg-n">이 주에 요약된 항목 기준</span></figcaption>
+        {% for b in chart.bars %}
+        <div class="dgc-r" title="{{ b.title }}">
+          <span class="dgc-k">{{ b.name }}</span>
+          <span class="dgc-b" role="img" aria-label="{{ b.name }} {{ b.total }}개: {{ b.title }}">{% for sg in b.segments %}<i class="dgc-{{ sg.key }}" style="width: {{ sg.pct }}%"></i>{% endfor %}</span>
+          <span class="dgc-n">{{ b.total }}</span>
+        </div>
+        {% endfor %}
+        <p class="dgc-lg">{% for l in chart.legend %}<span><i class="dgc-{{ l.key }}"></i>{{ l.label }}</span>{% endfor %}</p>
+      </figure>
+      {% endif %}
+
       {% if releases %}
       <h2 class="dl-h">주요 릴리스 <span class="dg-n">중요도 4 이상</span></h2>
       <div class="dg-l">

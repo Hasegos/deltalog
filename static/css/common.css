@@ -381,6 +381,8 @@ summary::-webkit-details-marker {
     display: inline-flex;
     align-items: center;
     min-height: 32px;
+    min-width: 24px;
+    justify-content: center;
   }
 
   .foot-bottom {
