@@ -65,6 +65,46 @@
   color: var(--dim);
 }
 
+/* ── 릴리스 상세 안내 ── */
+.rd-guide {
+  margin-top: 22px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.rd-guide ul {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.rd-guide li + li {
+  margin-top: 4px;
+}
+
+.rd-og {
+  padding: 1px 6px;
+  font-size: 13px;
+  color: var(--dim);
+  background: var(--bg);
+  border-radius: 6px;
+}
+
+.page a.rd-btn {
+  display: inline-block;
+  padding: 9px 14px;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--on-fg);
+  background: var(--fg);
+  border-radius: 8px;
+  text-decoration: none;
+}
+
 /* ── 버전 비교 ── */
 .cf {
   display: flex;
@@ -179,6 +219,27 @@
   grid-column: 1 / -1;
   font-size: 13px;
   color: var(--dim);
+}
+
+.cl details summary {
+  cursor: pointer;
+  width: max-content;
+  padding: 2px 8px;
+  margin-left: -8px;
+  border-radius: 6px;
+}
+
+.cl details summary::before {
+  content: "▸ ";
+}
+
+.cl details[open] summary::before {
+  content: "▾ ";
+}
+
+.cl details summary:hover {
+  color: var(--fg);
+  background: var(--bg);
 }
 
 .cl details p {
