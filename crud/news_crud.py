@@ -58,7 +58,7 @@ def requeue_failed(db: Session, max_attempts: int) -> int:
     return result.rowcount
 
 
-def _filter(stmt: Select, company: str, tab: str, topic: str) -> Select:
+def _filter(stmt: Select, company: str, tab: str, topic: str, q: str = "") -> Select:
     """요약이 끝난 글만 남기고 화면 필터 조건을 덧붙인다.
 
     Args:
@@ -66,6 +66,7 @@ def _filter(stmt: Select, company: str, tab: str, topic: str) -> Select:
         company: 제작사 이름. 빈 문자열이면 거르지 않는다
         tab: `all`, `imp`, 또는 뉴스 분류 값 (`model`, `pricing`, `security` 등)
         topic: 주제. 빈 문자열이면 거르지 않는다
+        q: 검색어. 제목, 요약, 주제, 제작사에서 부분 일치를 찾는다. 빈 문자열이면 거르지 않는다
     Returns:
         조건이 붙은 조회문
     """
@@ -78,10 +79,13 @@ def _filter(stmt: Select, company: str, tab: str, topic: str) -> Select:
         stmt = stmt.where(News.news_type == tab)
     if topic:
         stmt = stmt.where(News.topic == topic)
+    if q:
+        columns = (News.title_ko, News.title, News.summary_ko, News.topic, News.company)
+        stmt = stmt.where(or_(*(func.coalesce(col, "").icontains(q, autoescape=True) for col in columns)))
     return stmt
 
 
-def list_news(db: Session, company: str, tab: str, topic: str, limit: int, offset: int = 0) -> list[News]:
+def list_news(db: Session, company: str, tab: str, topic: str, limit: int, offset: int = 0, q: str = "") -> list[News]:
     """조건에 맞는 글을 게시일 최신순으로 돌려준다.
 
     Args:
@@ -89,23 +93,24 @@ def list_news(db: Session, company: str, tab: str, topic: str, limit: int, offse
         company, tab, topic: 화면 필터 (`_filter` 참고)
         limit: 한 쪽에 담을 최대 개수
         offset: 건너뛸 개수
+        q: 검색어
     Returns:
         글 목록
     """
-    stmt = _filter(select(News), company, tab, topic).order_by(News.published_at.desc(), News.id.desc()).limit(limit).offset(offset)
+    stmt = _filter(select(News), company, tab, topic, q).order_by(News.published_at.desc(), News.id.desc()).limit(limit).offset(offset)
     return list(db.scalars(stmt))
 
 
-def count_news(db: Session, company: str, tab: str, topic: str) -> int:
+def count_news(db: Session, company: str, tab: str, topic: str, q: str = "") -> int:
     """조건에 맞는 글 개수를 돌려준다.
 
     Args:
         db: DB 세션
-        company, tab, topic: 화면 필터 (`_filter` 참고)
+        company, tab, topic, q: 화면 필터와 검색어 (`_filter` 참고)
     Returns:
         글 개수
     """
-    return db.scalar(_filter(select(func.count(News.id)), company, tab, topic)) or 0
+    return db.scalar(_filter(select(func.count(News.id)), company, tab, topic, q)) or 0
 
 
 def count_by_company(db: Session) -> dict[str, int]:

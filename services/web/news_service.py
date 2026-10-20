@@ -53,7 +53,7 @@ def _row(article: News, now: datetime) -> dict:
     }
 
 
-def build_news(db: Session, company: str, tab: str, topic: str, page: int = 1, now: datetime | None = None) -> dict:
+def build_news(db: Session, company: str, tab: str, topic: str, q: str = "", page: int = 1, now: datetime | None = None) -> dict:
     """소식 화면에 필요한 값을 모두 만든다.
 
     Args:
@@ -61,6 +61,7 @@ def build_news(db: Session, company: str, tab: str, topic: str, page: int = 1, n
         company: 제작사 필터
         tab: `NEWS_TABS`의 키 (`all`, `imp`, `model`, `pricing`, `security`)
         topic: 주제 필터
+        q: 검색어. 제목, 요약, 주제, 제작사에서 부분 일치를 찾는다
         page: 쪽 번호. 전체 쪽 수를 넘으면 마지막 쪽으로 본다
         now: 기준 시각. 비우면 현재 시각
     Returns:
@@ -70,7 +71,8 @@ def build_news(db: Session, company: str, tab: str, topic: str, page: int = 1, n
     company = company if company in NEWS_COMPANIES else ""
     tab = tab if tab in dict(NEWS_TABS) else "all"
     topic = topic if topic in TOPICS else ""
-    params = {key: value for key, value in (("company", company), ("tab", tab if tab != "all" else ""), ("topic", topic)) if value}
+    q = q.strip()
+    params = {key: value for key, value in (("company", company), ("tab", tab if tab != "all" else ""), ("topic", topic), ("q", q)) if value}
 
     by_company = news_crud.count_by_company(db)
     companies = [
@@ -81,7 +83,7 @@ def build_news(db: Session, company: str, tab: str, topic: str, page: int = 1, n
     tabs = [
         {
             "label": label,
-            "count": news_crud.count_news(db, company, key, topic),
+            "count": news_crud.count_news(db, company, key, topic, q),
             "active": key == tab,
             "href": _url(no_tab, tab=None if key == "all" else key),
         }
@@ -92,7 +94,7 @@ def build_news(db: Session, company: str, tab: str, topic: str, page: int = 1, n
     page = min(page, pages)
     more = _url(params, page=str(page + 1)) if page < pages else None
 
-    articles = news_crud.list_news(db, company, tab, topic, NEWS_PAGE_SIZE, (page - 1) * NEWS_PAGE_SIZE)
+    articles = news_crud.list_news(db, company, tab, topic, NEWS_PAGE_SIZE, (page - 1) * NEWS_PAGE_SIZE, q)
     rows = []
     last_day = ""
     for article in articles:
@@ -114,6 +116,8 @@ def build_news(db: Session, company: str, tab: str, topic: str, page: int = 1, n
         "tabs": tabs,
         "topics": [{"name": t, "active": t == topic} for t in TOPICS],
         "hidden": {k: v for k, v in params.items() if k != "topic"},
+        "search_hidden": {k: v for k, v in params.items() if k != "q"},
+        "q": q,
         "rows": rows,
         "more": more,
         "filtered": bool(params),
