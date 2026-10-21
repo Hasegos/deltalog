@@ -104,7 +104,7 @@ def _fetch(source: Source) -> FetchResult:
         if source.slug == "openai-api":
             return openai_changelog_service.fetch_releases(source.feed_url, source.etag)
         if source.slug == "windsurf":
-            return windsurf_service.fetch_releases(source.feed_url)
+            return windsurf_service.fetch_releases(source.feed_url, source.etag)
         if source.slug in antigravity_service.PANELS:
             return antigravity_service.fetch_releases(source.feed_url, source.name, antigravity_service.PANELS[source.slug], source.etag)
         return jetbrains_service.fetch_releases(source.feed_url, source.name)
