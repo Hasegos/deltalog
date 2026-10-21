@@ -15,6 +15,7 @@ from core.constants.og import (
     OG_CHIP_COLUMN,
     OG_DIM,
     OG_FG,
+    OG_FIRST_CATEGORIES,
     OG_FONT,
     OG_HEIGHT,
     OG_LINE,
@@ -94,8 +95,8 @@ def _render(card_json: str) -> bytes:
         draw.text((OG_MARGIN, y), line, font=title_font, fill=OG_FG)
         y += int(card["title_size"] * 1.28)
     if card["meta"]:
-        draw.text((OG_MARGIN, y + 2), card["meta"], font=_font(26, 400), fill=OG_DIM)
-        y += 44
+        draw.text((OG_MARGIN, y + 10), card["meta"], font=_font(26, 400), fill=OG_DIM)
+        y += 52
     y += 22
 
     body_font = _font(28, 400)
@@ -133,17 +134,17 @@ def render(card: dict) -> bytes:
 
 
 def release_card(db: Session, slug: str, key: str) -> dict | None:
-    """릴리스 상세의 OG 카드 값을 만든다. 도구 이름, 버전, 가장 중요한 요약 `OG_RELEASE_ROWS`개를 담는다. 그런 릴리스가 없으면 `None`."""
+    """릴리스 상세의 OG 카드 값을 만든다. 도구 이름, 버전, 요약 `OG_RELEASE_ROWS`개를 담는다. breaking · 보안이 먼저, 나머지는 중요도 순이다. 그런 릴리스가 없으면 `None`."""
     values = build_release(db, slug, key, "")
     if values is None:
         return None
     ranked = [
-        (-row["importance"], order, group, row)
+        (group["key"] not in OG_FIRST_CATEGORIES, -row["importance"], order, group, row)
         for order, group in enumerate(values["groups"])
         for row in group["rows"]
         if row["summary"]
     ]
-    rows = [{"key": group["key"], "label": group["label"], "text": row["summary"]} for _, _, group, row in sorted(ranked, key=lambda r: r[:2])[:OG_RELEASE_ROWS]]
+    rows = [{"key": group["key"], "label": group["label"], "text": row["summary"]} for _, _, _, group, row in sorted(ranked, key=lambda r: r[:3])[:OG_RELEASE_ROWS]]
     meta = f"{values['date']} 릴리스 · 변경 항목 {values['total']}개"
     return _card(values["name"], values["version"], meta, rows, title_size=72, title_lines=1)
 

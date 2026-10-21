@@ -10,6 +10,7 @@ OG_CACHE_SEC = 3600                        # 브라우저와 Cloudflare가 이�
 OG_BODY_BOTTOM = 556                       # 본문(요약 줄)이 내려갈 수 있는 맨 아래 y. 그 밑은 푸터 자리
 OG_CHIP_COLUMN = 136                       # 유형 칩 줄의 너비. 요약 글자의 왼쪽을 맞춘다
 OG_RELEASE_ROWS = 3                        # 릴리스 카드에 보여줄 가장 중요한 요약 수
+OG_FIRST_CATEGORIES = ("breaking", "security")  # 중요도와 상관없이 릴리스 카드 맨 앞에 두는 유형
 
 # 사이트 CSS의 밝은 테마 색(common.css)과 같다
 OG_BG = "#f7f5f0"
