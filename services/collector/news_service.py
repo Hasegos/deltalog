@@ -138,11 +138,14 @@ def fetch_feed(url: str) -> list[Article] | None:
     Returns:
         최신순 글 목록. 변경이 없으면 `None`
     Raises:
-        httpx.HTTPError: 요청이 실패했을 때
+        httpx.HTTPError: 요청이 실패했거나 응답이 비었을 때 (JetBrains 피드가 가끔 빈 본문을 준다)
     """
     response = _conditional_get(url)
     if response is None:
         return None
+    if not response.text.strip():
+        _etags.pop(url, None)  # 빈 응답의 ETag를 기억하면 다음부터 304만 받아 영영 비어 보인다
+        raise httpx.ReadError("빈 응답")
     oldest = datetime.now(timezone.utc) - timedelta(days=NEWS_MAX_AGE_DAYS)
     fresh = [a for a in _articles(response.text) if a.published_at is None or a.published_at >= oldest]
     far = datetime.max.replace(tzinfo=timezone.utc)
