@@ -36,6 +36,19 @@ SOURCES = [
     {"slug": "pycharm", "name": "PyCharm", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=PCP&latest=false&type=release"},
     {"slug": "webstorm", "name": "WebStorm", "kind": "html", "feed_url": f"{JETBRAINS_API}?code=WS&latest=false&type=release"},
 ]
+# 한국어로 많이 검색하는 이름. 도구별 목록 페이지의 설명 · 소개 문장에만 덧붙인다 (검색어와 맞추려는 용도)
+TOOL_KO_NAMES = {
+    "claude-code": "클로드 코드",
+    "codex": "코덱스",
+    "gemini-cli": "제미나이 CLI",
+    "copilot-cli": "깃허브 코파일럿 CLI",
+    "cursor": "커서",
+    "windsurf": "윈드서프",
+    "intellij-idea": "인텔리제이",
+    "pycharm": "파이참",
+    "webstorm": "웹스톰",
+    "android-studio": "안드로이드 스튜디오",
+}
 # 한 저장소에 여러 제품의 릴리스가 섞여 있을 때 소스에 넣을 태그만 거른다 (slug별 정규식, 태그 앞에서부터 맞춘다)
 GITHUB_TAG_PATTERNS = {"cline": r"v\d", "qwen-code": r"v\d", "kilo-code": r"v\d"}
 # 피드가 없어 변경 로그 페이지를 직접 읽는 소스(Windsurf, Antigravity)의 요청 제한 시간(초)과 한 번에 읽을 최대 릴리스 수

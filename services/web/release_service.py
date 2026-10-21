@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from core.constants.news import RELATED_DAYS, RELATED_LIMIT, RELATED_MIN_IMPORTANCE, TOOL_COMPANY
 from core.constants.page import KST
+from core.constants.source import TOOL_KO_NAMES
 from core.constants.taxonomy import CATEGORIES, SEVERITY
 from crud import entry_crud, item_crud, news_crud
 from models.entry_model import Entry
@@ -195,14 +196,16 @@ def build_release_index(db: Session, slug: str, base: str) -> dict | None:
             groups.append({"name": source.name, "slug": source.slug, "rows": _rows(db, source.slug, entries), "more": not slug})
     if slug and groups:
         name, rows = groups[0]["name"], groups[0]["rows"]
-        title = f"{name} 릴리스 목록 · 변경 사항 한국어 요약 · Deltalog"
-        desc = f"{name}의 릴리스 {len(rows)}개의 변경 사항을 한국어로 요약해 모았습니다. 최신 버전은 {rows[0]['version']}입니다."
+        ko_name = TOOL_KO_NAMES.get(slug)
+        label = f"{name}({ko_name})" if ko_name else name
+        title = f"{name} 업데이트 내역 · 릴리스 노트 한국어 요약 · Deltalog"
+        desc = f"{label}의 최근 릴리스 {len(rows)}개 업데이트 내역과 변경 사항을 한국어로 요약했습니다. 최신 버전은 {rows[0]['version']}입니다."
     else:
-        name = ""
+        name = label = ""
         title = "릴리스 목록 · AI 코딩 도구별 최근 릴리스와 변경 사항 한국어 요약 · Deltalog"
         desc = "도구별 최근 릴리스와 변경 사항 한국어 요약으로 바로 가는 목록입니다."
     crumbs = [("릴리스", "/releases")] + ([(name, f"/releases/{slug}")] if name else [])
-    return {"name": name, "slug": slug, "groups": groups, "seo_title": title, "seo_desc": desc, "jsonld": _json_ld(_breadcrumb(base, crumbs))}
+    return {"name": name, "label": label, "slug": slug, "groups": groups, "seo_title": title, "seo_desc": desc, "jsonld": _json_ld(_breadcrumb(base, crumbs))}
 
 
 def list_releases_json(db: Session, slug: str, limit: int) -> list[dict] | None:
