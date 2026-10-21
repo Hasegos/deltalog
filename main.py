@@ -87,7 +87,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             coalesce=True,
         )
     scheduler.add_job(purge_old_logs, "cron", hour=3, minute=0, next_run_time=datetime.now())
-    scheduler.add_job(requeue_failed_job, "cron", hour=4, minute=0)
+    # 서버가 04:00에 꺼져 있으면 크론이 지나가 버리므로, 켜질 때도 한 번 돌린다(시도 횟수가 차면 되돌리지 않으니 반복 재시작에도 무한히 다시 하지 않는다)
+    scheduler.add_job(requeue_failed_job, "cron", hour=4, minute=0, next_run_time=datetime.now() + timedelta(seconds=15))
     scheduler.start()
     yield
     scheduler.shutdown(wait=False)
