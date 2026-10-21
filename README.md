@@ -99,9 +99,8 @@ Claude Code는 거의 매일 새 버전이 나오고, Codex · Cursor · VS Code
 - **검색 · 필터** — 입력 즉시 검색, 도구 · 유형 · 주제 · 중요도 필터, 도구별 최신 버전 한눈에 보기.
 - **RSS** (`/feed.xml`) — 도구 · 제작사 · 최소 중요도를 골라 나만의 구독 주소를 만듭니다 (`/subscribe`).
 - **MCP 서버** (`/mcp`) — Claude Code, Cursor, VS Code, Gemini CLI 같은 AI 에이전트가 릴리스 요약 · 종료 일정 · 소식을 직접 조회합니다 (`/agents`).
-- **수집 현황** (`/status`) — 소스별 마지막 확인 시각, 연속 3번 실패하면 웹훅 알림, 페이지 모양이 바뀌어 0건을 읽어도 실패로 기록합니다.
+- **수집 현황** (`/status`) — 소스별 마지막 확인 시각과 수집 성공 여부를 공개합니다.
 - **SEO** — 페이지별 title · description · canonical · Open Graph · JSON-LD, 릴리스 상세 페이지 약 300개, `sitemap.xml` · `robots.txt`.
-- **서버가 꺼져도 읽기** — Cloudflare Worker가 서버 장애를 감지하면 Pages 스냅샷(홈 · 소식 · 종료 일정 · 주간 요약)을 대신 보여줍니다.
 
 <br>
 
@@ -113,8 +112,7 @@ Claude Code는 거의 매일 새 버전이 나오고, Codex · Cursor · VS Code
 | Frontend | Jinja2 SSR, 바닐라 JavaScript, CSS |
 | Database | PostgreSQL |
 | AI | Gemini API (OpenAI 호환 엔드포인트) |
-| Infra | Docker Compose, VMware VM, Cloudflare (DNS · Worker · Pages) |
-| 운영 | Prometheus 지표, GitHub Actions 배포 |
+| Infra | Docker, Cloudflare |
 
 <br>
 
@@ -131,7 +129,6 @@ flowchart LR
     L --> DB
     DB --> W[FastAPI + Jinja2 SSR]
     W --> U[웹 · RSS · MCP]
-    W -. 서버 장애 .-> CF[Cloudflare Worker<br/>Pages 스냅샷]
 ```
 
 ### 요약 파이프라인
@@ -157,21 +154,7 @@ services/
   web/        화면용 데이터 (홈 · 릴리스 · 소식 · 종료 일정 · 주간 · 버전 비교 · sitemap)
 templates/    Jinja2 템플릿
 static/       CSS · JS · 이미지
-scripts/      Pages 스냅샷 생성
 ```
-
-<br>
-
-## 실행
-
-Docker Compose로 `app`과 `db`를 띄웁니다. `.env`에 DB 접속 정보와 `GEMINI_API_KEY` 등을 넣어야 합니다.
-
-```bash
-docker compose up -d --build
-docker compose logs -f app
-```
-
-운영은 `docker-compose.prod.yml`을 쓰고, `master`에 병합하면 GitHub Actions가 검사 후 서버에 배포합니다.
 
 <br>
 
