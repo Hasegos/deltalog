@@ -10,13 +10,14 @@
 <meta property="og:title" content="{{ seo_title }}">
 <meta property="og:description" content="{{ seo_desc }}">
 <meta property="og:url" content="{{ canonical_url(request) }}">
-<meta property="og:image" content="{{ site_url(request) }}/static/img/og.png">
+{% set og_url = site_url(request) ~ (og_path or "/static/img/og.png") %}
+<meta property="og:image" content="{{ og_url }}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{{ seo_title }}">
 <meta name="twitter:description" content="{{ seo_desc }}">
-<meta name="twitter:image" content="{{ site_url(request) }}/static/img/og.png">
+<meta name="twitter:image" content="{{ og_url }}">
 <link rel="alternate" type="application/rss+xml" title="Deltalog" href="/feed.xml">
 <link rel="icon" href="{{ asset('img/favicon.svg') }}" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
