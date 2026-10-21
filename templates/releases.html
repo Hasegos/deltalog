@@ -10,8 +10,8 @@
   <main>
     <section class="page">
       <nav class="bc" aria-label="경로"><a href="/">홈</a> › {% if slug %}<a href="/releases">릴리스</a> › {{ name }}{% else %}릴리스{% endif %}</nav>
-      <h1>{{ name ~ ' ' if name }}릴리스 목록</h1>
-      <p class="lead">릴리스를 누르면 그 릴리스의 변경 항목을 한국어 요약으로 봅니다.</p>
+      <h1>{% if name %}{{ name }} 업데이트 내역 · 릴리스 노트{% else %}릴리스 목록{% endif %}</h1>
+      <p class="lead">{% if label %}{{ label }}의 최근 릴리스와 변경 사항을 한국어로 요약해 모았습니다. 버전을 누르면 변경 항목을 중요한 것부터 봅니다.{% else %}릴리스를 누르면 그 릴리스의 변경 항목을 한국어 요약으로 봅니다.{% endif %}</p>
 
       {% for g in groups %}
       <div class="cg">
