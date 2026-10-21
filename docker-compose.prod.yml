@@ -8,6 +8,8 @@ services:
       POSTGRES_DB: ${POSTGRESQL_DATABASE}
       PGPORT: ${POSTGRESQL_PORT}
     command: ["postgres", "-p", "${POSTGRESQL_PORT}"]
+    ports:
+      - "127.0.0.1:${POSTGRESQL_PORT}:${POSTGRESQL_PORT}"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
