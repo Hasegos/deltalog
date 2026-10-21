@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Red
 from sqlalchemy.orm import Session
 
 from core.config import settings
+from core.constants.og import OG_CACHE_SEC
 from core.constants.news import NEWS_COMPANIES
 from core.templates import site_url, templates
 from crud import item_crud
@@ -17,7 +18,7 @@ from services.web.news_service import build_news, build_news_detail
 from services.web.page_service import build_tools, build_topics
 from services.web.status_service import build_status
 from services.web.weekly_service import build_weekly, parse_week
-from services.web import sitemap_service
+from services.web import og_service, sitemap_service
 from services.web.release_service import build_release, build_release_index
 
 page_router = APIRouter(include_in_schema=False)
@@ -167,6 +168,34 @@ def weekly_page(request: Request, week: str, db: Session = Depends(get_db)) -> H
     if values is None:
         raise HTTPException(status_code=404, detail="주간 요약을 찾을 수 없습니다")
     return templates.TemplateResponse(request, "weekly.html", values)
+
+
+def _og_response(card: dict | None) -> Response:
+    """OG 카드 값으로 PNG 응답을 만든다. 카드가 없으면 404."""
+    if card is None:
+        raise HTTPException(status_code=404, detail="이미지를 만들 수 없습니다")
+    return Response(og_service.render(card), media_type="image/png", headers={"Cache-Control": f"public, max-age={OG_CACHE_SEC}"})
+
+
+@page("/og/releases/{slug}/{key}.png")
+def og_release(slug: str, key: str, db: Session = Depends(get_db)) -> Response:
+    """릴리스 상세 페이지의 공유 이미지(OG)를 그린다. 그런 릴리스가 없으면 404."""
+    return _og_response(og_service.release_card(db, slug, key))
+
+
+@page("/og/news/{news_id}.png")
+def og_news(news_id: str, db: Session = Depends(get_db)) -> Response:
+    """소식 상세 페이지의 공유 이미지(OG)를 그린다. 그런 소식이 없거나 요약 전이면 404."""
+    card = og_service.news_card(db, int(news_id)) if news_id.isdigit() and len(news_id) < 10 else None
+    return _og_response(card)
+
+
+@page("/og/weekly/{week}.png")
+def og_weekly(week: str, db: Session = Depends(get_db)) -> Response:
+    """주간 요약 페이지의 공유 이미지(OG)를 그린다. 날짜가 월요일이 아니거나 그 주의 요약이 없으면 404."""
+    monday = parse_week(week)
+    card = og_service.weekly_card(db, monday) if monday and monday.isoformat() == week else None
+    return _og_response(card)
 
 
 @page("/subscribe", response_class=HTMLResponse)

@@ -127,6 +127,7 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "seo_title": f"{name} {version} 변경 사항 한국어 요약 · Deltalog",
         "seo_desc": description,
         "seo_type": "article",
+        "og_path": f"/og{path}.png",
         "noindex": not done,
         "jsonld": _json_ld(
             [

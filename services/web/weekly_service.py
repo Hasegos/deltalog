@@ -92,6 +92,7 @@ def build_weekly(db: Session, monday: date | None) -> dict | None:
     return {
         "digest": digest,
         "range": _range_label(digest.week_start),
+        "og_path": f"/og/weekly/{digest.week_start.isoformat()}.png",
         "chart": _chart(weekly_crud.category_counts(db, start, end)),
         "releases": [_tool(name, list(found.values())) for name, found in groups.items()],
         "news": news,

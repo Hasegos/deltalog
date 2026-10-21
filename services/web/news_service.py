@@ -115,6 +115,7 @@ def build_news_detail(db: Session, news_id: int, base: str, now: datetime | None
         "seo_title": f"{title} · {article.company} 소식 한국어 요약 · Deltalog",
         "seo_desc": f"{article.company} 공식 발표 한국어 요약. {description}".strip(),
         "seo_type": "article",
+        "og_path": f"/og/news/{article.id}.png",
         "jsonld": _json_ld(
             [
                 {
