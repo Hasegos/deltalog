@@ -322,14 +322,16 @@ def changes_page(
 
 @page("/robots.txt", response_class=PlainTextResponse)
 def robots(request: Request) -> PlainTextResponse:
-    """검색 로봇 안내문을 돌려준다. API는 막고 사이트맵 주소를 알린다.
+    """검색 로봇 안내문을 돌려준다. API와 쿼리가 붙은 주소(필터 · 검색 · 쪽 번호 조합)는 막고 사이트맵 주소를 알린다.
+
+    쿼리가 붙은 화면은 모두 `noindex`라 색인에 들어가지 않는데, 조합이 많아 로봇이 실제 페이지 대신 그쪽을 크롤링하느라 시간을 쓴다.
 
     Args:
         request: 현재 요청
     Returns:
         `robots.txt` 본문
     """
-    return PlainTextResponse(f"User-agent: *\nDisallow: /api/\n\nSitemap: {site_url(request)}/sitemap.xml\n")
+    return PlainTextResponse(f"User-agent: *\nDisallow: /api/\nDisallow: /*?\n\nSitemap: {site_url(request)}/sitemap.xml\n")
 
 
 @page("/feed.xml")
