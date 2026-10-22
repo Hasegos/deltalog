@@ -1,5 +1,6 @@
 # AI API 모델 가격 · 한도 원본. 사람이 공식 문서를 보고 고치고, 바뀐 내용은 `git diff data/models.toml`로 본다.
 # 확인하지 못한 값은 키를 지운다 (화면에 "미확인"으로 보인다). 추측해서 채우지 않는다.
+# 수록 기준 (Anthropic): 공식 가격 페이지의 현역(Active) · 폐기 예고(Deprecated) 모델만 넣고, 종료(Retired) 모델과 limited availability 모델(Mythos 계열)은 뺀다. OpenAI · Google은 아직 이 기준으로 대조하지 않았다.
 #
 # 필드
 #   provider          Anthropic / OpenAI / Google (종료 일정의 제공사 이름과 같다)
@@ -98,6 +99,57 @@ max_output_tokens = 128000
 note = "Claude 4.7 이후 모델은 새 토크나이저를 써서 같은 글에서 이전 모델보다 토큰이 약 30% 더 나옵니다."
 source_url = "https://platform.claude.com/docs/en/about-claude/pricing"
 spec_url = "https://platform.claude.com/docs/en/models/sonnet-5/overview"
+verified_at = 2026-10-22
+
+[[model]]
+provider = "Anthropic"
+id = "claude-fable-5"
+name = "Claude Fable 5"
+input_per_mtok = 10.0
+output_per_mtok = 50.0
+context_tokens = 1000000
+max_output_tokens = 128000
+note = "Claude 4.7 이후 모델은 새 토크나이저를 써서 같은 글에서 이전 모델보다 토큰이 약 30% 더 나옵니다."
+source_url = "https://platform.claude.com/docs/en/about-claude/pricing"
+spec_url = "https://platform.claude.com/docs/en/models/fable-5/overview"
+verified_at = 2026-10-22
+
+[[model]]
+provider = "Anthropic"
+id = "claude-opus-4-8"
+name = "Claude Opus 4.8"
+input_per_mtok = 5.0
+output_per_mtok = 25.0
+context_tokens = 1000000
+max_output_tokens = 128000
+note = "Claude 4.7 이후 모델은 새 토크나이저를 써서 같은 글에서 이전 모델보다 토큰이 약 30% 더 나옵니다."
+source_url = "https://platform.claude.com/docs/en/about-claude/pricing"
+spec_url = "https://platform.claude.com/docs/en/models/opus-4-8/overview"
+verified_at = 2026-10-22
+
+[[model]]
+provider = "Anthropic"
+id = "claude-opus-4-7"
+name = "Claude Opus 4.7"
+input_per_mtok = 5.0
+output_per_mtok = 25.0
+context_tokens = 1000000
+max_output_tokens = 128000
+note = "Claude 4.7 이후 모델은 새 토크나이저를 써서 같은 글에서 이전 모델보다 토큰이 약 30% 더 나옵니다."
+source_url = "https://platform.claude.com/docs/en/about-claude/pricing"
+spec_url = "https://platform.claude.com/docs/en/models/opus-4-7/overview"
+verified_at = 2026-10-22
+
+[[model]]
+provider = "Anthropic"
+id = "claude-opus-4-6"
+name = "Claude Opus 4.6"
+input_per_mtok = 5.0
+output_per_mtok = 25.0
+context_tokens = 1000000
+max_output_tokens = 128000
+source_url = "https://platform.claude.com/docs/en/about-claude/pricing"
+spec_url = "https://platform.claude.com/docs/en/models/opus-4-6/overview"
 verified_at = 2026-10-22
 
 [[model]]
