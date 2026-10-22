@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/models.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › <a href="/models">모델 가격</a> › {{ m.name }}</nav>
+      <h1>{{ m.name }} API 가격</h1>
+      <p class="lead">{{ m.provider }} · <code>{{ m.id }}</code></p>
+      {% if m.stale %}<p class="cf-err">가격을 확인한 지 {{ m.age }}일이 지났습니다. 결제 전에 공식 페이지에서 다시 확인하세요.</p>{% endif %}
+
+      <div class="md-wrap md-facts">
+        <table class="md-t">
+          <tbody>
+            <tr><th scope="row">입력 단가</th><td class="{{ 'md-na' if m.input_raw is none }}">{{ m.input }}{% if m.input_raw is not none %} <span class="md-pv">/ 100만 토큰</span>{% endif %}</td></tr>
+            <tr><th scope="row">출력 단가</th><td class="{{ 'md-na' if m.output_raw is none }}">{{ m.output }}{% if m.output_raw is not none %} <span class="md-pv">/ 100만 토큰</span>{% endif %}</td></tr>
+            <tr><th scope="row">컨텍스트 창</th><td class="{{ 'md-na' if m.context == '미확인' }}">{{ m.context }}</td></tr>
+            <tr><th scope="row">최대 출력</th><td class="{{ 'md-na' if m.max_output == '미확인' }}">{{ m.max_output }}</td></tr>
+            <tr><th scope="row">종료 예정</th><td>{% if first %}<b class="md-dd{{ ' soon' if first.soon }}">{{ first.badge }}</b> {{ first.date_label }}{% else %}<span class="md-na">수집한 공식 폐기 안내에 종료일 없음</span>{% endif %}</td></tr>
+            <tr><th scope="row">최종 확인</th><td>{{ m.verified }} · <a href="{{ m.source_url }}" target="_blank" rel="noopener">가격 출처 ↗</a>{% if m.spec_url %} · <a href="{{ m.spec_url }}" target="_blank" rel="noopener">한도 출처 ↗</a>{% endif %}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      {% if m.note %}
+      <div class="cg">
+        <h2>가격 조건</h2>
+        <p>{{ m.note }}</p>
+        <p class="cf-note">아래 계산기는 기본(표준) 단가만 씁니다.</p>
+      </div>
+      {% endif %}
+
+      <div class="cg">
+        <h2>종료 일정</h2>
+        {% if m.deadlines %}
+        <ul class="md-dls">
+          {% for d in m.deadlines %}
+          <li>
+            <p><b class="md-dd{{ ' soon' if d.soon }}">{{ d.badge }}</b> {{ d.date_label }} · {{ d.kind }}</p>
+            {% if not d.echo %}<p>{{ d.summary }}</p>{% endif %}
+            <p class="cf-note">{% if d.replacement %}대체: {% if d.replacement_href %}<a href="{{ d.replacement_href }}">{{ d.replacement }}</a>{% else %}<code>{{ d.replacement }}</code>{% endif %} · {% endif %}{% if d.announced %}폐기 공지 {{ d.announced }} · {% endif %}<a href="{{ d.url }}" target="_blank" rel="noopener">원문 보기 ↗</a></p>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="cf-note">Deltalog가 수집한 제공사의 공식 폐기 안내에는 이 모델의 종료일이 없습니다. 종료되지 않는다는 보장은 아니니 <a href="/deadlines">종료 일정</a>과 제공사 문서를 함께 확인하세요.</p>
+        {% endif %}
+      </div>
+
+      {% if m.priced %}
+      <div class="cg">
+        <h2>월 비용 계산</h2>
+        {% include "partials/cost_calc.html" %}
+        <p class="cf-note">여러 모델을 한꺼번에 비교하려면 <a href="/models/cost">월 비용 계산기</a>를 쓰세요.</p>
+      </div>
+      {% endif %}
+
+      {% if siblings %}
+      <div class="cg">
+        <h2>{{ m.provider }}의 다른 모델</h2>
+        <ul class="cl">
+          {% for s in siblings %}<li><a href="{{ s.href }}">{{ s.name }}</a> <span class="ct">입력 {{ s.input }} · 출력 {{ s.output }}</span></li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <p class="cf-note">가격은 사람이 공식 페이지를 보고 옮겨 적은 값이라 틀리거나 낡았을 수 있습니다. 결제 전에는 반드시 위의 공식 출처를 확인하세요. 틀린 값은 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ ('가격 오류: ' ~ m.name) | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+
+      <nav class="pn" aria-label="모델 목록"><a href="/models">← 모델 가격 전체 보기</a></nav>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>
