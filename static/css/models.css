@@ -1,0 +1,186 @@
+/* =============================
+  models.css — 모델 가격 비교, 모델 상세, 비용 계산기
+  ============================= */
+
+.md-h {
+  margin: 36px 0 10px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.md-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.md-t {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.md-t th,
+.md-t td {
+  padding: 11px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.md-t thead th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dim);
+  white-space: nowrap;
+  background: var(--bg);
+}
+
+.md-t tbody tr:last-child th,
+.md-t tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.md-t tbody tr:hover {
+  background: var(--hover);
+}
+
+.md-t .md-n {
+  text-align: right;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.md-na {
+  color: var(--dim);
+}
+
+.md-pv {
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.md-nt {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+.md-dd {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.md-dd.soon {
+  color: var(--c-security);
+}
+
+.md-old {
+  color: var(--c-security);
+}
+
+.md-facts .md-t th {
+  width: 8em;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.md-dls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.md-dls li {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.md-dls li + li {
+  margin-top: 10px;
+}
+
+.md-dls p {
+  margin: 0;
+}
+
+.md-dls p + p {
+  margin-top: 4px;
+}
+
+.md-calc {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 720px) {
+  .md-t thead {
+    display: none;
+  }
+
+  .md-t tbody tr {
+    display: block;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .md-t tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .md-t tbody td {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+    text-align: right;
+    border: 0;
+  }
+
+  .md-t tbody td::before {
+    content: attr(data-label);
+    flex: none;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--dim);
+    text-align: left;
+  }
+
+  .md-t tbody td > :not(.md-nt) {
+    min-width: 0;
+  }
+
+  .md-t tbody td[data-label="모델"] {
+    display: block;
+    padding-bottom: 6px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .md-t tbody td[data-label="모델"]::before {
+    display: none;
+  }
+
+  .md-facts .md-t th,
+  .md-facts .md-t td {
+    display: block;
+    width: auto;
+    padding: 0;
+    text-align: left;
+    border: 0;
+  }
+
+  .md-facts .md-t th {
+    font-size: 13px;
+    color: var(--dim);
+  }
+
+  .md-facts .md-t td {
+    margin-top: 2px;
+  }
+}
