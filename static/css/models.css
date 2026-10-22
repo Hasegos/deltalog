@@ -82,6 +82,15 @@
   color: var(--c-security);
 }
 
+.md-min {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.md-min.passed {
+  color: var(--c-security);
+}
+
 .md-facts .md-t th {
   width: 8em;
   font-weight: 600;

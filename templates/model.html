@@ -22,7 +22,7 @@
             <tr><th scope="row">출력 단가</th><td class="{{ 'md-na' if m.output_raw is none }}">{{ m.output }}{% if m.output_raw is not none %} <span class="md-pv">/ 100만 토큰</span>{% endif %}</td></tr>
             <tr><th scope="row">컨텍스트 창</th><td class="{{ 'md-na' if m.context == '미확인' }}">{{ m.context }}</td></tr>
             <tr><th scope="row">최대 출력</th><td class="{{ 'md-na' if m.max_output == '미확인' }}">{{ m.max_output }}</td></tr>
-            <tr><th scope="row">종료 예정</th><td>{% if first %}<b class="md-dd{{ ' soon' if first.soon }}">{{ first.badge }}</b> {{ first.date_label }}{% else %}<span class="md-na">수집한 공식 폐기 안내에 종료일 없음</span>{% endif %}</td></tr>
+            <tr><th scope="row">종료 예정</th><td>{% if first %}<b class="md-dd{{ ' soon' if first.soon }}">{{ first.badge }}</b> {{ first.date_label }}{% elif m.tentative %}{% set t = m.tentative %}{% include "partials/retire_floor.html" %}{% else %}<span class="md-na">수집한 공식 폐기 안내에 종료일 없음</span>{% endif %}</td></tr>
             <tr><th scope="row">최종 확인</th><td>{{ m.verified }} · <a href="{{ m.source_url }}" target="_blank" rel="noopener">가격 출처 ↗</a>{% if m.spec_url %} · <a href="{{ m.spec_url }}" target="_blank" rel="noopener">한도 출처 ↗</a>{% endif %}</td></tr>
           </tbody>
         </table>
@@ -48,6 +48,9 @@
           </li>
           {% endfor %}
         </ul>
+        {% elif m.tentative %}
+        <p>{% set t = m.tentative %}{% include "partials/retire_floor.html" %}</p>
+        <p class="cf-note">제공사가 확정한 종료 일정은 아직 없고, 위 날짜는 "이 날짜 이전에는 종료하지 않는다"는 잠정 안내입니다. 날짜가 지나면 언제든 종료가 공지될 수 있으니 <a href="/deadlines">종료 일정</a>을 함께 확인하세요.</p>
         {% else %}
         <p class="cf-note">Deltalog가 수집한 제공사의 공식 폐기 안내에는 이 모델의 종료일이 없습니다. 종료되지 않는다는 보장은 아니니 <a href="/deadlines">종료 일정</a>과 제공사 문서를 함께 확인하세요.</p>
         {% endif %}

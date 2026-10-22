@@ -5,7 +5,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from core.constants.deadline import DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS
+from core.constants.deadline import DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS, DEADLINE_SOURCES
 from core.constants.model import COST_DEFAULTS, MODEL_DATA_PATH, MODEL_ID_RE, MODEL_RESERVED_IDS, MODEL_SIBLINGS, MODEL_STALE_DAYS
 from core.constants.page import KST
 from crud import deadline_crud
@@ -14,6 +14,7 @@ from services.web.deadline_service import _row as deadline_row
 from services.web.release_service import _breadcrumb, _json_ld
 
 _cache: dict = {"mtime": None, "data": None}
+_RETIRE_URLS = {source["provider"]: source["url"] for source in DEADLINE_SOURCES}
 
 
 def _number(model_id: str, raw: dict, key: str, integer: bool = False) -> float | int | None:
@@ -86,6 +87,9 @@ def _parse(raw: dict) -> dict:
         aliases = item.get("aliases", [])
         if not isinstance(aliases, list) or not all(isinstance(a, str) and a for a in aliases):
             raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: aliases는 문자열 목록이어야 합니다")
+        floor = item.get("retire_not_before")
+        if floor is not None and type(floor) is not date:
+            raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: retire_not_before는 날짜(YYYY-MM-DD)여야 합니다 ({floor!r})")
         keys = sorted({model_id, name.lower(), *(a.lower() for a in aliases)}, key=len, reverse=True)
         models.append(
             {
@@ -100,6 +104,7 @@ def _parse(raw: dict) -> dict:
                 "source_url": _text(model_id, item, "source_url", https=True),
                 "spec_url": _text(model_id, item, "spec_url", https=True, required=False),
                 "verified": verified,
+                "retire_not_before": floor,
                 "pattern": re.compile(r"(?<![\w.\-])(?:" + "|".join(re.escape(k) for k in keys) + r")(?![\w.\-]|\s+[a-z])"),
             }
         )
@@ -165,11 +170,13 @@ def _present(model: dict, deadlines: list[Deadline], today: date) -> dict:
         deadlines: 종료 일정 목록
         today: 기준 날짜
     Returns:
-        화면 값. `deadlines`는 종료일 빠른 순이고 `next`는 아직 지나지 않은 가장 빠른 일정이다 (모두 지났으면 가장 최근 일정, 없으면 `None`)
+        화면 값. `deadlines`는 종료일 빠른 순이고 `next`는 아직 지나지 않은 가장 빠른 일정이다 (모두 지났으면 가장 최근 일정, 없으면 `None`).
+        `tentative`는 제공사가 "이 날짜 이전에는 종료하지 않는다"고만 밝힌 잠정 날짜(`retire_not_before`)이고 확정된 종료 일정이 아니다. 없으면 `None`
     """
     matched = sorted((d for d in deadlines if d.provider == model["provider"] and model["pattern"].search(d.name.lower())), key=lambda d: d.deadline)
     rows = [deadline_row(d, today) for d in matched]
     age = (today - model["verified"]).days
+    floor = model["retire_not_before"]
     return {
         "id": model["id"],
         "provider": model["provider"],
@@ -190,6 +197,7 @@ def _present(model: dict, deadlines: list[Deadline], today: date) -> dict:
         "priced": model["input"] is not None and model["output"] is not None,
         "deadlines": rows,
         "next": next((r for r in rows if not r["past"]), rows[-1] if rows else None),
+        "tentative": {"date": floor.isoformat(), "passed": floor <= today, "url": _RETIRE_URLS.get(model["provider"], model["source_url"])} if floor else None,
     }
 
 
