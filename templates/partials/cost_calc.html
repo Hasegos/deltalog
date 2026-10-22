@@ -1,0 +1,31 @@
+<form class="cf md-calc" id="cost-form" autocomplete="off" onsubmit="return false">
+  <label>요청 1건당 입력 토큰
+    <input type="number" name="in" min="0" step="any" inputmode="decimal" value="{{ calc.defaults.input_tokens }}">
+  </label>
+  <label>요청 1건당 출력 토큰
+    <input type="number" name="out" min="0" step="any" inputmode="decimal" value="{{ calc.defaults.output_tokens }}">
+  </label>
+  <label>월 요청 수
+    <input type="number" name="req" min="0" step="any" inputmode="decimal" value="{{ calc.defaults.requests }}">
+  </label>
+  <label>환율 (1달러 = 원)
+    <input type="number" name="fx" min="0" step="any" inputmode="decimal" value="{{ calc.fx }}">
+  </label>
+</form>
+<p class="cf-note">기본 환율 {{ calc.fx }}원은 {{ calc.fx_date }} <a href="{{ calc.fx_url }}" target="_blank" rel="noopener">{{ calc.fx_source }}</a> 값입니다. 실제 결제 환율과 카드 수수료는 다를 수 있으니 직접 고쳐 쓰세요. 계산은 이 브라우저 안에서만 하고 입력값을 서버로 보내지 않습니다.</p>
+<div class="md-wrap">
+  <table class="md-t md-res">
+    <thead><tr><th>모델</th><th class="md-n">월 비용 (USD)</th><th class="md-n">월 비용 (원)</th></tr></thead>
+    <tbody id="cost-rows">
+      {% for r in calc.rows %}
+      <tr>
+        <td data-label="모델"><a href="{{ r.href }}">{{ r.name }}</a> <span class="md-pv">{{ r.provider }}</span>{% if r.note %}<small class="md-nt">※ {{ r.note }}</small>{% endif %}</td>
+        <td class="md-n" data-label="월 비용 (USD)">${{ '{:,.2f}'.format(r.usd) }}</td>
+        <td class="md-n" data-label="월 비용 (원)">{{ '{:,.0f}'.format(r.krw) }}원</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script type="application/json" id="cost-data">{{ calc.data | tojson }}</script>
+<script src="{{ asset('js/cost.js') }}" defer></script>

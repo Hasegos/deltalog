@@ -14,6 +14,7 @@ from services.web.changes_service import build_changes
 from services.web.deadline_service import build_deadlines
 from services.web.feed_service import build_feed
 from services.web.home_service import build_home
+from services.web.model_service import build_cost, build_model_detail, build_models
 from services.web.news_service import build_news, build_news_detail
 from services.web.page_service import build_tools, build_topics
 from services.web.status_service import build_status
@@ -108,6 +109,50 @@ def news_detail_page(request: Request, news_id: str, db: Session = Depends(get_d
     if context is None:
         raise HTTPException(status_code=404, detail="소식을 찾을 수 없습니다")
     return templates.TemplateResponse(request, "news_item.html", context)
+
+
+@page("/models", response_class=HTMLResponse)
+def models_page(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+    """AI API 모델 가격 · 한도 · 종료 예정일 비교표 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+        db: 요청에 쓸 DB 세션
+    Returns:
+        렌더링한 모델 가격 페이지
+    """
+    return templates.TemplateResponse(request, "models.html", build_models(db, site_url(request)))
+
+
+@page("/models/cost", response_class=HTMLResponse)
+def cost_page(request: Request) -> HTMLResponse:
+    """모든 모델의 월 비용을 한 번에 계산하는 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        렌더링한 월 비용 계산기 페이지
+    """
+    return templates.TemplateResponse(request, "cost.html", build_cost(site_url(request)))
+
+
+@page("/models/{model_id}", response_class=HTMLResponse)
+def model_page(request: Request, model_id: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    """모델 하나의 가격 · 한도 · 종료일 상세 화면을 그린다.
+
+    Args:
+        request: 현재 요청
+        model_id: 모델 ID
+        db: 요청에 쓸 DB 세션
+    Returns:
+        모델 상세 페이지
+    Raises:
+        HTTPException: 그런 모델이 없을 때 (404)
+    """
+    context = build_model_detail(db, model_id, site_url(request))
+    if context is None:
+        raise HTTPException(status_code=404, detail="모델을 찾을 수 없습니다")
+    return templates.TemplateResponse(request, "model.html", context)
 
 
 @page("/deadlines", response_class=HTMLResponse)

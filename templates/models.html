@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/models.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › 모델 가격</nav>
+      <h1>AI API 모델 가격 비교</h1>
+      <p class="lead">Claude · GPT · Gemini API의 100만 토큰당 단가, 컨텍스트 크기, 종료 예정일을 한 표로 봅니다. 모든 값 옆에 공식 페이지를 확인한 날짜와 출처 링크가 있습니다.</p>
+      <p><a class="rd-btn" href="/models/cost">월 비용 계산기 →</a></p>
+
+      {% for g in groups %}
+      <h2 class="md-h" id="{{ g.slug }}">{{ g.provider }}</h2>
+      <div class="md-wrap">
+        <table class="md-t">
+          <thead>
+            <tr><th>모델</th><th class="md-n">입력 / 100만</th><th class="md-n">출력 / 100만</th><th class="md-n">컨텍스트</th><th class="md-n">최대 출력</th><th>종료 예정</th><th>확인일 · 출처</th></tr>
+          </thead>
+          <tbody>
+            {% for r in g.rows %}
+            <tr>
+              <td data-label="모델"><a href="{{ r.href }}">{{ r.name }}</a>{% if r.note %}<sup title="가격 조건이 있습니다">※</sup>{% endif %}</td>
+              <td class="md-n{{ ' md-na' if r.input_raw is none }}" data-label="입력 / 100만">{{ r.input }}</td>
+              <td class="md-n{{ ' md-na' if r.output_raw is none }}" data-label="출력 / 100만">{{ r.output }}</td>
+              <td class="md-n{{ ' md-na' if r.context == '미확인' }}" data-label="컨텍스트">{{ r.context }}</td>
+              <td class="md-n{{ ' md-na' if r.max_output == '미확인' }}" data-label="최대 출력">{{ r.max_output }}</td>
+              <td data-label="종료 예정">{% if r.deadlines %}<b class="md-dd{{ ' soon' if r.deadlines[0].soon }}">{{ r.deadlines[0].badge }}</b> {{ r.deadlines[0].date }}{% else %}<span class="md-na">—</span>{% endif %}</td>
+              <td data-label="확인일 · 출처"><a href="{{ r.source_url }}" target="_blank" rel="noopener">{{ r.verified }} ↗</a>{% if r.stale %} <span class="md-old" title="확인한 지 {{ r.age }}일이 지났습니다">⚠</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+
+      <p class="cf-note">※ 표시가 있는 모델은 구간 단가나 예고된 가격 변경이 있습니다. 모델 이름을 눌러 상세 페이지에서 확인하세요. 표의 단가는 각 제공사의 기본(표준) 단가이고 배치 · 캐시 할인은 반영하지 않았습니다.</p>
+      <p class="cf-note">종료 예정의 — 표시는 Deltalog가 수집한 <a href="/deadlines">공식 폐기 안내</a>에 이 모델의 종료일이 없다는 뜻입니다. 종료되지 않는다는 보장은 아닙니다. ⚠ 표시는 가격을 확인한 지 오래됐다는 뜻입니다.</p>
+      <p class="cf-note">가격은 사람이 공식 페이지를 보고 옮겨 적은 값이라 틀리거나 낡았을 수 있습니다. 결제 전에는 반드시 확인일 옆의 공식 페이지를 보세요. 틀린 값은 <a href="https://github.com/Hasegos/deltalog/issues/new?title={{ '가격 오류' | urlencode }}" target="_blank" rel="noopener">오류 제보</a>해 주세요.</p>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

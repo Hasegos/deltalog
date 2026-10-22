@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/page.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/models.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="page">
+      <nav class="bc" aria-label="경로"><a href="/">홈</a> › <a href="/models">모델 가격</a> › 월 비용 계산기</nav>
+      <h1>AI API 월 비용 계산기</h1>
+      <p class="lead">요청 한 건에 쓰는 입력 · 출력 토큰과 한 달 요청 수를 넣으면 {{ models_total }}개 모델의 월 비용을 싼 순서로 달러와 원화로 보여줍니다.</p>
+
+      {% include "partials/cost_calc.html" %}
+
+      <p class="cf-note">처음 보이는 값은 입력 {{ '{:,}'.format(calc.defaults.input_tokens) }}토큰 · 출력 {{ '{:,}'.format(calc.defaults.output_tokens) }}토큰 · 월 {{ '{:,}'.format(calc.defaults.requests) }}건 기준입니다. 가격이 비어 있는 모델은 계산에서 뺍니다.</p>
+      <p class="cf-note">기본(표준) 단가로만 계산합니다. 배치 · 캐시 할인, 프롬프트가 길 때의 구간 단가, 예고된 가격 변경은 반영하지 않으니 ※ 표시가 있는 모델은 <a href="/models">모델 가격</a> 상세 페이지의 가격 조건을 확인하세요. Claude 4.7 이후 모델은 토크나이저가 달라 같은 글에서도 토큰 수가 더 나옵니다.</p>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>
