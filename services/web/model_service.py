@@ -100,7 +100,7 @@ def _parse(raw: dict) -> dict:
                 "source_url": _text(model_id, item, "source_url", https=True),
                 "spec_url": _text(model_id, item, "spec_url", https=True, required=False),
                 "verified": verified,
-                "pattern": re.compile(r"(?<![\w.\-])(?:" + "|".join(re.escape(k) for k in keys) + r")(?![\w.\-])"),
+                "pattern": re.compile(r"(?<![\w.\-])(?:" + "|".join(re.escape(k) for k in keys) + r")(?![\w.\-]|\s+[a-z])"),
             }
         )
     return {
@@ -128,14 +128,26 @@ _load()
 
 
 def _money(value: float | None) -> str:
-    """100만 토큰당 달러 단가를 글로 만든다. 값이 없으면 `미확인`이다."""
+    """100만 토큰당 달러 단가를 글로 만든다. 값이 없으면 `미확인`이다.
+
+    Args:
+        value: USD 단가
+    Returns:
+        `$10.00`, `$0.125` 같은 글
+    """
     if value is None:
         return "미확인"
-    return f"${value:,.2f}" if round(value, 2) == value else f"${value:,.4f}".rstrip("0")
+    return f"${value:,.2f}" if round(value, 2) == value else f"${value:,.4f}".rstrip("0").rstrip(".")
 
 
 def _tokens(count: int | None) -> str:
-    """토큰 수를 글로 만든다 (`1M`, `200K`, `1,048,576`). 값이 없으면 `미확인`이다."""
+    """토큰 수를 글로 만든다. 값이 없으면 `미확인`이다.
+
+    Args:
+        count: 토큰 수
+    Returns:
+        `1M`, `200K`, `1,048,576` 같은 글
+    """
     if count is None:
         return "미확인"
     if count % 1_000_000 == 0:
@@ -153,9 +165,10 @@ def _present(model: dict, deadlines: list[Deadline], today: date) -> dict:
         deadlines: 종료 일정 목록
         today: 기준 날짜
     Returns:
-        화면 값. `deadlines`는 종료일 빠른 순이다
+        화면 값. `deadlines`는 종료일 빠른 순이고 `next`는 아직 지나지 않은 가장 빠른 일정이다 (모두 지났으면 가장 최근 일정, 없으면 `None`)
     """
     matched = sorted((d for d in deadlines if d.provider == model["provider"] and model["pattern"].search(d.name.lower())), key=lambda d: d.deadline)
+    rows = [deadline_row(d, today) for d in matched]
     age = (today - model["verified"]).days
     return {
         "id": model["id"],
@@ -175,12 +188,20 @@ def _present(model: dict, deadlines: list[Deadline], today: date) -> dict:
         "age": age,
         "stale": age > MODEL_STALE_DAYS,
         "priced": model["input"] is not None and model["output"] is not None,
-        "deadlines": [deadline_row(d, today) for d in matched],
+        "deadlines": rows,
+        "next": next((r for r in rows if not r["past"]), rows[-1] if rows else None),
     }
 
 
 def _deadlines(db: Session, today: date) -> list[Deadline]:
-    """종료 일정 화면과 같은 기간(최근 종료 `DEADLINE_PAST_DAYS`일 전부터)의 일정을 돌려준다."""
+    """종료 일정 화면과 같은 기간(최근 종료 `DEADLINE_PAST_DAYS`일 전부터)의 일정을 돌려준다.
+
+    Args:
+        db: DB 세션
+        today: 기준 날짜
+    Returns:
+        종료일 빠른 순 일정
+    """
     return deadline_crud.list_since(db, today - timedelta(days=DEADLINE_PAST_DAYS))
 
 
@@ -190,14 +211,14 @@ def _cost_rows(models: list[dict]) -> list[dict]:
     Args:
         models: `_present` 결과 목록
     Returns:
-        `{"id", "name", "href", "provider", "usd", "note"}` 목록. 원화는 템플릿이 환율을 곱해 만든다
+        `{"id", "name", "href", "provider", "usd", "note", "verified", "source_url"}` 목록. 원화는 `_calc`가 환율을 곱해 만든다
     """
     rows = []
     for m in models:
         if not m["priced"]:
             continue
         per_request = (COST_DEFAULTS["input_tokens"] * m["input_raw"] + COST_DEFAULTS["output_tokens"] * m["output_raw"]) / 1_000_000
-        rows.append({"id": m["id"], "name": m["name"], "href": m["href"], "provider": m["provider"], "usd": per_request * COST_DEFAULTS["requests"], "note": m["note"]})
+        rows.append({"id": m["id"], "name": m["name"], "href": m["href"], "provider": m["provider"], "usd": per_request * COST_DEFAULTS["requests"], "note": m["note"], "verified": m["verified"], "source_url": m["source_url"]})
     return sorted(rows, key=lambda r: (r["usd"], r["name"]))
 
 
@@ -222,13 +243,19 @@ def _calc(models: list[dict], meta: dict) -> dict:
         "rows": rows,
         "data": {
             "fx": meta["rate"],
-            "models": [{"id": m["id"], "name": m["name"], "href": m["href"], "provider": m["provider"], "in": m["input_raw"], "out": m["output_raw"], "note": m["note"]} for m in models if m["priced"]],
+            "models": [{"id": m["id"], "name": m["name"], "href": m["href"], "provider": m["provider"], "in": m["input_raw"], "out": m["output_raw"], "note": m["note"], "verified": m["verified"], "source": m["source_url"]} for m in models if m["priced"]],
         },
     }
 
 
 def _grouped(models: list[dict]) -> list[dict]:
-    """모델을 제공사별로 묶는다. 제공사 안에서는 출력 단가가 높은 순이고 가격이 없는 모델은 맨 뒤다."""
+    """모델을 제공사별로 묶는다. 제공사 안에서는 출력 단가가 높은 순이고 가격이 없는 모델은 맨 뒤다.
+
+    Args:
+        models: `_present` 결과 목록
+    Returns:
+        `{"provider", "slug", "rows", "sources"}` 목록. 모델이 없는 제공사는 뺀다
+    """
     groups = []
     for provider in DEADLINE_PROVIDERS:
         rows = sorted((m for m in models if m["provider"] == provider), key=lambda m: (m["output_raw"] is None, -(m["output_raw"] or 0), m["name"]))
@@ -271,7 +298,7 @@ def build_models(db: Session, base: str, today: date | None = None) -> dict:
                     "isPartOf": {"@type": "WebSite", "name": "Deltalog", "url": base},
                     "mainEntity": {
                         "@type": "ItemList",
-                        "itemListElement": [{"@type": "ListItem", "position": i, "name": m["name"], "url": f"{base}{m['href']}"} for i, m in enumerate(models, 1)],
+                        "itemListElement": [{"@type": "ListItem", "position": i, "name": m["name"], "url": f"{base}{m['href']}"} for i, m in enumerate((x for x in models if x["priced"]), 1)],
                     },
                 },
                 _breadcrumb(base, [("모델 가격", "/models")]),
@@ -341,7 +368,7 @@ def build_model_detail(db: Session, model_id: str, base: str, today: date | None
     for row in model["deadlines"]:
         target = next((m for m in data["models"] if m["provider"] == raw["provider"] and m["id"] != model_id and m["pattern"].search(row["replacement"].lower())), None)
         row["replacement_href"] = f"/models/{target['id']}" if target and row["replacement"] else ""
-    first = model["deadlines"][0] if model["deadlines"] else None
+    first = model["next"]
     facts = [f"입력 {model['input']} · 출력 {model['output']} (100만 토큰당)"] if model["priced"] else []
     if model["context"] != "미확인":
         facts.append(f"컨텍스트 {model['context']}")

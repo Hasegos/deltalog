@@ -45,6 +45,15 @@
       provider.className = "md-pv";
       provider.textContent = " " + r.m.provider;
       name.appendChild(provider);
+      var checked = document.createElement("small");
+      checked.className = "md-nt";
+      var source = document.createElement("a");
+      source.href = r.m.source;
+      source.target = "_blank";
+      source.rel = "noopener";
+      source.textContent = "가격 확인 " + r.m.verified + " ↗";
+      checked.appendChild(source);
+      name.appendChild(checked);
       if (r.m.note) {
         var note = document.createElement("small");
         note.className = "md-nt";

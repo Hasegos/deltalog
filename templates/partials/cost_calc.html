@@ -19,7 +19,7 @@
     <tbody id="cost-rows">
       {% for r in calc.rows %}
       <tr>
-        <td data-label="모델"><a href="{{ r.href }}">{{ r.name }}</a> <span class="md-pv">{{ r.provider }}</span>{% if r.note %}<small class="md-nt">※ {{ r.note }}</small>{% endif %}</td>
+        <td data-label="모델"><a href="{{ r.href }}">{{ r.name }}</a> <span class="md-pv">{{ r.provider }}</span><small class="md-nt"><a href="{{ r.source_url }}" target="_blank" rel="noopener">가격 확인 {{ r.verified }} ↗</a></small>{% if r.note %}<small class="md-nt">※ {{ r.note }}</small>{% endif %}</td>
         <td class="md-n" data-label="월 비용 (USD)">${{ '{:,.2f}'.format(r.usd) }}</td>
         <td class="md-n" data-label="월 비용 (원)">{{ '{:,.0f}'.format(r.krw) }}원</td>
       </tr>
