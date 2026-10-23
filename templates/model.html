@@ -82,7 +82,7 @@
         <ul class="md-ed">{% for s in editorial.notes %}<li>{{ s }}</li>{% endfor %}</ul>
       </div>
       {% endif %}
-      <p class="cf-note">Deltalog가 공식 문서를 근거로 쓰고 사람이 검수한 내용입니다 (검수 {{ editorial.reviewed_at }}). 근거:
+      <p class="cf-note">Deltalog가 공식 문서를 근거로 쓰고 문장마다 근거를 다시 대조해 검수한 내용입니다 (검수 {{ editorial.reviewed_at }}). 근거:
         {% for u in editorial.evidence %}<a href="{{ u }}" target="_blank" rel="noopener">출처 {{ loop.index }} ↗</a>{% if not loop.last %} · {% endif %}{% endfor %}
       </p>
       {% endif %}
