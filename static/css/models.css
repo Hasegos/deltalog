@@ -82,6 +82,40 @@
   color: var(--c-security);
 }
 
+.md-tf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.md-tf input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.md-ed {
+  margin: 8px 0 0;
+  padding-left: 1.3em;
+  line-height: 1.7;
+}
+
+.md-ed li {
+  margin: 8px 0;
+}
+
+.md-min {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.md-min.passed {
+  color: var(--c-security);
+}
+
 .md-facts .md-t th {
   width: 8em;
   font-weight: 600;
