@@ -17,6 +17,7 @@ from core.logger import purge_old_logs, setup_logging
 from core.middleware import access_log, api_headers, metrics_guard, security_headers, trailing_slash
 from db.init_db import init_db
 from services.collector.poller_service import poll_all, poll_news
+from services.collector.price_check_service import check_prices_job
 from services.llm.deadline_llm_service import refresh_deadlines_job
 from services.llm.llm_service import requeue_failed_job, summarize_job
 from services.llm.news_llm_service import summarize_news_job
@@ -86,6 +87,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             max_instances=1,
             coalesce=True,
         )
+    scheduler.add_job(
+        check_prices_job,
+        "interval",
+        minutes=settings.PRICE_CHECK_INTERVAL_MIN,
+        next_run_time=datetime.now() + timedelta(seconds=270),
+        max_instances=1,
+        coalesce=True,
+    )
     scheduler.add_job(purge_old_logs, "cron", hour=3, minute=0, next_run_time=datetime.now())
     # 서버가 04:00에 꺼져 있으면 크론이 지나가 버리므로, 켜질 때도 한 번 돌린다(시도 횟수가 차면 되돌리지 않으니 반복 재시작에도 무한히 다시 하지 않는다)
     scheduler.add_job(requeue_failed_job, "cron", hour=4, minute=0, next_run_time=datetime.now() + timedelta(seconds=15))
