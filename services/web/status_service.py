@@ -6,12 +6,25 @@ from core.config import settings
 from core.constants.page import KST
 from core.constants.status import ALERT_AFTER_FAILURES, STALE_FACTOR, STATUS_GROUPS
 from crud import feed_status_crud, item_crud, news_crud
+from services.collector import price_check_service
 from services.web.home_service import _ago
 
 
 def _interval(group: str) -> int:
     """묶음의 정상 수집 주기(분)를 돌려준다."""
     return {"release": settings.POLL_INTERVAL_MIN, "news": settings.NEWS_POLL_INTERVAL_MIN, "deadline": settings.DEADLINE_POLL_INTERVAL_MIN}.get(group, 60)
+
+
+def _price(now: datetime) -> dict | None:
+    """가격 자동 대조의 마지막 결과를 화면 값으로 만든다. 아직 한 번도 돌지 않았으면 `None`이다."""
+    last = price_check_service.latest()
+    if last["checked_at"] is None:
+        return None
+    rows = [
+        {"provider": provider, "checked": r["checked"], "error": r["error"], "issues": r["items"], "state": "error" if r["error"] else "stale" if r["items"] else "ok"}
+        for provider, r in last["providers"].items()
+    ]
+    return {"checked": _ago(last["checked_at"], now), "interval": settings.PRICE_CHECK_INTERVAL_MIN, "rows": rows, "bad": sum(r["state"] != "ok" for r in rows)}
 
 
 def build_status(db: Session, now: datetime | None = None) -> dict:
@@ -50,6 +63,7 @@ def build_status(db: Session, now: datetime | None = None) -> dict:
         )
     return {
         "groups": [{"title": STATUS_GROUPS[key], "interval": _interval(key), "rows": rows} for key, rows in groups.items() if rows],
+        "price": _price(now),
         "bad": bad,
         "pending_items": item_crud.count_pending_items(db),
         "pending_news": news_crud.count_pending(db),

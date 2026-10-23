@@ -63,6 +63,15 @@
   color: var(--c-breaking);
 }
 
+.st-p {
+  padding-left: 76px;
+  background: var(--bg);
+}
+
+.st-p code {
+  overflow-wrap: anywhere;
+}
+
 .st-ok > summary {
   padding: 12px 18px;
   font-family: var(--mono);
