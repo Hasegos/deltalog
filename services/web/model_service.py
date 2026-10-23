@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from core.constants.deadline import DEADLINE_PAST_DAYS, DEADLINE_PROVIDERS, DEADLINE_SOURCES
-from core.constants.model import COST_DEFAULTS, MODEL_DATA_PATH, MODEL_ID_RE, MODEL_RESERVED_IDS, MODEL_SIBLINGS, MODEL_STALE_DAYS
+from core.constants.model import COST_DEFAULTS, EDITORIAL_KEYS, MODEL_DATA_PATH, MODEL_ID_RE, MODEL_RESERVED_IDS, MODEL_SIBLINGS, MODEL_STALE_DAYS
 from core.constants.page import KST
 from crud import deadline_crud
 from models.deadline_model import Deadline
@@ -59,6 +59,52 @@ def _text(model_id: str, raw: dict, key: str, https: bool = False, required: boo
     return value.strip()
 
 
+def _strings(model_id: str, raw: dict, key: str, https: bool = False) -> list[str]:
+    """모델 한 줄의 문자열 목록 필드를 읽는다. 키가 없으면 빈 목록이다.
+
+    Args:
+        model_id: 오류 문구에 쓸 모델 ID
+        raw: TOML의 `[[model]]` 한 줄
+        key: 필드 이름
+        https: 모든 값이 `https://`로 시작해야 하면 `True`
+    Returns:
+        앞뒤 공백을 뗀 문자열 목록
+    Raises:
+        ValueError: 목록이 아니거나, 빈 문자열이 있거나, 같은 값이 겹치거나, `https://`가 아닐 때
+    """
+    value = raw.get(key, [])
+    if not isinstance(value, list) or not all(isinstance(v, str) and v.strip() and (not https or v.startswith("https://")) for v in value):
+        raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: {key}는 비어 있지 않은 문자열 목록이어야 합니다")
+    items = [v.strip() for v in value]
+    if len(set(items)) != len(items):
+        raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: {key}에 같은 값이 겹칩니다")
+    return items
+
+
+def _parse_editorial(model_id: str, item: dict) -> tuple[dict | None, list[str]]:
+    """모델 한 줄의 편집 콘텐츠(`use_when` 등)를 검증한다. 검수(`reviewed = true`)를 마친 모델만 화면에 쓸 값을 돌려주고, 초안은 검증만 하고 버린다.
+
+    Args:
+        model_id: 오류 문구에 쓸 모델 ID
+        item: TOML의 `[[model]]` 한 줄
+    Returns:
+        `(화면에 쓸 편집 콘텐츠 또는 None, compare_with 목록)`
+    Raises:
+        ValueError: 형식이 틀렸거나, 검수를 마쳤는데 검수일 · 근거 링크 · 본문이 없을 때
+    """
+    reviewed, reviewed_at = item.get("reviewed", False), item.get("reviewed_at")
+    if not isinstance(reviewed, bool) or (reviewed_at is not None and type(reviewed_at) is not date):
+        raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: reviewed(true/false)나 reviewed_at(날짜)이 올바르지 않습니다")
+    body = {key: _strings(model_id, item, key) for key in EDITORIAL_KEYS}
+    compare = _strings(model_id, item, "compare_with")
+    evidence = _strings(model_id, item, "evidence_urls", https=True)
+    if reviewed and (reviewed_at is None or not evidence or not any(body.values())):
+        raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: reviewed = true면 reviewed_at, evidence_urls, 본문(use_when · avoid_when · migration · notes 중 하나 이상)이 필요합니다")
+    if not reviewed:
+        return None, compare
+    return {**body, "compare": compare, "evidence": evidence, "reviewed_at": reviewed_at}, compare
+
+
 def _parse(raw: dict) -> dict:
     """TOML에서 읽은 값을 검증해 서비스가 쓰는 모양으로 바꾼다. 종료 일정과 이름을 맞출 정규식도 만든다.
 
@@ -73,7 +119,7 @@ def _parse(raw: dict) -> dict:
     rate, rate_day = meta.get("usd_krw"), meta.get("usd_krw_date")
     if isinstance(rate, bool) or not isinstance(rate, (int, float)) or rate <= 0 or not isinstance(rate_day, date):
         raise ValueError(f"{MODEL_DATA_PATH}: [meta]에 usd_krw(양수)와 usd_krw_date(날짜)가 필요합니다")
-    models, seen = [], set()
+    models, seen, compares, owners = [], set(), {}, {}
     for item in raw.get("model", []):
         model_id = str(item.get("id", ""))
         if not re.fullmatch(MODEL_ID_RE, model_id) or model_id in MODEL_RESERVED_IDS or model_id in seen:
@@ -90,6 +136,12 @@ def _parse(raw: dict) -> dict:
         floor = item.get("retire_not_before")
         if floor is not None and type(floor) is not date:
             raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: retire_not_before는 날짜(YYYY-MM-DD)여야 합니다 ({floor!r})")
+        editorial, compare = _parse_editorial(model_id, item)
+        compares[model_id] = compare
+        for key in EDITORIAL_KEYS:
+            for sentence in _strings(model_id, item, key):
+                if owners.setdefault(sentence, model_id) != model_id:
+                    raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: {key}의 문장이 {owners[sentence]}와 같습니다. 모델마다 다른 내용을 써야 합니다 ({sentence[:30]!r})")
         keys = sorted({model_id, name.lower(), *(a.lower() for a in aliases)}, key=len, reverse=True)
         models.append(
             {
@@ -105,9 +157,13 @@ def _parse(raw: dict) -> dict:
                 "spec_url": _text(model_id, item, "spec_url", https=True, required=False),
                 "verified": verified,
                 "retire_not_before": floor,
+                "editorial": editorial,
                 "pattern": re.compile(r"(?<![\w.\-])(?:" + "|".join(re.escape(k) for k in keys) + r")(?![\w.\-]|\s+[a-z])"),
             }
         )
+    for model_id, compare in compares.items():
+        if model_id in compare or any(c not in seen for c in compare):
+            raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: compare_with에 없는 모델이거나 자기 자신이 있습니다 ({compare})")
     return {
         "meta": {"rate": float(rate), "date": rate_day, "source": _text("[meta]", meta, "usd_krw_source"), "url": _text("[meta]", meta, "usd_krw_url", https=True)},
         "models": models,
@@ -355,7 +411,7 @@ def build_cost(base: str, today: date | None = None) -> dict:
 
 
 def build_model_detail(db: Session, model_id: str, base: str, today: date | None = None) -> dict | None:
-    """모델 상세 화면에 필요한 값을 만든다. 가격이 비어 있는 모델은 `noindex`다.
+    """모델 상세 화면에 필요한 값을 만든다. 가격이 비어 있는 모델은 `noindex`다. 검수를 마친(`reviewed = true`) 모델만 `editorial`에 편집 콘텐츠가 있고, 아니면 `None`이다.
 
     Args:
         db: DB 세션
@@ -377,7 +433,11 @@ def build_model_detail(db: Session, model_id: str, base: str, today: date | None
         target = next((m for m in data["models"] if m["provider"] == raw["provider"] and m["id"] != model_id and m["pattern"].search(row["replacement"].lower())), None)
         row["replacement_href"] = f"/models/{target['id']}" if target and row["replacement"] else ""
     first = model["next"]
-    facts = [f"입력 {model['input']} · 출력 {model['output']} (100만 토큰당)"] if model["priced"] else []
+    editorial = None
+    if raw["editorial"]:
+        by_id = {m["id"]: m for m in models}
+        editorial = {**raw["editorial"], "reviewed_at": raw["editorial"]["reviewed_at"].isoformat(), "compare": [by_id[c] for c in raw["editorial"]["compare"]]}
+    facts =[f"입력 {model['input']} · 출력 {model['output']} (100만 토큰당)"] if model["priced"] else []
     if model["context"] != "미확인":
         facts.append(f"컨텍스트 {model['context']}")
     if model["max_output"] != "미확인":
@@ -390,6 +450,7 @@ def build_model_detail(db: Session, model_id: str, base: str, today: date | None
     return {
         "m": model,
         "first": first,
+        "editorial": editorial,
         "siblings": siblings,
         "calc": _calc([model], data["meta"]),
         "noindex": not model["priced"],

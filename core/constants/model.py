@@ -6,6 +6,7 @@ MODEL_ID_RE = r"[a-z0-9][a-z0-9.\-]*"
 MODEL_RESERVED_IDS = ("cost",)
 MODEL_STALE_DAYS = 90
 MODEL_SIBLINGS = 6
+EDITORIAL_KEYS = ("use_when", "avoid_when", "migration", "notes")
 
 
 # ──────────────────────────────────────

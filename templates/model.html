@@ -36,6 +36,57 @@
       </div>
       {% endif %}
 
+      {% if editorial %}
+      {% if editorial.use_when %}
+      <div class="cg">
+        <h2>이럴 때 쓴다</h2>
+        <ul class="md-ed">{% for s in editorial.use_when %}<li>{{ s }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      {% if editorial.avoid_when %}
+      <div class="cg">
+        <h2>이럴 때 피한다</h2>
+        <ul class="md-ed">{% for s in editorial.avoid_when %}<li>{{ s }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      {% if editorial.compare %}
+      <div class="cg">
+        <h2>비교할 모델</h2>
+        <div class="md-wrap">
+          <table class="md-t">
+            <thead><tr><th>모델</th><th class="md-n">입력 / 100만</th><th class="md-n">출력 / 100만</th><th class="md-n">컨텍스트</th><th>종료 예정</th></tr></thead>
+            <tbody>
+              {% for c in editorial.compare %}
+              <tr>
+                <td data-label="모델"><a href="{{ c.href }}">{{ c.name }}</a></td>
+                <td class="md-n" data-label="입력 / 100만">{{ c.input }}</td>
+                <td class="md-n" data-label="출력 / 100만">{{ c.output }}</td>
+                <td class="md-n" data-label="컨텍스트">{{ c.context }}</td>
+                <td data-label="종료 예정">{% if c.next %}<b class="md-dd{{ ' soon' if c.next.soon }}">{{ c.next.badge }}</b> {{ c.next.date }}{% elif c.tentative %}{% set t = c.tentative %}{% include "partials/retire_floor.html" %}{% else %}<span class="md-na">—</span>{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      {% if editorial.migration %}
+      <div class="cg">
+        <h2>이전할 때 주의점</h2>
+        <ul class="md-ed">{% for s in editorial.migration %}<li>{{ s }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      {% if editorial.notes %}
+      <div class="cg">
+        <h2>메모</h2>
+        <ul class="md-ed">{% for s in editorial.notes %}<li>{{ s }}</li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <p class="cf-note">Deltalog가 공식 문서를 근거로 쓰고 사람이 검수한 내용입니다 (검수 {{ editorial.reviewed_at }}). 근거:
+        {% for u in editorial.evidence %}<a href="{{ u }}" target="_blank" rel="noopener">출처 {{ loop.index }} ↗</a>{% if not loop.last %} · {% endif %}{% endfor %}
+      </p>
+      {% endif %}
+
       <div class="cg">
         <h2>종료 일정</h2>
         {% if m.deadlines %}
