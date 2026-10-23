@@ -6,7 +6,9 @@ import httpx
 from core.config import settings
 from core.constants.model import PRICE_DOCS, PRICE_FORMAT_MISS_RATIO, PRICE_SNIPPET_CHARS
 from core.constants.page import KST
+from core.constants.status import ALERT_AFTER_FAILURES
 from core.logger import get_logger
+from services.collector.status_service import notify
 from services.web.model_service import _load
 
 logger = get_logger("price_check")
@@ -123,8 +125,29 @@ def check(provider: str, text: str, models: list[dict]) -> dict:
     return {"checked": len(models), "items": items, "format": False}
 
 
+def _alert_mismatch(provider: str, known: frozenset, result: dict) -> frozenset:
+    """어긋난 모델 집합이 지난 대조와 달라졌을 때만 알린다(6시간마다 같은 알림이 반복되지 않게). 서버를 다시 켜면 `known`이 비어 어긋남이 남아 있으면 한 번 다시 알린다.
+
+    Args:
+        provider: 제공사
+        known: 지난 대조에서 어긋난 항목 이름들
+        result: 이번 `check` 결과
+    Returns:
+        이번에 어긋난 항목 이름들
+    """
+    names = frozenset(item["name"] for item in result["items"])
+    if names == known:
+        return names
+    if names:
+        lines = "\n".join(f"- {item['name']}: {item['problem']}" for item in result["items"][:10])
+        notify(f"[Deltalog] {provider} 모델 가격이 공식 가격 페이지와 다릅니다. 공식 페이지를 보고 data/models.toml을 고쳐야 합니다.\n{lines}")
+    else:
+        notify(f"[Deltalog] {provider} 모델 가격이 공식 가격 페이지와 다시 같아졌습니다.")
+    return names
+
+
 def check_prices_job() -> None:
-    """`data/models.toml`의 단가를 공식 가격 페이지와 대조해 결과를 메모리에 둔다. 어긋나도 TOML은 고치지 않는다. 사람이 공식 페이지를 보고 고친다."""
+    """`data/models.toml`의 단가를 공식 가격 페이지와 대조해 결과를 메모리에 두고, 어긋남이 생기거나 풀릴 때, 가격 페이지를 `ALERT_AFTER_FAILURES`번 연속 못 받거나 다시 받을 때 알린다. 어긋나도 TOML은 고치지 않는다. 사람이 공식 페이지를 보고 고친다."""
     try:
         models = _load()["models"]
     except Exception:
@@ -133,14 +156,21 @@ def check_prices_job() -> None:
     providers = {}
     for provider, doc in PRICE_DOCS.items():
         priced = [m for m in models if m["provider"] == provider and m["input"] is not None and m["output"] is not None]
+        before = _state["providers"].get(provider, {})
+        known, fails = before.get("known", frozenset()), before.get("fails", 0)
         try:
             response = httpx.get(doc["url"], headers={"User-Agent": settings.COLLECTOR_USER_AGENT}, timeout=settings.FEED_TIMEOUT_SEC, follow_redirects=True)
             response.raise_for_status()
         except httpx.HTTPError as exc:
             logger.warning("가격 페이지 요청 실패: %s (%s)", provider, exc.__class__.__name__)
-            providers[provider] = {"checked": 0, "items": [], "format": False, "error": f"가격 페이지를 받지 못했습니다 ({exc.__class__.__name__})"}
+            providers[provider] = {"checked": 0, "items": [], "format": False, "error": f"가격 페이지를 받지 못했습니다 ({exc.__class__.__name__})", "known": known, "fails": fails + 1}
+            if fails + 1 == ALERT_AFTER_FAILURES:
+                notify(f"[Deltalog] {provider} 공식 가격 페이지를 {ALERT_AFTER_FAILURES}번 연속 받지 못했습니다 ({exc.__class__.__name__}). 가격 대조가 멈춰 있습니다.")
             continue
-        providers[provider] = {**check(provider, response.text, priced), "error": None}
+        if fails >= ALERT_AFTER_FAILURES:
+            notify(f"[Deltalog] {provider} 공식 가격 페이지를 다시 받았습니다.")
+        result = check(provider, response.text, priced)
+        providers[provider] = {**result, "error": None, "known": _alert_mismatch(provider, known, result), "fails": 0}
         logger.info("가격 대조: %s 모델 %d개, 어긋남 %d건", provider, len(priced), len(providers[provider]["items"]))
     _state.update(checked_at=datetime.now(KST), providers=providers)
 
