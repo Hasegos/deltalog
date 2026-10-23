@@ -136,6 +136,12 @@ def _parse(raw: dict) -> dict:
         floor = item.get("retire_not_before")
         if floor is not None and type(floor) is not date:
             raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: retire_not_before는 날짜(YYYY-MM-DD)여야 합니다 ({floor!r})")
+        factor = item.get("tokenizer_factor", 1.0)
+        if isinstance(factor, bool) or not isinstance(factor, (int, float)) or factor <= 0:
+            raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: tokenizer_factor는 0보다 큰 숫자여야 합니다 ({factor!r})")
+        factor_source = _text(model_id, item, "tokenizer_source", https=True, required=False)
+        if factor != 1 and not factor_source:
+            raise ValueError(f"{MODEL_DATA_PATH}: {model_id}: tokenizer_factor가 1.0이 아니면 tokenizer_source(공식 출처)가 필요합니다")
         editorial, compare = _parse_editorial(model_id, item)
         compares[model_id] = compare
         for key in EDITORIAL_KEYS:
@@ -157,6 +163,8 @@ def _parse(raw: dict) -> dict:
                 "spec_url": _text(model_id, item, "spec_url", https=True, required=False),
                 "verified": verified,
                 "retire_not_before": floor,
+                "tokenizer_factor": float(factor),
+                "tokenizer_source": factor_source,
                 "editorial": editorial,
                 "pattern": re.compile(r"(?<![\w.\-])(?:" + "|".join(re.escape(k) for k in keys) + r")(?![\w.\-]|\s+[a-z])"),
             }
@@ -227,7 +235,8 @@ def _present(model: dict, deadlines: list[Deadline], today: date) -> dict:
         today: 기준 날짜
     Returns:
         화면 값. `deadlines`는 종료일 빠른 순이고 `next`는 아직 지나지 않은 가장 빠른 일정이다 (모두 지났으면 가장 최근 일정, 없으면 `None`).
-        `tentative`는 제공사가 "이 날짜 이전에는 종료하지 않는다"고만 밝힌 잠정 날짜(`retire_not_before`)이고 확정된 종료 일정이 아니다. 없으면 `None`
+        `tentative`는 제공사가 "이 날짜 이전에는 종료하지 않는다"고만 밝힌 잠정 날짜(`retire_not_before`)이고 확정된 종료 일정이 아니다. 없으면 `None`.
+        `tokenizer`는 같은 글이 이전 토크나이저보다 더 많은 토큰으로 세어지는 모델의 `{"factor", "source"}`이고, 해당하지 않으면 `None`
     """
     matched = sorted((d for d in deadlines if d.provider == model["provider"] and model["pattern"].search(d.name.lower())), key=lambda d: d.deadline)
     rows = [deadline_row(d, today) for d in matched]
@@ -254,6 +263,7 @@ def _present(model: dict, deadlines: list[Deadline], today: date) -> dict:
         "deadlines": rows,
         "next": next((r for r in rows if not r["past"]), rows[-1] if rows else None),
         "tentative": {"date": floor.isoformat(), "passed": floor <= today, "url": _RETIRE_URLS.get(model["provider"], model["source_url"])} if floor else None,
+        "tokenizer": {"factor": model["tokenizer_factor"], "source": model["tokenizer_source"]} if model["tokenizer_factor"] != 1 else None,
     }
 
 
@@ -298,7 +308,11 @@ def _calc(models: list[dict], meta: dict) -> dict:
     rows = _cost_rows(models)
     for row in rows:
         row["krw"] = row["usd"] * meta["rate"]
+    corrected = [m["tokenizer"] for m in models if m["priced"] and m["tokenizer"]]
     return {
+        "has_factor": bool(corrected),
+        "factor": corrected[0]["factor"] if corrected else 1.0,
+        "factor_source": corrected[0]["source"] if corrected else "",
         "defaults": COST_DEFAULTS,
         "fx": meta["rate"],
         "fx_date": meta["date"].isoformat(),
@@ -307,7 +321,7 @@ def _calc(models: list[dict], meta: dict) -> dict:
         "rows": rows,
         "data": {
             "fx": meta["rate"],
-            "models": [{"id": m["id"], "name": m["name"], "href": m["href"], "provider": m["provider"], "in": m["input_raw"], "out": m["output_raw"], "note": m["note"], "verified": m["verified"], "source": m["source_url"]} for m in models if m["priced"]],
+            "models": [{"id": m["id"], "name": m["name"], "href": m["href"], "provider": m["provider"], "in": m["input_raw"], "out": m["output_raw"], "tf": m["tokenizer"]["factor"] if m["tokenizer"] else 1, "note": m["note"], "verified": m["verified"], "source": m["source_url"]} for m in models if m["priced"]],
         },
     }
 
