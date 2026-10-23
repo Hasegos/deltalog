@@ -47,6 +47,26 @@
       {% else %}
       <div class="empty">아직 수집 기록이 없습니다. 서버가 막 시작됐을 수 있습니다.</div>
       {% endfor %}
+
+      {% if price %}
+      <h2 class="dl-h">모델 가격 대조 <span class="st-int">{{ price.interval }}분마다</span></h2>
+      <p class="st-sum{{ ' bad' if price.bad }}">{% if price.bad %}공식 가격 페이지와 어긋난 제공사가 {{ price.bad }}곳 있습니다. 공식 페이지를 보고 <code>data/models.toml</code>을 고쳐야 합니다.{% else %}모든 모델 단가가 공식 가격 페이지와 같습니다.{% endif %} 마지막 대조: {{ price.checked }}.</p>
+      <div class="dl-l">
+        {% for r in price.rows %}
+        <div class="st-r">
+          <span class="st-s {{ r.state }}">{{ {"ok": "일치", "stale": "어긋남", "error": "실패"}[r.state] }}</span>
+          <b>{{ r.provider }}</b>
+          <span class="st-t">{% if r.error %}{{ r.error }}{% else %}모델 {{ r.checked }}개 대조{% endif %}</span>
+        </div>
+        {% for i in r.issues %}
+        <div class="st-r st-p">
+          <b>{{ i.name }}</b>
+          <span class="st-t">{{ i.problem }}{% if i.row %} · 공식 원문: <code>{{ i.row }}</code>{% endif %}</span>
+        </div>
+        {% endfor %}
+        {% endfor %}
+      </div>
+      {% endif %}
     </section>
   </main>
 
