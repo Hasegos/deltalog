@@ -12,6 +12,10 @@
     <input type="number" name="fx" min="0" step="any" inputmode="decimal" value="{{ calc.fx }}">
   </label>
 </form>
+{% if calc.has_factor %}
+<label class="md-tf"><input type="checkbox" id="cost-tf"> 토크나이저 보정 적용</label>
+<p class="cf-note">입력한 토큰 수는 이전 토크나이저(또는 일반 추정) 기준이라고 가정합니다. 켜면 Claude 4.7 이후 모델의 입력 · 출력 토큰에 약 {{ '%g' | format(calc.factor) }}배를 곱해 계산하고, 해당 모델 행에 보정 전 비용을 작게 함께 보여줍니다. 공식 문서도 같은 글이 "약 30% 더 많은 토큰"으로 세어지지만 정확한 증가율은 내용에 따라 다르다고 밝히니(<a href="{{ calc.factor_source }}" target="_blank" rel="noopener">출처 ↗</a>) 결과는 추정입니다. 기본은 꺼짐입니다.</p>
+{% endif %}
 <p class="cf-note">기본 환율 {{ calc.fx }}원은 {{ calc.fx_date }} <a href="{{ calc.fx_url }}" target="_blank" rel="noopener">{{ calc.fx_source }}</a> 값입니다. 실제 결제 환율과 카드 수수료는 다를 수 있으니 직접 고쳐 쓰세요. 계산은 이 브라우저 안에서만 하고 입력값을 서버로 보내지 않습니다.</p>
 <div class="md-wrap">
   <table class="md-t md-res">

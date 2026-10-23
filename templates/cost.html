@@ -17,7 +17,7 @@
       {% include "partials/cost_calc.html" %}
 
       <p class="cf-note">처음 보이는 값은 입력 {{ '{:,}'.format(calc.defaults.input_tokens) }}토큰 · 출력 {{ '{:,}'.format(calc.defaults.output_tokens) }}토큰 · 월 {{ '{:,}'.format(calc.defaults.requests) }}건 기준입니다. 가격이 비어 있는 모델은 계산에서 뺍니다.</p>
-      <p class="cf-note">기본(표준) 단가로만 계산합니다. 배치 · 캐시 할인, 프롬프트가 길 때의 구간 단가, 예고된 가격 변경은 반영하지 않으니 ※ 표시가 있는 모델은 <a href="/models">모델 가격</a> 상세 페이지의 가격 조건을 확인하세요. Claude 4.7 이후 모델은 토크나이저가 달라 같은 글에서도 토큰 수가 더 나옵니다.</p>
+      <p class="cf-note">기본(표준) 단가로만 계산합니다. 배치 · 캐시 할인, 프롬프트가 길 때의 구간 단가, 예고된 가격 변경은 반영하지 않으니 ※ 표시가 있는 모델은 <a href="/models">모델 가격</a> 상세 페이지의 가격 조건을 확인하세요. Claude 4.7 이후 모델은 토크나이저가 달라 같은 글에서도 토큰 수가 더 나오는데, 기본 결과는 이 차이를 반영하지 않습니다. 위의 "토크나이저 보정 적용"을 켜면 추정치로 반영합니다.</p>
     </section>
   </main>
 
