@@ -5,7 +5,7 @@ from urllib.parse import quote
 from sqlalchemy.orm import Session
 
 from core.constants.news import RELATED_DAYS, RELATED_LIMIT, RELATED_MIN_IMPORTANCE, TOOL_COMPANY
-from core.constants.page import KST
+from core.constants.page import KST, THIN_MAX_CHARS, THIN_MAX_IMPORTANCE
 from core.constants.source import TOOL_KO_NAMES
 from core.constants.taxonomy import CATEGORIES, SEVERITY
 from crud import entry_crud, item_crud, news_crud
@@ -13,6 +13,24 @@ from models.entry_model import Entry
 
 DESCRIPTION_CHARS = 150
 DESCRIPTION_LINES = 3
+
+
+def release_label(name: str, version: str) -> str:
+    """도구 이름과 버전(없으면 글 제목)을 이은 표시 이름. 버전 자리에 이미 도구 이름이 있으면(`Android Studio Rabbit 1 now available`) 다시 붙이지 않는다."""
+    return version if name.lower() in version.lower() else f"{name} {version}"
+
+
+def is_thin(done: int, chars: int, importance: int) -> bool:
+    """릴리스 페이지에 색인할 만한 내용이 없는지 판정한다. 페이지의 `noindex`와 사이트맵 제외가 같은 규칙을 쓴다.
+
+    Args:
+        done: 요약이 끝난 항목 수
+        chars: 요약이 끝난 항목의 요약 글자 합계
+        importance: 요약이 끝난 항목의 가장 높은 중요도
+    Returns:
+        요약된 항목이 없거나, 요약이 `THIN_MAX_CHARS`자 미만이고 최고 중요도가 `THIN_MAX_IMPORTANCE` 이하이면 `True`
+    """
+    return done == 0 or (chars < THIN_MAX_CHARS and importance <= THIN_MAX_IMPORTANCE)
 
 
 def release_path(slug: str, entry: Entry) -> str:
@@ -58,7 +76,7 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         key: 버전 또는 글 ID
         base: 사이트 주소 (끝 `/` 없음). JSON-LD의 주소에 쓴다
     Returns:
-        템플릿에 넘길 값. 글이 없으면 `None`. 요약된 항목이 하나도 없으면 `noindex`가 참이다
+        템플릿에 넘길 값. 글이 없으면 `None`. 얇은 페이지(`is_thin`)이면 `noindex`가 참이다
     """
     found = entry_crud.get_entry_by_key(db, slug, key)
     if found is None:
@@ -94,7 +112,8 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
     version = entry.version or entry.title
     name = source.name
     summary_text = "; ".join(i.summary_ko for i in top)
-    description = f"{name} {version} 변경 사항 {len(items)}개 한국어 요약. {summary_text}".strip()
+    label = release_label(name, version)
+    description = f"{label} 변경 사항 {len(items)}개 한국어 요약. {summary_text}".strip()
     if len(description) > DESCRIPTION_CHARS:
         description = description[: DESCRIPTION_CHARS - 1].rstrip() + "…"
 
@@ -113,6 +132,7 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "name": name,
         "slug": slug,
         "version": version,
+        "label": label,
         "has_version": bool(entry.version),
         "date": entry.published_at.astimezone(KST).strftime("%Y-%m-%d"),
         "url": entry.url if entry.url.startswith(("https://", "http://")) else "",
@@ -125,24 +145,24 @@ def build_release(db: Session, slug: str, key: str, base: str) -> dict | None:
         "done": len(done),
         "older": {"label": older.version or older.title, "path": release_path(slug, older)} if older else None,
         "newer": {"label": newer.version or newer.title, "path": release_path(slug, newer)} if newer else None,
-        "seo_title": f"{name} {version} 변경 사항 한국어 요약 · Deltalog",
+        "seo_title": f"{label} 변경 사항 한국어 요약 · Deltalog",
         "seo_desc": description,
         "seo_type": "article",
         "og_path": f"/og{path}.png",
-        "noindex": not done,
+        "noindex": is_thin(len(done), sum(len(i.summary_ko) for i in done), max((i.importance or 0 for i in done), default=0)),
         "jsonld": _json_ld(
             [
                 {
                 "@context": "https://schema.org",
                 "@type": "TechArticle",
-                "headline": f"{name} {version} 변경 사항",
+                "headline": f"{label} 변경 사항",
                 "description": description,
                 "inLanguage": "ko",
                 "datePublished": published,
                 "dateModified": published,
                 "mainEntityOfPage": f"{base}{path}",
                 "isBasedOn": entry.url,
-                "about": {"@type": "SoftwareApplication", "name": name, "softwareVersion": version},
+                "about": {"@type": "SoftwareApplication", "name": name, **({"softwareVersion": version} if entry.version else {})},
                 "author": {"@type": "Organization", "name": "Deltalog"},
                 "publisher": {"@type": "Organization", "name": "Deltalog", "url": base},
                 },

@@ -239,15 +239,16 @@ def count_entries_by_source(db: Session) -> dict[int, int]:
 
 
 def entry_stats(db: Session, entry_ids: list[int]) -> dict[int, dict]:
-    """글마다 항목 개수, 요약 끝난 개수, 가장 높은 중요도, 유형별 개수를 모아 돌려준다.
+    """글마다 항목 개수, 요약 끝난 개수, 가장 높은 중요도, 요약 글자 합계, 유형별 개수를 모아 돌려준다.
 
     Args:
         db: DB 세션
         entry_ids: 글 ID 목록
     Returns:
-        글 ID별 `{"count", "done", "importance", "categories"}`. `categories`는 유형별 개수
+        글 ID별 `{"count", "done", "importance", "chars", "done_importance", "categories"}`. `chars`는 요약이 끝난 항목의 요약 글자 합계,
+        `done_importance`는 요약이 끝난 항목의 가장 높은 중요도, `categories`는 유형별 개수
     """
-    stats: dict[int, dict] = defaultdict(lambda: {"count": 0, "done": 0, "importance": 0, "categories": {}})
+    stats: dict[int, dict] = defaultdict(lambda: {"count": 0, "done": 0, "importance": 0, "chars": 0, "done_importance": 0, "categories": {}})
     if not entry_ids:
         return stats
     stmt = (
@@ -257,15 +258,19 @@ def entry_stats(db: Session, entry_ids: list[int]) -> dict[int, dict]:
             func.count(Item.id),
             func.count(Item.id).filter(Item.status == "done"),
             func.max(Item.importance),
+            func.coalesce(func.sum(func.length(Item.summary_ko)).filter(Item.status == "done"), 0),
+            func.max(Item.importance).filter(Item.status == "done"),
         )
         .where(Item.entry_id.in_(entry_ids))
         .group_by(Item.entry_id, Item.category)
     )
-    for entry_id, category, count, done, importance in db.execute(stmt).all():
+    for entry_id, category, count, done, importance, chars, done_importance in db.execute(stmt).all():
         row = stats[entry_id]
         row["count"] += count
         row["done"] += done
         row["importance"] = max(row["importance"], importance or 0)
+        row["chars"] += chars
+        row["done_importance"] = max(row["done_importance"], done_importance or 0)
         if category:
             row["categories"][category] = row["categories"].get(category, 0) + count
     return stats

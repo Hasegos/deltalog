@@ -11,3 +11,6 @@ CLAUDE.md
 logs
 img
 README.md
+out/
+.secrets/
+.venv-youtube/
