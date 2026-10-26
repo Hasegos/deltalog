@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from crud import deadline_crud, entry_crud, item_crud, news_crud, weekly_crud
 from services.web.model_service import sitemap_urls as model_urls
-from services.web.release_service import release_path
+from services.web.release_service import is_thin, release_path
 
 SITEMAP_LIMIT = 45000
 SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -27,7 +27,7 @@ def collect_urls(db: Session) -> list[tuple[str, str]]:
     - 소개, 문의, 처리방침, 약관은 템플릿 파일의 수정일을 쓴다.
     - 모델 가격 페이지(`/models`, `/models/cost`, `/models/<ID>`)는 `data/models.toml`의 확인일을 쓰고, 가격이 빈 모델 상세는 뺀다.
     - 소식 상세 페이지(`/news/<ID>`)는 요약이 끝난 소식만 넣는다.
-    - 글 상세 페이지는 요약된 항목이 있는 글만 넣고, 주소는 글의 `kind`에 맞는 함수(`ENTRY_PATHS`)로 만든다.
+    - 글 상세 페이지는 요약된 항목이 있고 얇지 않은(`is_thin`) 글만 넣고, 주소는 글의 `kind`에 맞는 함수(`ENTRY_PATHS`)로 만든다.
       새 종류(뉴스)는 `ENTRY_PATHS`에 함수를 더하면 자동으로 들어간다.
 
     Args:
@@ -56,9 +56,11 @@ def collect_urls(db: Session) -> list[tuple[str, str]]:
         urls.append((f"/releases/{quote(source.slug, safe='')}", _day(moment) if moment else ""))
     for path, template in FILE_PAGES.items():
         urls.append((path, _day(datetime.fromtimestamp(os.path.getmtime(os.path.join("templates", template)), timezone.utc))))
-    for entry, source in entry_crud.list_summarized_entries(db):
+    pairs = entry_crud.list_summarized_entries(db)
+    stats = entry_crud.entry_stats(db, [entry.id for entry, _ in pairs])
+    for entry, source in pairs:
         make_path = ENTRY_PATHS.get(entry.kind)
-        if make_path:
+        if make_path and not is_thin(stats[entry.id]["done"], stats[entry.id]["chars"], stats[entry.id]["done_importance"]):
             urls.append((make_path(source.slug, entry), _day(entry.published_at)))
     return urls
 
