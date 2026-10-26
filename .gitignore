@@ -23,3 +23,8 @@ graphify-out/
 
 ### video ###
 out/
+.secrets/
+.venv-youtube/
+scripts/youtube_auth.py
+scripts/youtube_upload.py
+scripts/requirements-youtube.txt
