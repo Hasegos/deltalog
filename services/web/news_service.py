@@ -10,7 +10,7 @@ from core.constants.taxonomy import TOPICS
 from crud import entry_crud, news_crud
 from models.news_model import News
 from services.web.home_service import _ago, _day_label
-from services.web.release_service import _breadcrumb, _json_ld, release_path
+from services.web.release_service import _breadcrumb, _json_ld, release_label, release_path
 
 
 def _url(params: dict[str, str], **override: str | None) -> str:
@@ -77,7 +77,7 @@ def _related(db: Session, articles: list[News]) -> dict[int, list[dict]]:
             key=lambda pair: abs(pair[0].published_at - article.published_at),
         )[:RELATED_LIMIT]
         if near:
-            result[article.id] = [{"label": f"{source.name} {entry.version or entry.title}", "path": release_path(source.slug, entry)} for entry, source in near]
+            result[article.id] = [{"label": release_label(source.name, entry.version or entry.title), "path": release_path(source.slug, entry)} for entry, source in near]
     return result
 
 

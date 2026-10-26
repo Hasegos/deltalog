@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from core.constants.taxonomy import CATEGORIES, SEVERITY
 from crud import entry_crud, item_crud, news_crud
-from services.web.release_service import release_path
+from services.web.release_service import release_label, release_path
 
 FEED_LIMIT = 30
 FEED_TOP = 3
@@ -68,7 +68,7 @@ def build_feed(db: Session, base: str, tools: list[str] | None = None, companies
         stats = entry_crud.entry_stats(db, ids)
         for entry, source in pairs:
             link = base + release_path(source.slug, entry)
-            entries.append((entry.published_at, f"{source.name} {entry.version or entry.title}", link, link, _release_html(stats[entry.id], tops.get(entry.id, []))))
+            entries.append((entry.published_at, release_label(source.name, entry.version or entry.title), link, link, _release_html(stats[entry.id], tops.get(entry.id, []))))
     if companies or not tools:
         for article in news_crud.list_for_feed(db, companies, min_importance, FEED_LIMIT):
             entries.append((article.published_at, f"[{article.company}] {article.title_ko or article.title}", article.url, article.url, escape(article.summary_ko or "")))
