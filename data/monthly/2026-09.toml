@@ -1,0 +1,299 @@
+month = "2026-09"
+title = "신규 모델 출시로 대규모 에이전트 기능 강화"
+title_candidates = [
+  "신규 모델 출시로 대규모 에이전트 기능 강화",
+  "이번 달 전체 릴리스는 103건으로 증가",
+  "Claude Sonnet 4.5 모델 종료 예정",
+]
+published_at = 2026-10-30
+reviewed = false
+editor_note = [
+  "이번 달 AI 도구와 IDE 생태계는 릴리스 103건과 주요 변경 사항 36건을 기록하며 활발한 움직임을 보였다. 특히 에이전트와 UI 및 모델 요금 관련 주제에서 업데이트가 집중되었다.",
+  "Anthropic API와 OpenAI API는 각각 신규 모델과 에이전트 기능을 대거 선보이며 개발 환경의 자동화를 넓혔다. 또한 Goose와 Gemini CLI 등 보안 패치와 권한 강화 조치가 다수 포함되었다.",
+  "60일 내에 종료를 앞둔 항목은 29건으로 확인되었다. 주요 모델과 대시보드 서비스의 지원 중단에 맞춰 대체 모델로의 전환이 요구된다.",
+]
+experience = [
+  "[운영자 경험: 직접 작성]",
+]
+
+[[picks]]
+url = "/releases/anthropic-api/255"
+title = "Anthropic API 2026-09-30"
+comment = "지원 중단에 따른 모델 전환 일정을 확인해야 한다."
+
+[[picks]]
+url = "/releases/gemini-cli/0.61.0"
+title = "Gemini CLI 0.61.0"
+comment = "프롬프트 인젝션 취약점을 해결하기 위해 업데이트가 필요하다."
+
+[[picks]]
+url = "/releases/openai-api/242"
+title = "OpenAI API 2026-09-10"
+comment = "공개 베타로 출시된 Agents API 기능을 미리 살펴봐야 한다."
+
+[[picks]]
+url = "/releases/goose/1.49.0"
+title = "Goose 1.49.0"
+comment = "보안 규칙의 우선순위 적용으로 에이전트 권한 관리를 점검한다."
+
+[[picks]]
+url = "/releases/cursor/53"
+title = "Cursor Rollouts and Security Review"
+comment = "코드 배포와 보안 검토를 자동화하는 기능을 활용한다."
+
+[[todos]]
+date = 2026-11-30
+text = "claude-sonnet-4-5를 claude-sonnet-5-5로 바꾼다"
+guide = ""
+
+[[todos]]
+date = 2026-11-17
+text = "gemini-2.5-audio를 gemini-3.8-live로 바꾼다"
+guide = ""
+
+[[todos]]
+date = 2026-12-01
+text = "chatgpt-image를 gpt-image-2.5로 바꾼다"
+guide = ""
+
+[stats]
+month = "2026-09"
+breaking = 36
+releases = 103
+security = 44
+tools_active = 20
+deadlines_60d = 29
+prev_breaking = 16
+prev_releases = 50
+prev_security = 31
+releases_delta_pct = 106
+
+[[stats.topics]]
+n = 170
+prev = 69
+topic = "UI"
+
+[[stats.topics]]
+n = 123
+prev = 94
+topic = "모델·요금"
+
+[[stats.topics]]
+n = 107
+prev = 59
+topic = "CLI·설정"
+
+[[stats.topics]]
+n = 92
+prev = 42
+topic = "에이전트"
+
+[[stats.topics]]
+n = 84
+prev = 29
+topic = "MCP·플러그인"
+
+[[stats.topics]]
+n = 69
+prev = 27
+topic = "원격·클라우드"
+
+[[stats.topics]]
+n = 62
+prev = 22
+topic = "에디터·언어"
+
+[[stats.topics]]
+n = 60
+prev = 13
+topic = "Git·연동"
+
+[[stats.topics]]
+n = 59
+prev = 14
+topic = "보안·권한"
+
+[[stats.topics]]
+n = 52
+prev = 22
+topic = "세션·컨텍스트"
+
+[[stats.topics]]
+n = 41
+prev = 17
+topic = "성능"
+
+[[stats.topics]]
+n = 30
+prev = 23
+topic = "기타"
+
+[[stats.topics]]
+n = 11
+prev = 15
+topic = "훅"
+
+[[stats.topics]]
+n = 2
+prev = 6
+topic = "빌드·테스트"
+
+[[stats.by_tool]]
+name = "Claude Code"
+slug = "claude-code"
+breaking = 13
+releases = 17
+security = 4
+important = 35
+
+[[stats.by_tool]]
+name = "Antigravity"
+slug = "antigravity"
+breaking = 1
+releases = 10
+security = 0
+important = 13
+
+[[stats.by_tool]]
+name = "OpenAI API"
+slug = "openai-api"
+breaking = 0
+releases = 9
+security = 0
+important = 11
+
+[[stats.by_tool]]
+name = "OpenCode"
+slug = "opencode"
+breaking = 0
+releases = 8
+security = 0
+important = 0
+
+[[stats.by_tool]]
+name = "Anthropic API"
+slug = "anthropic-api"
+breaking = 4
+releases = 7
+security = 0
+important = 9
+
+[[stats.by_tool]]
+name = "Gemini API"
+slug = "gemini-api"
+breaking = 1
+releases = 7
+security = 0
+important = 6
+
+[[stats.by_tool]]
+name = "Windsurf (Devin Desktop)"
+slug = "windsurf"
+breaking = 2
+releases = 6
+security = 1
+important = 7
+
+[[stats.by_tool]]
+name = "Zed"
+slug = "zed"
+breaking = 6
+releases = 6
+security = 0
+important = 4
+
+[[stats.by_tool]]
+name = "Goose"
+slug = "goose"
+breaking = 2
+releases = 5
+security = 37
+important = 33
+
+[[stats.by_tool]]
+name = "Antigravity CLI"
+slug = "antigravity-cli"
+breaking = 1
+releases = 4
+security = 0
+important = 1
+
+[[stats.by_tool]]
+name = "Kilo Code"
+slug = "kilo-code"
+breaking = 1
+releases = 4
+security = 0
+important = 1
+
+[[stats.by_tool]]
+name = "VS Code"
+slug = "vscode"
+breaking = 2
+releases = 4
+security = 0
+important = 13
+
+[[stats.by_tool]]
+name = "Cursor"
+slug = "cursor"
+breaking = 0
+releases = 3
+security = 0
+important = 11
+
+[[stats.by_tool]]
+name = "Android Studio"
+slug = "android-studio"
+breaking = 0
+releases = 2
+security = 0
+important = 2
+
+[[stats.by_tool]]
+name = "Antigravity SDK"
+slug = "antigravity-sdk"
+breaking = 3
+releases = 2
+security = 0
+important = 4
+
+[[stats.by_tool]]
+name = "Gemini CLI"
+slug = "gemini-cli"
+breaking = 0
+releases = 2
+security = 2
+important = 3
+
+[[stats.by_tool]]
+name = "IntelliJ IDEA"
+slug = "intellij-idea"
+breaking = 0
+releases = 2
+security = 0
+important = 1
+
+[[stats.by_tool]]
+name = "PyCharm"
+slug = "pycharm"
+breaking = 0
+releases = 2
+security = 0
+important = 0
+
+[[stats.by_tool]]
+name = "WebStorm"
+slug = "webstorm"
+breaking = 0
+releases = 2
+security = 0
+important = 0
+
+[[stats.by_tool]]
+name = "Cline"
+slug = "cline"
+breaking = 0
+releases = 1
+security = 0
+important = 0
