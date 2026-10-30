@@ -1,7 +1,7 @@
 import json
 import re
 import tomllib
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -11,7 +11,6 @@ from core.constants.monthly import (
     MONTHLY_DATA_DIR,
     MONTHLY_DEADLINE_DAYS,
     MONTHLY_MONTH_RE,
-    MONTHLY_PENDING_GRACE_DAYS,
     MONTHLY_PICKS_MAX,
     MONTHLY_PICKS_MIN,
     MONTHLY_TODOS_MAX,
@@ -19,8 +18,8 @@ from core.constants.monthly import (
     MONTHLY_TOPICS_SHOWN,
 )
 from core.constants.page import KST
-from core.months import month_bounds, next_month
-from crud import monthly_crud, weekly_crud
+from core.months import next_month
+from crud import monthly_crud
 from services.web.release_service import _breadcrumb, _json_ld
 
 _cache: dict = {"stamp": None, "data": None}
@@ -414,7 +413,10 @@ def dumps(doc: dict) -> str:
 
 
 def build_draft(db: Session, month: date, now: datetime) -> str:
-    """월간 리포트 초안 뼈대를 TOML 글로 만든다. 검수 전(`reviewed = false`)이고 제목 · 해설 · 할 일은 비어 있으며 숫자만 채운다.
+    """월간 리포트 초안을 TOML 글로 만든다. 항상 검수 전(`reviewed = false`)이고 경험은 자리표시 문구다.
+
+    저장된 Gemini 초안(`MonthlyDraft`)이 있으면 그 숫자(`stats`)와 글을 쓰고 제목 후보는 `title_candidates`에 둔다.
+    없으면 제목 · 해설 · 고른 변경 · 할 일이 빈 뼈대에 지금 센 숫자를 채운다.
 
     Args:
         db: DB 세션
@@ -424,37 +426,24 @@ def build_draft(db: Session, month: date, now: datetime) -> str:
         `data/monthly/YYYY-MM.toml`에 그대로 저장할 수 있는 글
     """
     today = now.astimezone(KST).date()
-    return dumps(
-        {
-            "month": month.strftime("%Y-%m"),
-            "title": "",
-            "published_at": today,
-            "reviewed": False,
-            "editor_note": [],
-            "experience": [EXPERIENCE_PLACEHOLDER],
-            "picks": [],
-            "todos": [],
-            "stats": monthly_crud.stats(db, month, today),
-        }
-    )
+    saved = monthly_crud.get_draft(db, month)
+    draft = saved.draft if saved else {}
+    headlines = draft.get("headlines", [])
+    doc = {
+        "month": month.strftime("%Y-%m"),
+        "title": headlines[0] if headlines else "",
+        **({"title_candidates": headlines} if headlines else {}),
+        "published_at": today,
+        "reviewed": False,
+        "editor_note": draft.get("trends", []),
+        "experience": [EXPERIENCE_PLACEHOLDER],
+        "picks": draft.get("picks", []),
+        "todos": [{"date": date.fromisoformat(t["date"]), "text": t["text"], "guide": ""} for t in draft.get("todos", [])],
+        "stats": saved.stats if saved else monthly_crud.stats(db, month, today),
+    }
+    return dumps(doc)
 
 
 def is_finished(month: date, now: datetime) -> bool:
     """그 달이 한국 시간으로 끝났는지 돌려준다."""
     return now.astimezone(KST).date() >= next_month(month)
-
-
-def pending_count(db: Session, month: date, now: datetime) -> int:
-    """그 달에 올라온 글 중 요약을 기다리는 릴리스 항목과 소식의 합을 돌려준다. 달이 끝나고 `MONTHLY_PENDING_GRACE_DAYS`일이 지나면 더 기다리지 않으므로 0이다.
-
-    Args:
-        db: DB 세션
-        month: 그 달 1일
-        now: 지금 시각
-    Returns:
-        기다려야 할 개수
-    """
-    start, end = month_bounds(month)
-    if now >= end + timedelta(days=MONTHLY_PENDING_GRACE_DAYS):
-        return 0
-    return weekly_crud.count_pending(db, start, end)
