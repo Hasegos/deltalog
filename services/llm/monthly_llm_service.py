@@ -36,15 +36,23 @@ from services.web.release_service import release_label, release_path
 logger = get_logger("monthly")
 llm_logger = get_logger("llm")
 
-_QUOTES = ('"', "“", "”")
+_QUOTES = str.maketrans("", "", '"“”')
 _EXPERIENCE = re.compile(r"써 보니|써봤|체감|사용해 보니")
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 _failed: dict[date, datetime] = {}
 
 
+class MonthlyRejected(Exception):
+    """모델 답이 검증을 통과하지 못했을 때. `code`는 로그에 남길 분류이고, `hint`는 다음 시도에서 모델에게 알려 줄 이유다(글 내용은 담지 않는다)."""
+
+    def __init__(self, code: str, hint: str):
+        super().__init__(hint)
+        self.code, self.hint = code, hint
+
+
 def _clean(texts: list[str]) -> list[str]:
-    """글마다 NUL 문자를 지우고 앞뒤 공백을 뗀다."""
-    return [t.replace("\x00", "").strip() for t in texts]
+    """글마다 NUL 문자와 큰따옴표를 지우고 앞뒤 공백을 뗀다."""
+    return [t.replace("\x00", "").translate(_QUOTES).strip() for t in texts]
 
 
 def _plain_number(number: str) -> str:
@@ -70,33 +78,32 @@ class MonthlyText(BaseModel):
 
     @model_validator(mode="after")
     def check(self) -> "MonthlyText":
-        """공백과 NUL 문자를 다듬고 개수 · 길이 · 문장 끝 · 따옴표 · 경험 표현을 확인한다.
+        """공백 · NUL 문자 · 큰따옴표를 지우고 개수 · 길이 · 문장 끝 · 경험 표현을 확인한다. 오류 문구는 모델에게 다시 알려 줄 수 있게 어긴 규칙과 지금 개수를 담는다.
 
         Returns:
             다듬은 값
         Raises:
-            ValueError: 개수나 길이가 맞지 않거나, 문장이 "~다"로 끝나지 않거나, 큰따옴표나 경험 표현(써 보니, 체감 등)이 있을 때
+            ValueError: 개수나 길이가 맞지 않거나, 문장이 "~다"로 끝나지 않거나, 경험 표현(써 보니, 체감 등)이 있을 때
         """
         self.headlines = [h.rstrip(".") for h in _clean(self.headlines)]
         self.trends, self.pick_reasons, self.todo_texts = _clean(self.trends), _clean(self.pick_reasons), _clean(self.todo_texts)
         self.pick_ids, self.todo_ids = _clean(self.pick_ids), _clean(self.todo_ids)
         if len(self.headlines) != 3 or any(not h or len(h) > MONTHLY_HEADLINE_MAX for h in self.headlines):
-            raise ValueError("제목 후보 오류")
+            raise ValueError(f"headlines는 3개이고 각각 {MONTHLY_HEADLINE_MAX}자 이내여야 한다 (지금 {len(self.headlines)}개, 글자 수 {[len(h) for h in self.headlines]})")
         if not 2 <= len(self.trends) <= 3 or any(not t or len(t) > MONTHLY_TREND_MAX or not _ends_with_da(t) for t in self.trends):
-            raise ValueError("흐름 문단 오류")
+            raise ValueError(f"trends는 2~3개이고 각각 {MONTHLY_TREND_MAX}자 이내이며 모든 문장이 ~다로 끝나야 한다 (지금 {len(self.trends)}개, 글자 수 {[len(t) for t in self.trends]})")
         picks = len(self.pick_ids)
         if not MONTHLY_PICKS_MIN <= picks <= MONTHLY_PICKS_MAX or len(set(self.pick_ids)) != picks or len(self.pick_reasons) != picks:
-            raise ValueError("고른 변경 개수 오류")
+            raise ValueError(f"pick_ids는 겹치지 않는 {MONTHLY_PICKS_MIN}~{MONTHLY_PICKS_MAX}개이고 pick_reasons와 개수가 같아야 한다 (지금 ids {picks}개, reasons {len(self.pick_reasons)}개)")
         if any(not r or len(r) > MONTHLY_REASON_MAX or not _ends_with_da(r) for r in self.pick_reasons):
-            raise ValueError("고른 이유 형식 오류")
+            raise ValueError(f"pick_reasons는 각각 {MONTHLY_REASON_MAX}자 이내이고 모든 문장이 ~다로 끝나야 한다 (글자 수 {[len(r) for r in self.pick_reasons]})")
         todos = len(self.todo_ids)
         if todos > MONTHLY_TODOS_MAX or len(set(self.todo_ids)) != todos or len(self.todo_texts) != todos:
-            raise ValueError("할 일 개수 오류")
+            raise ValueError(f"todo_ids는 겹치지 않는 {MONTHLY_TODOS_MAX}개 이하이고 todo_texts와 개수가 같아야 한다 (지금 ids {todos}개, texts {len(self.todo_texts)}개)")
         if any(not t or len(t) > MONTHLY_TODO_MAX or not _ends_with_da(t) for t in self.todo_texts):
-            raise ValueError("할 일 형식 오류")
-        body = self.body()
-        if any(q in body for q in _QUOTES) or _EXPERIENCE.search(body):
-            raise ValueError("따옴표나 경험 표현 오류")
+            raise ValueError(f"todo_texts는 각각 {MONTHLY_TODO_MAX}자 이내이고 모든 문장이 ~다로 끝나야 한다 (글자 수 {[len(t) for t in self.todo_texts]})")
+        if _EXPERIENCE.search(self.body()):
+            raise ValueError("써 보니, 써봤, 체감, 사용해 보니 같은 경험 표현을 쓰지 않는다")
         return self
 
     def body(self) -> str:
@@ -145,34 +152,48 @@ def build_source(db: Session, month: date, stats: dict, today: date) -> tuple[st
     return "\n".join(lines), refs
 
 
-def parse(content: str, source: str, refs: dict[str, dict]) -> MonthlyText | None:
-    """모델 답을 읽어 검증을 통과한 초안을 돌려준다. 형식이 틀리거나 입력에 없는 ID · 숫자 · 영어 단어가 있으면 `None`이다.
+def parse(content: str, source: str, refs: dict[str, dict]) -> MonthlyText:
+    """모델 답을 읽어 검증을 통과한 초안을 돌려준다.
 
     Args:
         content: 모델 답 본문
         source: 모델에 보낸 글
         refs: `build_source`가 만든 ID별 화면 값
     Returns:
-        통과한 초안. 아니면 `None`
+        통과한 초안
+    Raises:
+        MonthlyRejected: JSON이 아니거나(`json`), 개수 · 길이 · 문장 끝이 틀렸거나(`schema`), 입력에 없는 ID(`id`) · 숫자(`number`) · 영어 단어(`words`)가 있을 때
     """
     text = re.sub(r"^```(?:json)?|```$", "", content.strip(), flags=re.MULTILINE).strip()
     try:
-        row = MonthlyText.model_validate(json.loads(text))
-    except (ValueError, TypeError, ValidationError):
-        return None
-    if any(not i.startswith(("R", "N")) or i not in refs for i in row.pick_ids) or any(not i.startswith("D") or i not in refs for i in row.todo_ids):
-        return None
+        data = json.loads(text)
+    except ValueError as exc:
+        raise MonthlyRejected("json", "JSON 형식이 아니다. 설명이나 코드 블록 없이 JSON 객체만 쓴다") from exc
+    try:
+        row = MonthlyText.model_validate(data)
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        where = ".".join(str(p) for p in first["loc"])
+        reason = first["msg"].removeprefix("Value error, ")
+        raise MonthlyRejected("schema", f"{where}: {reason}" if where else reason) from exc
+    bad = [i for i in row.pick_ids if not i.startswith(("R", "N")) or i not in refs] + [i for i in row.todo_ids if not i.startswith("D") or i not in refs]
+    if bad:
+        raise MonthlyRejected("id", f"입력에 없거나 종류가 맞지 않는 ID를 썼다: {', '.join(bad)}. pick_ids는 R · N, todo_ids는 D로 시작하는 ID만 쓴다")
     body = row.body()
     known = {_plain_number(n) for n in _NUMBER.findall(source)}
-    if any(_plain_number(n) not in known for n in _NUMBER.findall(body)) or unseen_words(body, source):
-        return None
+    numbers = sorted({n for n in _NUMBER.findall(body) if _plain_number(n) not in known})
+    if numbers:
+        raise MonthlyRejected("number", f"입력에 없는 숫자를 썼다: {', '.join(numbers)}. 숫자는 입력에 있는 값만 그대로 쓰고 직접 계산하지 않는다")
+    words = sorted(set(unseen_words(body, source)))
+    if words:
+        raise MonthlyRejected("words", f"입력에 없는 영어 단어나 일본어 · 한자를 썼다: {', '.join(words)}. 입력에 쓰인 이름과 용어만 쓴다")
     return row
 
 
 def generate_month(db: Session, month: date, now: datetime) -> bool:
     """한 달의 월간 리포트 초안을 만들어 저장한다. 읽을 수 있는 답이 올 때까지 `LLM_MAX_RETRIES`번까지 다시 보내고(한 달에 최대 `LLM_MAX_RETRIES + 1`번), 호출마다 하루 한도를 확인하고 센다.
 
-    끝까지 통과하지 못하면 저장하지 않고 `MONTHLY_RETRY_HOURS`시간 동안 이 달을 건너뛰게 기록한 뒤 예외를 던진다.
+    거부된 답은 이유(`MonthlyRejected.hint`)와 함께 다음 시도에 돌려 보내 고치게 하고, 로그에는 이유 분류(`reason`)만 남긴다. 끝까지 통과하지 못하면 저장하지 않고 `MONTHLY_RETRY_HOURS`시간 동안 이 달을 건너뛰게 기록한 뒤 예외를 던진다.
 
     Args:
         db: DB 세션
@@ -190,27 +211,34 @@ def generate_month(db: Session, month: date, now: datetime) -> bool:
     if not stats["releases"]:
         return False
     source, refs = build_source(db, month, stats, today)
-    messages = [{"role": "system", "content": MONTHLY_PROMPT}, {"role": "user", "content": source}]
+    base = [{"role": "system", "content": MONTHLY_PROMPT}, {"role": "user", "content": source}]
+    messages, last = base, ""
     for attempt in range(settings.LLM_MAX_RETRIES + 1):
         if llm_usage_crud.calls_today(db, "gemini") >= settings.GEMINI_DAILY_LIMIT:
             raise LlmBudgetExhausted("Gemini 오늘 호출 한도를 모두 썼습니다")
         llm_usage_crud.add_call(db, "gemini")
         completion = lm_client.complete(messages, MONTHLY_SCHEMA)
-        row = parse(completion.content, source, refs)
-        log_event(llm_logger, event="monthly", provider="gemini", model=completion.model, refs=len(refs), ok=row is not None, attempt=attempt + 1)
-        if row is not None:
-            draft = {
-                "headlines": row.headlines,
-                "trends": row.trends,
-                "picks": [{"url": refs[i]["url"], "title": refs[i]["title"], "comment": r} for i, r in zip(row.pick_ids, row.pick_reasons)],
-                "todos": [{"date": refs[i]["date"], "text": t} for i, t in zip(row.todo_ids, row.todo_texts)],
-            }
-            monthly_crud.save_draft(db, month, stats, draft, completion.model, MONTHLY_PROMPT_VERSION)
-            db.commit()
-            logger.info("monthly %s: 저장 (입력 %d개)", month, len(refs))
-            return True
+        try:
+            row = parse(completion.content, source, refs)
+        except MonthlyRejected as exc:
+            last = exc.code
+            log_event(llm_logger, event="monthly", provider="gemini", model=completion.model, refs=len(refs), ok=False, reason=exc.code, attempt=attempt + 1)
+            feedback = f"위 답은 거부됐다. 이유: {exc.hint[:300]}. 규칙을 지켜 같은 형식의 JSON 객체로만 다시 답한다."
+            messages = [*base, {"role": "assistant", "content": completion.content}, {"role": "user", "content": feedback}]
+            continue
+        log_event(llm_logger, event="monthly", provider="gemini", model=completion.model, refs=len(refs), ok=True, attempt=attempt + 1)
+        draft = {
+            "headlines": row.headlines,
+            "trends": row.trends,
+            "picks": [{"url": refs[i]["url"], "title": refs[i]["title"], "comment": r} for i, r in zip(row.pick_ids, row.pick_reasons)],
+            "todos": [{"date": refs[i]["date"], "text": t} for i, t in zip(row.todo_ids, row.todo_texts)],
+        }
+        monthly_crud.save_draft(db, month, stats, draft, completion.model, MONTHLY_PROMPT_VERSION)
+        db.commit()
+        logger.info("monthly %s: 저장 (입력 %d개)", month, len(refs))
+        return True
     _failed[month] = now
-    raise LlmUnavailable("월간 리포트 초안 답을 읽지 못했습니다")
+    raise LlmUnavailable(f"월간 리포트 초안 답을 읽지 못했습니다 (마지막 이유: {last})")
 
 
 def finished_months(now: datetime) -> list[date]:
