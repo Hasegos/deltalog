@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/deadlines.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/weekly.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/monthly.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">월간 리포트 <span>한 달 동안 바뀐 것을 숫자와 직접 검수로 정리</span></h1>
+
+      {% if issues %}
+      <div class="dg-l">
+        {% for i in issues %}
+        <a class="dg-w" href="/monthly/{{ i.month }}"><b>{{ i.label }}</b><span>{{ i.title }}<em class="mo-ln">릴리스 {{ i.releases }}개{% if i.delta is not none %} · 지난달 대비 {{ '+' if i.delta >= 0 }}{{ i.delta }}%{% endif %}</em></span></a>
+        {% endfor %}
+      </div>
+      <p class="dl-note">월간 리포트는 한 달이 끝난 뒤 집계 숫자를 고정하고, 운영자가 직접 검수와 경험 해설을 더해 공개합니다.</p>
+      {% else %}
+      <div class="empty">아직 공개된 월간 리포트가 없습니다. 한 달이 끝나고 검수를 마치면 올라옵니다.</div>
+      {% endif %}
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>
