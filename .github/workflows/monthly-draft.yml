@@ -1,0 +1,126 @@
+name: Deltalog Monthly Draft
+
+on:
+  # 매월 1~5일 15:00 KST에 시도한다. 서버가 요약 대기를 비우고 Gemini 초안을 만들 때까지 며칠 걸릴 수 있어 5일까지 매일 다시 확인한다
+  schedule:
+    - cron: "0 6 1-5 * *"
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "만들 달 (YYYY-MM). 비우면 지난달"
+        required: false
+
+concurrency:
+  group: monthly-draft
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 소스 코드 가져오기 (dev)
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: 파이썬 환경 셋팅
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 입력이 없으면 한국 시간 기준 지난달이다. 이미 파일이 있거나 같은 이름의 작업 브랜치가 열려 있으면 오류 없이 끝낸다
+      - name: 대상 월 정하기
+        id: target
+        env:
+          INPUT_MONTH: ${{ inputs.month }}
+        run: |
+          MONTH="$INPUT_MONTH"
+          if [ -z "$MONTH" ]; then
+            MONTH=$(date -d "$(TZ=Asia/Seoul date +%Y-%m-01) -1 month" +%Y-%m)
+          fi
+          if ! echo "$MONTH" | grep -Eq '^20[0-9]{2}-(0[1-9]|1[0-2])$'; then
+            echo "::error::월 형식이 올바르지 않습니다 ($MONTH)"
+            exit 1
+          fi
+          echo "month=$MONTH" >> "$GITHUB_OUTPUT"
+          if [ -f "data/monthly/$MONTH.toml" ]; then
+            echo "::notice::data/monthly/$MONTH.toml이 이미 있어 건너뜁니다"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --heads origin "monthly/$MONTH" > /dev/null; then
+            echo "::notice::monthly/$MONTH 브랜치가 이미 있어 건너뜁니다 (검수 중인 PR이 있는지 확인하세요)"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 409는 요약 대기가 남았거나 Gemini 초안이 아직 없다는 뜻이다. 정기 실행은 5일까지 조용히 기다리고, 직접 실행이거나 5일이 지났으면 실패로 알린다
+      - name: 초안 받아오기
+        if: steps.target.outputs.skip != 'true'
+        env:
+          MONTH: ${{ steps.target.outputs.month }}
+          API_KEY: ${{ secrets.DELTALOG_API_KEY }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          mkdir -p data/monthly
+          CODE=$(curl -sS -o "data/monthly/$MONTH.toml" -w '%{http_code}' -H "X-API-Key: $API_KEY" "https://deltalog.kr/api/monthly/draft/$MONTH?require_draft=1")
+          if [ "$CODE" = "409" ]; then
+            rm -f "data/monthly/$MONTH.toml"
+            if [ "$EVENT" = "schedule" ] && [ "$(TZ=Asia/Seoul date +%d)" -lt 5 ]; then
+              echo "::notice::초안이 아직 준비되지 않았습니다. 내일 다시 확인합니다"
+              echo "wait=true" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "::error::초안이 준비되지 않았습니다 (HTTP 409). 서버의 요약 대기와 Gemini 초안을 확인한 뒤 다시 실행하세요"
+            exit 1
+          fi
+          if [ "$CODE" != "200" ]; then
+            echo "::error::초안 API가 HTTP $CODE를 돌려줬습니다"
+            head -c 300 "data/monthly/$MONTH.toml"
+            rm -f "data/monthly/$MONTH.toml"
+            exit 1
+          fi
+
+      - name: TOML 형식 확인
+        if: steps.target.outputs.skip != 'true' && env.wait != 'true'
+        env:
+          MONTH: ${{ steps.target.outputs.month }}
+        run: python -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' "data/monthly/$MONTH.toml"
+
+      - name: 작업 브랜치 만들고 올리기
+        if: steps.target.outputs.skip != 'true' && env.wait != 'true'
+        env:
+          MONTH: ${{ steps.target.outputs.month }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "monthly/$MONTH"
+          git add "data/monthly/$MONTH.toml"
+          git commit -m "ADD $MONTH 월간 리포트 초안"
+          git push origin "monthly/$MONTH"
+
+      # 이 토큰으로 만든 PR은 검사(Check and Deploy)가 자동으로 돌지 않는다. 검수한 내용을 이 브랜치에 push하면 그때 돈다
+      - name: dev 대상 PR 만들기
+        if: steps.target.outputs.skip != 'true' && env.wait != 'true'
+        env:
+          MONTH: ${{ steps.target.outputs.month }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > pr_body.md <<'EOF'
+          Gemini가 쓴 월간 리포트 초안입니다. 이 상태(`reviewed = false`)로는 화면에 나오지 않습니다. 아래를 모두 마친 뒤 `reviewed = true`로 바꾸고 병합하세요. 고친 내용을 이 브랜치에 push하면 검사가 돌고, 검수를 마쳤다면서 덜 끝난 항목은 검사에서 걸립니다.
+
+          ## 검수 체크리스트
+
+          - [ ] breaking · 보안 숫자를 원문과 대조(오분류 빼기)
+          - [ ] title 하나 고르고 title_candidates 지우기
+          - [ ] editor_note 고쳐 쓰기
+          - [ ] experience에 직접 쓴 경험 3~5문장(placeholder 지우기)
+          - [ ] picks 3~5개로 줄이고 comment 고치기
+          - [ ] todos에 guide 연결(사이트 경로 `/models/...` 또는 `https://` 주소)
+          - [ ] reviewed = true, reviewed_at 날짜
+
+          병합은 `dev`로 하고, 평소처럼 `dev` → `master` PR로 배포합니다.
+          EOF
+          gh pr create --base dev --head "monthly/$MONTH" --title "$MONTH 월간 리포트 초안 (검수 필요)" --body-file pr_body.md
