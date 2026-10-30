@@ -1,7 +1,7 @@
 import json
 import re
 import tomllib
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from core.constants.monthly import (
     MONTHLY_DATA_DIR,
     MONTHLY_DEADLINE_DAYS,
     MONTHLY_MONTH_RE,
+    MONTHLY_PENDING_GRACE_DAYS,
     MONTHLY_PICKS_MAX,
     MONTHLY_PICKS_MIN,
     MONTHLY_TODOS_MAX,
@@ -18,8 +19,8 @@ from core.constants.monthly import (
     MONTHLY_TOPICS_SHOWN,
 )
 from core.constants.page import KST
-from core.months import next_month
-from crud import monthly_crud
+from core.months import month_bounds, next_month
+from crud import monthly_crud, weekly_crud
 from services.web.release_service import _breadcrumb, _json_ld
 
 _cache: dict = {"stamp": None, "data": None}
@@ -75,7 +76,7 @@ def _link(name: str, where: str, value: str) -> str:
     Raises:
         ValueError: 그 밖의 주소일 때
     """
-    if not (value.startswith("https://") or (value.startswith("/") and not value.startswith("//"))):
+    if not (value.startswith("https://") or (value.startswith("/") and not value.startswith(("//", "/\\")))):
         raise _error(name, f"{where} 주소는 https:// 또는 /로 시작해야 합니다 ({value!r})")
     return value
 
@@ -103,6 +104,10 @@ def _stats(name: str, raw: dict) -> dict:
         raise _error(name, "[stats]가 없거나 month가 파일 이름과 다릅니다")
     result = {"month": name, "releases_delta_pct": _count(name, "stats.", stats, "releases_delta_pct", signed=True)}
     result.update({key: _count(name, "stats.", stats, key) for key in _COUNT_KEYS})
+    before = result["prev_releases"]
+    expected = round(100 * (result["releases"] - before) / before) if before else None
+    if result["releases_delta_pct"] != expected:
+        raise _error(name, f"stats.releases_delta_pct가 releases와 prev_releases로 계산한 값과 다릅니다 (기대 {expected!r})")
     result["by_tool"] = [
         {"slug": _text(name, row, "slug"), "name": _text(name, row, "name"), **{key: _count(name, "stats.by_tool.", row, key) for key in ("releases", "breaking", "security", "important")}}
         for row in _rows(name, stats, "by_tool")
@@ -221,7 +226,7 @@ def _bars(stats: dict) -> dict | None:
     if not tools:
         return None
     shown, rest = tools[:MONTHLY_TOOLS_SHOWN], tools[MONTHLY_TOOLS_SHOWN:]
-    peak = shown[0]["releases"] or 1
+    peak = max(t["releases"] for t in shown) or 1
     bars = [
         {
             "name": t["name"],
@@ -437,3 +442,19 @@ def build_draft(db: Session, month: date, now: datetime) -> str:
 def is_finished(month: date, now: datetime) -> bool:
     """그 달이 한국 시간으로 끝났는지 돌려준다."""
     return now.astimezone(KST).date() >= next_month(month)
+
+
+def pending_count(db: Session, month: date, now: datetime) -> int:
+    """그 달에 올라온 글 중 요약을 기다리는 릴리스 항목과 소식의 합을 돌려준다. 달이 끝나고 `MONTHLY_PENDING_GRACE_DAYS`일이 지나면 더 기다리지 않으므로 0이다.
+
+    Args:
+        db: DB 세션
+        month: 그 달 1일
+        now: 지금 시각
+    Returns:
+        기다려야 할 개수
+    """
+    start, end = month_bounds(month)
+    if now >= end + timedelta(days=MONTHLY_PENDING_GRACE_DAYS):
+        return 0
+    return weekly_crud.count_pending(db, start, end)

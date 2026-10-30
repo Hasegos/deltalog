@@ -51,7 +51,8 @@ def _span(db: Session, start: datetime, end: datetime) -> dict:
         .group_by(Source.slug)
     )
     for slug, breaking, security, important in db.execute(items).all():
-        tools[slug].update(breaking=breaking, security=security, important=important)
+        if slug in tools:
+            tools[slug].update(breaking=breaking, security=security, important=important)
     topic_rows = (
         select(Item.topic, func.count(Item.id))
         .join(Entry, Item.entry_id == Entry.id)

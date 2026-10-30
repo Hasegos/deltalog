@@ -21,10 +21,13 @@ def get_draft(month: str, db: Session = Depends(get_db)) -> PlainTextResponse:
     Returns:
         TOML 글(`text/plain`). 검수 전(`reviewed = false`)이다
     Raises:
-        HTTPException: 형식이 틀렸거나 아직 끝나지 않은 달일 때 (400)
+        HTTPException: 형식이 틀렸거나 아직 끝나지 않은 달일 때 (400). 달이 끝난 지 `MONTHLY_PENDING_GRACE_DAYS`일 안인데 요약 대기 항목이 남았을 때 (409)
     """
     first = parse_month(month)
     now = datetime.now(timezone.utc)
     if first is None or not monthly_service.is_finished(first, now):
         raise HTTPException(status_code=400, detail="끝난 달(YYYY-MM)만 만들 수 있습니다")
+    waiting = monthly_service.pending_count(db, first, now)
+    if waiting:
+        raise HTTPException(status_code=409, detail=f"요약을 기다리는 항목이 {waiting}개 남아 있습니다")
     return PlainTextResponse(monthly_service.build_draft(db, first, now))
