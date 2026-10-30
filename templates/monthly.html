@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  {% include "partials/head_meta.html" %}
+  <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/news.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/deadlines.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/weekly.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/monthly.css') }}">
+</head>
+<body>
+  {% include "partials/header.html" %}
+
+  <main>
+    <section class="blk nw">
+      <h1 class="nw-h">{{ title }} <span>{{ label }} 월간 리포트</span></h1>
+      <p class="mo-by"><b class="mo-op">운영자가 씀</b><time datetime="{{ published }}">{{ published_label }} 발행</time><span>검수 {{ reviewed }}</span></p>
+
+      <div class="mo-cards">
+        {% for c in cards %}
+        <div class="mo-c">
+          <span>{{ c.name }}</span>
+          <b>{{ c.value }}</b>
+          <i>{{ c.note }}</i>
+        </div>
+        {% endfor %}
+      </div>
+
+      <article class="dg-top mo-text">
+        {% for p in editor_note %}<p>{{ p }}</p>{% endfor %}
+      </article>
+
+      <h2 class="dl-h">운영자 경험</h2>
+      <article class="dg-top mo-text">
+        {% for p in experience %}<p>{{ p }}</p>{% endfor %}
+      </article>
+
+      {% if todos %}
+      <h2 class="dl-h">이번 달 할 일 <span class="dg-n">종료 일정 기준</span></h2>
+      <div class="dg-l">
+        {% for t in todos %}
+        <div class="mo-td{{ ' mo-past' if t.past }}">
+          <div class="mo-tb"><b>{{ t.badge }}</b><span>{{ t.label }}</span></div>
+          <p>{{ t.text }}{% if t.guide %} <a href="{{ t.guide }}"{% if t.guide.startswith('https://') %} target="_blank" rel="noopener"{% endif %}>가이드 보기</a>{% endif %}</p>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if chart %}
+      <figure class="dgc">
+        <figcaption>도구별 릴리스 수 <span class="dg-n">릴리스가 있었던 {{ tools_active }}개 도구, 프리릴리스 제외</span></figcaption>
+        {% for b in chart.bars %}
+        <div class="dgc-r mo-r" title="{{ b.title }}">
+          <span class="dgc-k">{{ b.name }}</span>
+          <span class="dgc-b" role="img" aria-label="{{ b.name }} {{ b.title }}"><i class="dgc-feature" style="width: {{ b.pct }}%"></i></span>
+          <span class="dgc-n">{{ b.releases }}</span>
+          <span class="mo-rk">breaking {{ b.breaking }} · 보안 {{ b.security }}</span>
+        </div>
+        {% endfor %}
+        {% if chart.rest_n %}<p class="dgc-lg">나머지 {{ chart.rest_n }}곳 합계 릴리스 {{ chart.rest_releases }}개</p>{% endif %}
+      </figure>
+      {% endif %}
+
+      {% if topics %}
+      <figure class="dgc">
+        <figcaption>주제 분포 <span class="dg-n">기능 · breaking 항목 수, 이번 달과 지난달</span></figcaption>
+        {% for t in topics %}
+        <div class="mo-tp" title="{{ t.topic }}: 이번 달 {{ t.n }}개, 지난달 {{ t.prev }}개">
+          <span class="dgc-k">{{ t.topic }}</span>
+          <span class="mo-tpb">
+            <span class="dgc-b"><i class="dgc-feature" style="width: {{ t.pct }}%"></i></span>
+            <span class="dgc-b"><i class="mo-prev" style="width: {{ t.prev_pct }}%"></i></span>
+          </span>
+          <span class="mo-tpn"><b>{{ t.n }}</b><i>{{ t.prev }}</i></span>
+        </div>
+        {% endfor %}
+        <p class="dgc-lg"><span><i class="dgc-feature"></i>이번 달</span><span><i class="mo-prev"></i>지난달</span></p>
+      </figure>
+      {% endif %}
+
+      <h2 class="dl-h">이 달의 변경</h2>
+      <div class="dg-l">
+        {% for p in picks %}
+        <section class="dg-g">
+          <h3><a href="{{ p.url }}"{% if p.external %} target="_blank" rel="noopener"{% endif %}>{{ p.title }}{% if p.external %} ↗{% endif %}</a></h3>
+          <p class="mo-pc">{{ p.comment }}</p>
+        </section>
+        {% endfor %}
+      </div>
+
+      <div class="dg-nav mo-nav">
+        {% if older %}<a class="ch" href="/monthly/{{ older }}">← 이전 호</a>{% else %}<span></span>{% endif %}
+        <a class="ch" href="/monthly">전체 목록</a>
+        {% if newer %}<a class="ch" href="/monthly/{{ newer }}">다음 호 →</a>{% else %}<span></span>{% endif %}
+      </div>
+
+      <p class="dl-note">숫자는 발행일에 고정한 집계라 이후에 바뀌지 않습니다. 변경 요약은 AI(Google Gemini)가 만들었으니 중요한 결정 전에는 원문을 확인해 주세요. 글과 경험 부분은 운영자가 직접 검수해 썼습니다.</p>
+    </section>
+  </main>
+
+  {% include "partials/footer.html" %}
+</body>
+</html>

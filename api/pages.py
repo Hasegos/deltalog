@@ -15,6 +15,7 @@ from services.web.deadline_service import build_deadlines
 from services.web.feed_service import build_feed
 from services.web.home_service import build_home
 from services.web.model_service import build_cost, build_model_detail, build_models
+from services.web.monthly_service import build_monthly, build_monthly_index
 from services.web.news_service import build_news, build_news_detail
 from services.web.page_service import build_tools, build_topics
 from services.web.status_service import build_status
@@ -213,6 +214,36 @@ def weekly_page(request: Request, week: str, db: Session = Depends(get_db)) -> H
     if values is None:
         raise HTTPException(status_code=404, detail="주간 요약을 찾을 수 없습니다")
     return templates.TemplateResponse(request, "weekly.html", values)
+
+
+@page("/monthly", response_class=HTMLResponse)
+def monthly_index_page(request: Request) -> HTMLResponse:
+    """검수를 마친 월간 리포트 목록 화면을 그린다. 공개된 호가 없으면 빈 화면이다.
+
+    Args:
+        request: 현재 요청
+    Returns:
+        렌더링한 월간 리포트 목록 페이지
+    """
+    return templates.TemplateResponse(request, "monthly_index.html", build_monthly_index(site_url(request)))
+
+
+@page("/monthly/{month}", response_class=HTMLResponse)
+def monthly_page(request: Request, month: str) -> HTMLResponse:
+    """월간 리포트 한 호를 그린다.
+
+    Args:
+        request: 현재 요청
+        month: `YYYY-MM`
+    Returns:
+        렌더링한 월간 리포트 페이지
+    Raises:
+        HTTPException: 그런 호가 없거나 아직 검수를 마치지 않았을 때 (404)
+    """
+    values = build_monthly(month, site_url(request))
+    if values is None:
+        raise HTTPException(status_code=404, detail="월간 리포트를 찾을 수 없습니다")
+    return templates.TemplateResponse(request, "monthly.html", values)
 
 
 def _og_response(card: dict | None) -> Response:
