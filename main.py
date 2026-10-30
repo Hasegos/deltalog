@@ -20,6 +20,7 @@ from services.collector.poller_service import poll_all, poll_news
 from services.collector.price_check_service import check_prices_job
 from services.llm.deadline_llm_service import refresh_deadlines_job
 from services.llm.llm_service import requeue_failed_job, summarize_job
+from services.llm.monthly_llm_service import generate_monthly_job
 from services.llm.news_llm_service import summarize_news_job
 from services.llm.weekly_llm_service import generate_weekly_job
 from services.web.metrics_service import ItemStatusCollector
@@ -84,6 +85,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "interval",
             hours=6,
             next_run_time=datetime.now() + timedelta(seconds=210),
+            max_instances=1,
+            coalesce=True,
+        )
+        scheduler.add_job(
+            generate_monthly_job,
+            "interval",
+            hours=6,
+            next_run_time=datetime.now() + timedelta(seconds=330),
             max_instances=1,
             coalesce=True,
         )
