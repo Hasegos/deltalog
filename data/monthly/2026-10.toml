@@ -1,0 +1,331 @@
+month = "2026-10"
+title = "구글과 오픈아이의 신규 프론티어 모델 출시와 주요 업데이트"
+title_candidates = [
+  "구글과 오픈아이의 신규 프론티어 모델 출시와 주요 업데이트",
+  "이번 달 릴리스 219건과 breaking 변경 86건으로 증가",
+  "다가오는 11월 17일 및 30일 주요 모델 및 API 종료 예정",
+]
+published_at = 2026-11-01
+reviewed = false
+editor_note = [
+  "이번 달 전체 릴리스 수는 219건으로 지난달의 103건에 비해 113퍼센트 늘었다. breaking 변경은 86건으로 지난달의 36건보다 증가했으며 보안 관련 항목은 31건으로 집계되었다.",
+  "주요 토픽별로는 UI 관련 항목이 424건으로 가장 많았고 에이전트 항목이 338건으로 뒤를 이었다. CLI와 설정 관련 항목도 320건을 기록하며 활발한 업데이트가 이루어졌다.",
+  "향후 60일 내에 지원이 종료되는 항목은 총 29건이다. 개발자는 대체 모델과 API로 마이그레이션을 준비해야 한다.",
+]
+experience = [
+  "[운영자 경험: 직접 작성]",
+]
+
+[[picks]]
+url = "/news/21"
+title = "Google, 최신 프론티어 모델 Gemini 4 Argon 출시"
+comment = "구글의 최신 프론티어 모델인 Gemini 4 Argon 도입을 확인한다."
+
+[[picks]]
+url = "/news/210"
+title = "OpenAI, GPT-6.1 Terra 출시"
+comment = "오픈아이의 새 모델인 GPT-6.1 Terra 출시 정보를 파악한다."
+
+[[picks]]
+url = "/news/256"
+title = "Cursor Extension Marketplace 내 악성 확장 프로그램 보안 공지"
+comment = "확장 프로그램 보안 공지를 통해 악성 코드 감염 여부를 점검한다."
+
+[[picks]]
+url = "/news/236"
+title = "GitHub Copilot Fusion 정식 출시"
+comment = "깃허브 코파일럿 퓨전 정식 출시 기능을 워크플로에 적용한다."
+
+[[picks]]
+url = "/news/54"
+title = "Java and Kotlin by IntelliJ IDEA 1.0 정식 출시"
+comment = "제트브레인즈의 자바 및 코틀린 개발 환경 통합 도구를 활용한다."
+
+[[todos]]
+date = 2026-11-17
+text = "gemini-2.5를 gemini-3.8로 바꾼다"
+guide = ""
+
+[[todos]]
+date = 2026-11-30
+text = "claude-sonnet-4-5를 claude-sonnet-5-5로 바꾼다"
+guide = ""
+
+[[todos]]
+date = 2026-12-01
+text = "chatgpt-image를 새 버전으로 바꾼다"
+guide = ""
+
+[stats]
+month = "2026-10"
+breaking = 86
+releases = 219
+security = 31
+tools_active = 24
+deadlines_60d = 29
+prev_breaking = 36
+prev_releases = 103
+prev_security = 44
+releases_delta_pct = 113
+
+[[stats.topics]]
+n = 424
+prev = 170
+topic = "UI"
+
+[[stats.topics]]
+n = 338
+prev = 92
+topic = "에이전트"
+
+[[stats.topics]]
+n = 320
+prev = 107
+topic = "CLI·설정"
+
+[[stats.topics]]
+n = 243
+prev = 84
+topic = "MCP·플러그인"
+
+[[stats.topics]]
+n = 225
+prev = 69
+topic = "원격·클라우드"
+
+[[stats.topics]]
+n = 222
+prev = 123
+topic = "모델·요금"
+
+[[stats.topics]]
+n = 196
+prev = 52
+topic = "세션·컨텍스트"
+
+[[stats.topics]]
+n = 177
+prev = 59
+topic = "보안·권한"
+
+[[stats.topics]]
+n = 154
+prev = 30
+topic = "기타"
+
+[[stats.topics]]
+n = 119
+prev = 60
+topic = "Git·연동"
+
+[[stats.topics]]
+n = 102
+prev = 41
+topic = "성능"
+
+[[stats.topics]]
+n = 99
+prev = 62
+topic = "에디터·언어"
+
+[[stats.topics]]
+n = 49
+prev = 11
+topic = "훅"
+
+[[stats.topics]]
+n = 25
+prev = 2
+topic = "빌드·테스트"
+
+[[stats.by_tool]]
+name = "Kiro"
+slug = "kiro"
+breaking = 8
+releases = 29
+security = 2
+important = 52
+
+[[stats.by_tool]]
+name = "Claude Code"
+slug = "claude-code"
+breaking = 37
+releases = 27
+security = 7
+important = 54
+
+[[stats.by_tool]]
+name = "Antigravity CLI"
+slug = "antigravity-cli"
+breaking = 3
+releases = 21
+security = 1
+important = 28
+
+[[stats.by_tool]]
+name = "OpenCode"
+slug = "opencode"
+breaking = 6
+releases = 17
+security = 0
+important = 20
+
+[[stats.by_tool]]
+name = "Anthropic API"
+slug = "anthropic-api"
+breaking = 4
+releases = 15
+security = 0
+important = 13
+
+[[stats.by_tool]]
+name = "OpenAI API"
+slug = "openai-api"
+breaking = 0
+releases = 13
+security = 0
+important = 11
+
+[[stats.by_tool]]
+name = "Antigravity"
+slug = "antigravity"
+breaking = 0
+releases = 11
+security = 0
+important = 7
+
+[[stats.by_tool]]
+name = "GitHub Copilot CLI"
+slug = "copilot-cli"
+breaking = 2
+releases = 11
+security = 0
+important = 3
+
+[[stats.by_tool]]
+name = "Zed"
+slug = "zed"
+breaking = 6
+releases = 9
+security = 0
+important = 5
+
+[[stats.by_tool]]
+name = "Codex"
+slug = "codex"
+breaking = 6
+releases = 8
+security = 13
+important = 26
+
+[[stats.by_tool]]
+name = "Qwen Code"
+slug = "qwen-code"
+breaking = 2
+releases = 8
+security = 0
+important = 10
+
+[[stats.by_tool]]
+name = "Windsurf (Devin Desktop)"
+slug = "windsurf"
+breaking = 3
+releases = 8
+security = 0
+important = 2
+
+[[stats.by_tool]]
+name = "Gemini API"
+slug = "gemini-api"
+breaking = 4
+releases = 6
+security = 0
+important = 9
+
+[[stats.by_tool]]
+name = "Kilo Code"
+slug = "kilo-code"
+breaking = 0
+releases = 6
+security = 4
+important = 7
+
+[[stats.by_tool]]
+name = "Goose"
+slug = "goose"
+breaking = 0
+releases = 5
+security = 1
+important = 3
+
+[[stats.by_tool]]
+name = "VS Code"
+slug = "vscode"
+breaking = 4
+releases = 5
+security = 1
+important = 16
+
+[[stats.by_tool]]
+name = "Cline"
+slug = "cline"
+breaking = 0
+releases = 4
+security = 0
+important = 3
+
+[[stats.by_tool]]
+name = "Cursor"
+slug = "cursor"
+breaking = 0
+releases = 4
+security = 0
+important = 8
+
+[[stats.by_tool]]
+name = "Gemini CLI"
+slug = "gemini-cli"
+breaking = 0
+releases = 4
+security = 0
+important = 0
+
+[[stats.by_tool]]
+name = "Antigravity SDK"
+slug = "antigravity-sdk"
+breaking = 1
+releases = 3
+security = 0
+important = 6
+
+[[stats.by_tool]]
+name = "Android Studio"
+slug = "android-studio"
+breaking = 0
+releases = 2
+security = 0
+important = 2
+
+[[stats.by_tool]]
+name = "Antigravity IDE"
+slug = "antigravity-ide"
+breaking = 0
+releases = 1
+security = 0
+important = 2
+
+[[stats.by_tool]]
+name = "IntelliJ IDEA"
+slug = "intellij-idea"
+breaking = 0
+releases = 1
+security = 1
+important = 1
+
+[[stats.by_tool]]
+name = "WebStorm"
+slug = "webstorm"
+breaking = 0
+releases = 1
+security = 1
+important = 1
